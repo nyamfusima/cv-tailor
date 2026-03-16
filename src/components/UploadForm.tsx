@@ -23,87 +23,31 @@ export default function UploadForm() {
   };
 
   const handleSubmit = async () => {
-  if (!cvFile || !jobDesc.trim()) {
-    setError("Please upload your CV and paste the job description.");
-    return;
-  }
-  setError("");
-  setLoading(true);
+    if (!cvFile || !jobDesc.trim()) {
+      setError("Please upload your CV and paste the job description.");
+      return;
+    }
+    setError("");
+    setLoading(true);
 
-  const formData = new FormData();
-  formData.append("cv", cvFile);
-  formData.append("jobDescription", jobDesc);
+    const formData = new FormData();
+    formData.append("cv", cvFile);
+    formData.append("jobDescription", jobDesc);
 
-  try {
-    const res = await fetch("/api/tailor", {
-      method: "POST",
-      body: formData,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Something went wrong");
-    sessionStorage.setItem("tailoredCV", JSON.stringify(data));
-    router.push("/results");
-  } catch (err: any) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
-
-    // MOCK — remove this block and uncomment the fetch below when API is ready
-    await new Promise((r) => setTimeout(r, 1500));
-    sessionStorage.setItem("tailoredCV", JSON.stringify({
-      name: "Jane Smith",
-      email: "jane@example.com",
-      phone: "+27 82 555 0123",
-      location: "Cape Town, SA",
-      linkedin: "linkedin.com/in/janesmith",
-      summary: "Results-driven software engineer with 5 years of experience building scalable web applications, specialising in React and Node.js.",
-      experience: [
-        {
-          title: "Senior Frontend Engineer",
-          company: "Acme Corp",
-          dates: "2021 – Present",
-          bullets: [
-            "Led migration of legacy codebase to Next.js, reducing load time by 40%",
-            "Built reusable component library used across 3 product teams",
-            "Mentored 2 junior developers"
-          ]
-        },
-        {
-          title: "Frontend Developer",
-          company: "Startup XYZ",
-          dates: "2019 – 2021",
-          bullets: [
-            "Developed customer-facing dashboard with React and TypeScript",
-            "Integrated REST APIs and managed state with Redux"
-          ]
-        }
-      ],
-      education: [
-        { degree: "BSc Computer Science", institution: "UCT", dates: "2015 – 2019" }
-      ],
-      skills: ["React", "Next.js", "TypeScript", "Node.js", "REST APIs", "Git", "Tailwind CSS"],
-      matchScore: 87
-    }));
-    router.push("/results");
-    setLoading(false);
-
-    // REAL API — uncomment this when ready
-    // const formData = new FormData();
-    // formData.append("cv", cvFile);
-    // formData.append("jobDescription", jobDesc);
-    // try {
-    //   const res = await fetch("/api/tailor", { method: "POST", body: formData });
-    //   const data = await res.json();
-    //   if (!res.ok) throw new Error(data.error || "Something went wrong");
-    //   sessionStorage.setItem("tailoredCV", JSON.stringify(data));
-    //   router.push("/results");
-    // } catch (err: any) {
-    //   setError(err.message);
-    // } finally {
-    //   setLoading(false);
-    // }
+    try {
+      const res = await fetch("/api/tailor", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Something went wrong");
+      sessionStorage.setItem("tailoredCV", JSON.stringify(data));
+      router.push("/results");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -118,7 +62,6 @@ export default function UploadForm() {
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-16">
-        {/* Title */}
         <div className="mb-12">
           <h1 className="text-4xl font-semibold tracking-tight mb-3">
             Tailor your CV to the job
