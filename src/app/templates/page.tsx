@@ -1,32 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
-interface Experience {
-  title: string;
-  company: string;
-  dates: string;
-  bullets: string[];
-}
-
-interface Education {
-  degree: string;
-  institution: string;
-  dates: string;
-}
-
-interface TailoredCV {
-  name: string;
-  email: string;
-  phone: string;
-  location: string;
-  linkedin: string;
-  summary: string;
-  experience: Experience[];
-  education: Education[];
-  skills: string[];
-  matchScore: number;
-}
+import { TailoredCV } from "@/lib/types";
+import { downloadPDF } from "@/lib/generatePDF";
 
 const templates = [
   {
@@ -34,28 +10,24 @@ const templates = [
     name: "Classic",
     description: "Clean, traditional layout. Safe for any industry.",
     accent: "#1a1a1a",
-    preview: "border-l-4 border-neutral-800",
   },
   {
     id: "modern",
     name: "Modern",
     description: "Two-column layout with a bold header.",
     accent: "#4f46e5",
-    preview: "border-l-4 border-indigo-500",
   },
   {
     id: "minimal",
     name: "Minimal",
     description: "Pure whitespace. Lets the content breathe.",
     accent: "#0f766e",
-    preview: "border-l-4 border-teal-600",
   },
   {
     id: "sharp",
     name: "Sharp",
     description: "High contrast. Great for tech and creative roles.",
     accent: "#dc2626",
-    preview: "border-l-4 border-red-600",
   },
 ];
 
@@ -185,6 +157,7 @@ export default function TemplatesPage() {
   const router = useRouter();
   const [cv, setCV] = useState<TailoredCV | null>(null);
   const [selected, setSelected] = useState("classic");
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("tailoredCV");
@@ -200,6 +173,12 @@ export default function TemplatesPage() {
 
   const SelectedPreview = templateComponents[selected];
 
+  const handleDownload = async () => {
+    setDownloading(true);
+    await downloadPDF(cv, selected);
+    setDownloading(false);
+  };
+
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
       {/* Header */}
@@ -210,7 +189,10 @@ export default function TemplatesPage() {
         </div>
         <div className="flex items-center gap-4">
           <span className="text-xs text-neutral-500">Step 3 of 3 — Choose template</span>
-          <button onClick={() => router.back()} className="text-xs text-neutral-400 hover:text-white transition-colors">
+          <button
+            onClick={() => router.back()}
+            className="text-xs text-neutral-400 hover:text-white transition-colors"
+          >
             ← Back
           </button>
         </div>
@@ -223,7 +205,7 @@ export default function TemplatesPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Template thumbnails */}
+          {/* Template list */}
           <div className="space-y-3">
             {templates.map((t) => (
               <button
@@ -236,13 +218,13 @@ export default function TemplatesPage() {
                   }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-1 h-10 rounded-full`} style={{ backgroundColor: t.accent }} />
+                  <div className="w-1 h-10 rounded-full" style={{ backgroundColor: t.accent }} />
                   <div>
                     <p className="text-sm font-medium text-neutral-200">{t.name}</p>
                     <p className="text-xs text-neutral-500">{t.description}</p>
                   </div>
                   {selected === t.id && (
-                    <div className="ml-auto w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center">
+                    <div className="ml-auto w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
                       <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
@@ -253,10 +235,19 @@ export default function TemplatesPage() {
             ))}
 
             <button
-              onClick={() => alert("PDF export coming in Step 6!")}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition-colors text-sm mt-4"
+              onClick={handleDownload}
+              disabled={downloading}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-white font-medium py-3 rounded-xl transition-colors text-sm mt-2"
             >
-              Download PDF →
+              {downloading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Generating PDF...
+                </span>
+              ) : "Download PDF →"}
             </button>
           </div>
 

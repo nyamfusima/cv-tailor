@@ -23,12 +23,32 @@ export default function UploadForm() {
   };
 
   const handleSubmit = async () => {
-    if (!cvFile || !jobDesc.trim()) {
-      setError("Please upload your CV and paste the job description.");
-      return;
-    }
-    setError("");
-    setLoading(true);
+  if (!cvFile || !jobDesc.trim()) {
+    setError("Please upload your CV and paste the job description.");
+    return;
+  }
+  setError("");
+  setLoading(true);
+
+  const formData = new FormData();
+  formData.append("cv", cvFile);
+  formData.append("jobDescription", jobDesc);
+
+  try {
+    const res = await fetch("/api/tailor", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Something went wrong");
+    sessionStorage.setItem("tailoredCV", JSON.stringify(data));
+    router.push("/results");
+  } catch (err: any) {
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
     // MOCK — remove this block and uncomment the fetch below when API is ready
     await new Promise((r) => setTimeout(r, 1500));
