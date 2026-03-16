@@ -1,14 +1,13 @@
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const pdfParse = require("pdf-parse");
+import { extractText } from "unpdf";
 import mammoth from "mammoth";
 
 export async function parseFile(file: File): Promise<string> {
   const buffer = Buffer.from(await file.arrayBuffer());
 
   if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
-    const result = await pdfParse(buffer);
-    return result.text;
+    const uint8Array = new Uint8Array(buffer);
+    const { text } = await extractText(uint8Array, { mergePages: true });
+    return text;
   }
 
   if (file.name.endsWith(".docx")) {
