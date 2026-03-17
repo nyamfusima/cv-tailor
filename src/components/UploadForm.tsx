@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function UploadForm() {
@@ -10,6 +10,15 @@ export default function UploadForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [cvDragging, setCvDragging] = useState(false);
+
+  // Show error if the loading screen redirected back with an error
+  useEffect(() => {
+    const err = sessionStorage.getItem("tailorError");
+    if (err) {
+      setError(err);
+      sessionStorage.removeItem("tailorError");
+    }
+  }, []);
 
   const handleCvDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -30,24 +39,19 @@ export default function UploadForm() {
     setError("");
     setLoading(true);
 
-    const formData = new FormData();
-    formData.append("cv", cvFile);
-    formData.append("jobDescription", jobDesc);
-
-    try {
-      const res = await fetch("/api/tailor", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Something went wrong");
-      sessionStorage.setItem("tailoredCV", JSON.stringify(data));
-      router.push("/results");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    // Convert file to base64 so it survives sessionStorage
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(",")[1];
+      sessionStorage.setItem("pendingTailor", JSON.stringify({
+        cvBase64: base64,
+        cvName: cvFile.name,
+        cvType: cvFile.type,
+        jobDescription: jobDesc,
+      }));
+      router.push("/loading-screen");
+    };
+    reader.readAsDataURL(cvFile);
   };
 
   return (
@@ -161,15 +165,7 @@ export default function UploadForm() {
               cursor: loading || !cvFile || !jobDesc.trim() ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                </svg>
-                Tailoring your CV...
-              </span>
-            ) : "Tailor my CV →"}
+            {loading ? "Preparing..." : "Tailor my CV →"}
           </button>
 
           <p className="text-center text-xs text-slate-400">

@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseFile } from "@/lib/parseFile";
-import Groq from "groq-sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const client = new Groq();
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+async function callAI(prompt: string): Promise<string> {
+  const result = await model.generateContent(prompt);
+  return result.response.text();
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,14 +25,7 @@ export async function POST(req: NextRequest) {
 
     const cvText = await parseFile(cvFile);
 
-    // Call 1 — structure the original CV as-is
-    const originalCall = await client.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      max_tokens: 4096,
-      messages: [
-        {
-          role: "user",
-          content: `Extract and structure the following CV text into a clean JSON object. Do not change, rewrite, or improve any content — preserve everything exactly as written.
+    const originalPrompt = `Extract and structure the following CV text into a clean JSON object. Do not change, rewrite, or improve any content — preserve everything exactly as written.
 
 <cv>
 ${cvText}
@@ -69,19 +68,9 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
       "skills": ["skill1", "skill2"]
     }
   ]
-}`,
-        },
-      ],
-    });
+}`;
 
-    // Call 2 — tailor the CV aggressively
-    const tailorCall = await client.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      max_tokens: 4096,
-      messages: [
-        {
-          role: "user",
-          content: `You are an aggressive, expert CV rewriter and ATS specialist. Your job is to COMPLETELY TRANSFORM the candidate's CV to match the job description as closely as possible. You are not a passive editor — you are a ruthless rewriter.
+    const tailorPrompt = `You are an aggressive, expert CV rewriter and ATS specialist. Your job is to COMPLETELY TRANSFORM the candidate's CV to match the job description as closely as possible. You are not a passive editor — you are a ruthless rewriter.
 
 Here is the candidate's current CV:
 <cv>
@@ -153,13 +142,13 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
     "experienceRelevance": 85,
     "experienceBefore": 38
   }
-}`,
-        },
-      ],
-    });
+}`;
 
-    const rawOriginal = originalCall.choices[0].message.content || "";
-    const rawTailored = tailorCall.choices[0].message.content || "";
+    // Run both calls in parallel
+    const [rawOriginal, rawTailored] = await Promise.all([
+      callAI(originalPrompt),
+      callAI(tailorPrompt),
+    ]);
 
     const original = JSON.parse(rawOriginal.replace(/```json|```/g, "").trim());
     const tailored = JSON.parse(rawTailored.replace(/```json|```/g, "").trim());

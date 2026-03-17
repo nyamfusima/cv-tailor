@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "tailormyCV.ai",
+  title: "myCVtailor.ai",
   description: "AI-powered CV tailoring for ATS",
 };
 
