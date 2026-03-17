@@ -23,6 +23,15 @@ export interface SkillCategory {
   skills: string[];
 }
 
+export interface ScoreBreakdown {
+  keywordsMatch: number;
+  keywordsBefore: number;
+  skillsAlignment: number;
+  skillsBefore: number;
+  experienceRelevance: number;
+  experienceBefore: number;
+}
+
 export interface TailoredCV {
   name: string;
   email: string;
@@ -35,4 +44,5 @@ export interface TailoredCV {
   certifications?: Certification[];
   skills: SkillCategory[];
   matchScore: number;
+  scoreBreakdown: ScoreBreakdown;
 }

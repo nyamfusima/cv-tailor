@@ -59,6 +59,14 @@ YOUR RULES — follow these without exception:
 
 10. **Education coursework** — list relevant coursework based on the job description if the candidate's field of study supports it.
 
+11. **Score breakdown** — provide honest before/after scores for each dimension:
+- keywordsMatch: how many job description keywords appear in the tailored CV (0-100)
+- keywordsBefore: same metric on the ORIGINAL CV before tailoring
+- skillsAlignment: how well the skills section matches the job requirements (0-100)
+- skillsBefore: same metric on the ORIGINAL CV
+- experienceRelevance: how relevant the experience bullets are to the role (0-100)
+- experienceBefore: same metric on the ORIGINAL CV
+
 Return ONLY a JSON object in this exact format, no extra text, no markdown fences:
 {
   "name": "Full name",
@@ -96,7 +104,15 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
       "skills": ["skill1", "skill2"]
     }
   ],
-  "matchScore": 85
+  "matchScore": 85,
+  "scoreBreakdown": {
+    "keywordsMatch": 85,
+    "keywordsBefore": 42,
+    "skillsAlignment": 90,
+    "skillsBefore": 55,
+    "experienceRelevance": 85,
+    "experienceBefore": 38
+  }
 }`,
         },
       ],
