@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TailoredCV } from "@/lib/types";
+import { TailoredCV, OriginalCV } from "@/lib/types";
 import { downloadPDF } from "@/lib/generatePDF";
 
 function ScoreBar({ label, before, after, weight }: { label: string; before: number; after: number; weight: number }) {
@@ -51,26 +51,20 @@ function ScoreBar({ label, before, after, weight }: { label: string; before: num
   );
 }
 
-function OriginalCV({ text }: { text: string }) {
+function CVCard({ cv, isOriginal = false }: { cv: TailoredCV | OriginalCV; isOriginal?: boolean }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-      <div className="px-10 py-8 text-center border-b border-slate-100 bg-slate-100">
-        <h1 className="text-lg font-semibold text-slate-500 tracking-tight">Original CV</h1>
-        <p className="text-xs text-slate-400 mt-1">Unmodified — extracted from your upload</p>
-      </div>
-      <div className="px-10 py-8">
-        <pre className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed font-sans">{text}</pre>
-      </div>
-    </div>
-  );
-}
-
-function TailoredCVCard({ cv }: { cv: TailoredCV }) {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-      <div className="px-10 py-8 text-center" style={{ backgroundColor: "#0d1f3c" }}>
-        <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-3xl text-white mb-2 tracking-tight">{cv.name}</h1>
-        <p className="text-sm text-blue-200">
+      <div
+        className="px-10 py-8 text-center"
+        style={{ backgroundColor: isOriginal ? "#ef4444" : "#10b981" }}
+      >
+        <h1
+          style={{ fontFamily: "'DM Serif Display', serif" }}
+          className="text-3xl text-white mb-2 tracking-tight"
+        >
+          {cv.name}
+        </h1>
+        <p className="text-sm text-blue-100 opacity-80">
           {[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ")}
         </p>
       </div>
@@ -175,7 +169,7 @@ function TailoredCVCard({ cv }: { cv: TailoredCV }) {
 
 export default function ResultsPage() {
   const router = useRouter();
-  const [cv, setCV] = useState<TailoredCV & { originalText?: string } | null>(null);
+  const [cv, setCV] = useState<TailoredCV | null>(null);
   const [animatedScore, setAnimatedScore] = useState(0);
   const [downloading, setDownloading] = useState(false);
   const [view, setView] = useState<"tailored" | "original" | "compare">("tailored");
@@ -283,28 +277,33 @@ export default function ResultsPage() {
           </button>
         </div>
 
-        {/* Compare view — side by side, no score panel */}
+        {/* Compare view */}
         {view === "compare" && (
           <div className="grid grid-cols-2 gap-6">
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Original</p>
-              {cv.originalText && <OriginalCV text={cv.originalText} />}
+              {cv.originalCV
+                ? <CVCard cv={cv.originalCV} isOriginal />
+                : <p className="text-sm text-slate-400 p-6">Original not available.</p>}
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Tailored</p>
-              <TailoredCVCard cv={cv} />
+              <CVCard cv={cv} />
             </div>
           </div>
         )}
 
-        {/* Single view — CV on left, score on right */}
+        {/* Single view */}
         {view !== "compare" && (
           <div className="flex gap-8 items-start">
 
-            {/* LEFT */}
             <div className="flex-1 min-w-0">
-              {view === "tailored" && <TailoredCVCard cv={cv} />}
-              {view === "original" && cv.originalText && <OriginalCV text={cv.originalText} />}
+              {view === "tailored" && <CVCard cv={cv} />}
+              {view === "original" && (
+                cv.originalCV
+                  ? <CVCard cv={cv.originalCV} isOriginal />
+                  : <p className="text-sm text-slate-400 p-6">Original not available.</p>
+              )}
               <div className="flex justify-start">
                 <button
                   onClick={() => router.push("/")}
@@ -315,12 +314,11 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            {/* RIGHT — Score panel */}
+            {/* Score panel */}
             <div className="w-80 shrink-0 sticky top-24">
-
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-4">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">ATS Match Score</p>
-                <div className="flex items-center gap-4 mb-4">
+                <div className="flex items-center gap-4 mb-2">
                   <div className="relative flex items-center justify-center w-20 h-20 shrink-0">
                     <svg width="80" height="80" className="-rotate-90">
                       <circle cx="40" cy="40" r="32" fill="none" stroke="#f1f5f9" strokeWidth="6" />

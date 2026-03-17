@@ -19,7 +19,63 @@ export async function POST(req: NextRequest) {
 
     const cvText = await parseFile(cvFile);
 
-    const completion = await client.chat.completions.create({
+    // Call 1 — structure the original CV as-is
+    const originalCall = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      max_tokens: 4096,
+      messages: [
+        {
+          role: "user",
+          content: `Extract and structure the following CV text into a clean JSON object. Do not change, rewrite, or improve any content — preserve everything exactly as written.
+
+<cv>
+${cvText}
+</cv>
+
+Return ONLY a JSON object in this exact format, no extra text, no markdown fences:
+{
+  "name": "Full name",
+  "email": "email",
+  "phone": "phone",
+  "location": "location",
+  "linkedin": "linkedin url or empty string",
+  "summary": "professional summary exactly as written",
+  "experience": [
+    {
+      "title": "Job title",
+      "company": "Company name",
+      "dates": "Start – End",
+      "bullets": ["bullet 1", "bullet 2"]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Degree name",
+      "institution": "Institution name",
+      "dates": "Year or date range",
+      "coursework": ["course 1", "course 2"]
+    }
+  ],
+  "certifications": [
+    {
+      "name": "Certification name",
+      "issuer": "Issuing body",
+      "date": "Year or Month Year"
+    }
+  ],
+  "skills": [
+    {
+      "category": "Category name",
+      "skills": ["skill1", "skill2"]
+    }
+  ]
+}`,
+        },
+      ],
+    });
+
+    // Call 2 — tailor the CV aggressively
+    const tailorCall = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       max_tokens: 4096,
       messages: [
@@ -40,25 +96,15 @@ ${jobDescription}
 YOUR RULES — follow these without exception:
 
 1. **Rewrite every bullet point** to use the exact language, keywords, and phrases from the job description. Do not keep original wording if better wording exists in the job description.
-
 2. **Rewrite the summary completely** — it must read as if this person was born to do this specific job. Use the job title, the company's language, and mirror their priorities directly.
-
 3. **Reorder experience bullets** — most relevant to the job description goes first. Bury or cut bullets that are irrelevant.
-
 4. **Inject keywords aggressively** — scan the job description for every technical skill, tool, methodology, and buzzword. If the candidate has touched anything related, name it explicitly using the job description's exact terminology.
-
 5. **Reframe job titles and responsibilities** — if the candidate was a "developer" but the job says "engineer", use "engineer". If they built "websites" but the job says "scalable web applications", say "scalable web applications".
-
 6. **Skills section** — reorder categories and skills so the most job-relevant ones appear first. Add any skills mentioned in the job description that are clearly implied by the candidate's experience.
-
 7. **Never invent qualifications, companies, or degrees** — you can reframe and strengthen real experience, but do not fabricate.
-
 8. **The matchScore must reflect YOUR rewrite** — after your aggressive rewrite, the score should be 75 or above in almost all cases.
-
 9. **Certifications** — extract any certificates or credentials from the CV. Do not invent any.
-
 10. **Education coursework** — list relevant coursework based on the job description if the candidate's field of study supports it.
-
 11. **Score breakdown** — provide honest before/after scores for each dimension.
 
 Return ONLY a JSON object in this exact format, no extra text, no markdown fences:
@@ -112,12 +158,13 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
       ],
     });
 
-    const raw = completion.choices[0].message.content || "";
-    const cleaned = raw.replace(/```json|```/g, "").trim();
-    const tailored = JSON.parse(cleaned);
+    const rawOriginal = originalCall.choices[0].message.content || "";
+    const rawTailored = tailorCall.choices[0].message.content || "";
 
-    // Attach original extracted text so the UI can show a comparison
-    tailored.originalText = cvText;
+    const original = JSON.parse(rawOriginal.replace(/```json|```/g, "").trim());
+    const tailored = JSON.parse(rawTailored.replace(/```json|```/g, "").trim());
+
+    tailored.originalCV = original;
 
     return NextResponse.json(tailored);
   } catch (err: any) {

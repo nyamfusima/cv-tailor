@@ -32,6 +32,19 @@ export interface ScoreBreakdown {
   experienceBefore: number;
 }
 
+export interface OriginalCV {
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  linkedin: string;
+  summary: string;
+  experience: Experience[];
+  education: Education[];
+  certifications?: Certification[];
+  skills: SkillCategory[];
+}
+
 export interface TailoredCV {
   name: string;
   email: string;
@@ -45,4 +58,5 @@ export interface TailoredCV {
   skills: SkillCategory[];
   matchScore: number;
   scoreBreakdown: ScoreBreakdown;
+  originalCV?: OriginalCV;
 }
