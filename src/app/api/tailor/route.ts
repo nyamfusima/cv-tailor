@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "user",
-          content: `You are an expert CV writer and ATS specialist. Your job is to tailor the candidate's CV to match a specific job description as closely as possible, optimising for ATS systems.
+          content: `You are an aggressive, expert CV rewriter and ATS specialist. Your job is to COMPLETELY TRANSFORM the candidate's CV to match the job description as closely as possible. You are not a passive editor — you are a ruthless rewriter.
 
 Here is the candidate's current CV:
 <cv>
@@ -37,15 +37,27 @@ Here is the job description they are applying for:
 ${jobDescription}
 </job_description>
 
-Rewrite the CV to:
-1. Mirror the exact keywords and phrases from the job description
-2. Reorder and rewrite bullet points to highlight the most relevant experience first
-3. Adjust the professional summary/objective to speak directly to this role
-4. Keep all facts truthful — do not invent experience or qualifications
-5. Keep the same overall structure and sections as the original CV
-6. For education, include relevant coursework that matches the job description if known — do not invent courses
-7. For skills, preserve the same categories the candidate used in their original CV. Do not merge or rename categories. Just reorder skills within each category to prioritise those most relevant to the job description.
-8. For certifications, extract any certificates, licences, or professional credentials from the CV (e.g. AWS, Azure, Google Cloud, Scrum, PMP, etc). If none exist, return an empty array.
+YOUR RULES — follow these without exception:
+
+1. **Rewrite every bullet point** to use the exact language, keywords, and phrases from the job description. Do not keep original wording if better wording exists in the job description.
+
+2. **Rewrite the summary completely** — it must read as if this person was born to do this specific job. Use the job title, the company's language, and mirror their priorities directly.
+
+3. **Reorder experience bullets** — most relevant to the job description goes first. Bury or cut bullets that are irrelevant.
+
+4. **Inject keywords aggressively** — scan the job description for every technical skill, tool, methodology, and buzzword. If the candidate has touched anything related, name it explicitly using the job description's exact terminology.
+
+5. **Reframe job titles and responsibilities** — if the candidate was a "developer" but the job says "engineer", use "engineer". If they built "websites" but the job says "scalable web applications", say "scalable web applications".
+
+6. **Skills section** — reorder categories and skills so the most job-relevant ones appear first. Add any skills mentioned in the job description that are clearly implied by the candidate's experience.
+
+7. **Never invent qualifications, companies, or degrees** — you can reframe and strengthen real experience, but do not fabricate.
+
+8. **The matchScore must reflect YOUR rewrite** — after your aggressive rewrite, the score should be 75 or above in almost all cases. If you rewrote well, the score should reflect that. A low score means you did not rewrite aggressively enough.
+
+9. **Certifications** — extract any certificates or credentials from the CV. Do not invent any.
+
+10. **Education coursework** — list relevant coursework based on the job description if the candidate's field of study supports it.
 
 Return ONLY a JSON object in this exact format, no extra text, no markdown fences:
 {
@@ -54,13 +66,13 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
   "phone": "phone",
   "location": "location",
   "linkedin": "linkedin url or empty string",
-  "summary": "tailored professional summary",
+  "summary": "aggressively tailored professional summary",
   "experience": [
     {
       "title": "Job title",
       "company": "Company name",
       "dates": "Start – End",
-      "bullets": ["bullet 1", "bullet 2"]
+      "bullets": ["rewritten bullet 1", "rewritten bullet 2"]
     }
   ],
   "education": [
@@ -73,21 +85,19 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
   ],
   "certifications": [
     {
-      "name": "Certification name e.g. AWS Certified Solutions Architect",
-      "issuer": "Issuing body e.g. Amazon Web Services",
+      "name": "Certification name",
+      "issuer": "Issuing body",
       "date": "Year or Month Year"
     }
   ],
   "skills": [
     {
-      "category": "Category name e.g. Languages",
+      "category": "Category name",
       "skills": ["skill1", "skill2"]
     }
   ],
   "matchScore": 85
-}
-
-The matchScore is a number from 0–100 representing how well the tailored CV matches the job description.`,
+}`,
         },
       ],
     });

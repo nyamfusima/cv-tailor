@@ -54,7 +54,7 @@ export default function ResultsPage() {
       <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <img src="/favicon.ico" alt="TailorCV" className="w-7 h-7" />
-          <span className="font-semibold text-slate-800 tracking-tight">myCVtailor</span>
+          <span className="font-semibold text-slate-800 tracking-tight">tailormyCV.ai</span>
           </div>
         <div className="flex items-center gap-5">
           <span className="text-xs text-slate-400 font-medium tracking-wide uppercase">Step 2 of 2</span>
