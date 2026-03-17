@@ -12,6 +12,11 @@ export interface Education {
   coursework?: string[];
 }
 
+export interface SkillCategory {
+  category: string;
+  skills: string[];
+}
+
 export interface TailoredCV {
   name: string;
   email: string;
@@ -21,6 +26,6 @@ export interface TailoredCV {
   summary: string;
   experience: Experience[];
   education: Education[];
-  skills: string[];
+  skills: SkillCategory[];
   matchScore: number;
 }

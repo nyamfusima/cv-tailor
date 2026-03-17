@@ -44,6 +44,7 @@ Rewrite the CV to:
 4. Keep all facts truthful — do not invent experience or qualifications
 5. Keep the same overall structure and sections as the original CV
 6. For education, include relevant coursework that matches the job description if known — do not invent courses
+7. For skills, preserve the same categories the candidate used in their original CV. Do not merge or rename categories. Just reorder skills within each category to prioritise those most relevant to the job description.
 
 Return ONLY a JSON object in this exact format, no extra text, no markdown fences:
 {
@@ -69,7 +70,12 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
       "coursework": ["Relevant Course 1", "Relevant Course 2"]
     }
   ],
-  "skills": ["skill1", "skill2"],
+  "skills": [
+    {
+      "category": "Category name e.g. Languages",
+      "skills": ["skill1", "skill2"]
+    }
+  ],
   "matchScore": 85
 }
 

@@ -46,14 +46,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     lineHeight: 1.5,
   },
-  skillsRow: {
+  skillRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 2,
+    marginBottom: 3,
   },
-  skill: {
+  skillCategory: {
+    fontFamily: "Times-Bold",
     fontSize: 10,
     marginRight: 4,
+  },
+  skillList: {
+    fontSize: 10,
+    flex: 1,
   },
   jobHeader: {
     flexDirection: "row",
@@ -135,13 +139,12 @@ function HarvardDoc({ cv }: { cv: TailoredCV }) {
           <>
             <Text style={styles.sectionTitle}>Key Skills</Text>
             <View style={styles.sectionDivider} />
-            <View style={styles.skillsRow}>
-              {cv.skills.map((s, i) => (
-                <Text key={i} style={styles.skill}>
-                  {s}{i < cv.skills.length - 1 ? "  ·" : ""}
-                </Text>
-              ))}
-            </View>
+            {cv.skills.map((group, i) => (
+              <View key={i} style={styles.skillRow}>
+                <Text style={styles.skillCategory}>{group.category}:</Text>
+                <Text style={styles.skillList}>{group.skills.join(", ")}</Text>
+              </View>
+            ))}
           </>
         )}
 

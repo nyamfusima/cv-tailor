@@ -117,7 +117,14 @@ export default function ResultsPage() {
             <div className="mb-5">
               <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-900 mb-1">Key Skills</h2>
               <hr className="border-neutral-300 mb-3" />
-              <p className="text-sm text-neutral-700">{cv.skills.join("  ·  ")}</p>
+              <div className="space-y-1.5">
+                {cv.skills.map((group, i) => (
+                  <div key={i} className="flex gap-2 text-sm">
+                    <span className="font-bold text-neutral-900 shrink-0">{group.category}:</span>
+                    <span className="text-neutral-700">{group.skills.join(", ")}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
