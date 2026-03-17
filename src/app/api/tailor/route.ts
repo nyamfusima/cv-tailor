@@ -53,19 +53,13 @@ YOUR RULES — follow these without exception:
 
 7. **Never invent qualifications, companies, or degrees** — you can reframe and strengthen real experience, but do not fabricate.
 
-8. **The matchScore must reflect YOUR rewrite** — after your aggressive rewrite, the score should be 75 or above in almost all cases. If you rewrote well, the score should reflect that. A low score means you did not rewrite aggressively enough.
+8. **The matchScore must reflect YOUR rewrite** — after your aggressive rewrite, the score should be 75 or above in almost all cases.
 
 9. **Certifications** — extract any certificates or credentials from the CV. Do not invent any.
 
 10. **Education coursework** — list relevant coursework based on the job description if the candidate's field of study supports it.
 
-11. **Score breakdown** — provide honest before/after scores for each dimension:
-- keywordsMatch: how many job description keywords appear in the tailored CV (0-100)
-- keywordsBefore: same metric on the ORIGINAL CV before tailoring
-- skillsAlignment: how well the skills section matches the job requirements (0-100)
-- skillsBefore: same metric on the ORIGINAL CV
-- experienceRelevance: how relevant the experience bullets are to the role (0-100)
-- experienceBefore: same metric on the ORIGINAL CV
+11. **Score breakdown** — provide honest before/after scores for each dimension.
 
 Return ONLY a JSON object in this exact format, no extra text, no markdown fences:
 {
@@ -121,6 +115,9 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
     const raw = completion.choices[0].message.content || "";
     const cleaned = raw.replace(/```json|```/g, "").trim();
     const tailored = JSON.parse(cleaned);
+
+    // Attach original extracted text so the UI can show a comparison
+    tailored.originalText = cvText;
 
     return NextResponse.json(tailored);
   } catch (err: any) {
