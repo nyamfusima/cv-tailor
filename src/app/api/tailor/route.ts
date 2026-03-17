@@ -45,6 +45,7 @@ Rewrite the CV to:
 5. Keep the same overall structure and sections as the original CV
 6. For education, include relevant coursework that matches the job description if known — do not invent courses
 7. For skills, preserve the same categories the candidate used in their original CV. Do not merge or rename categories. Just reorder skills within each category to prioritise those most relevant to the job description.
+8. For certifications, extract any certificates, licences, or professional credentials from the CV (e.g. AWS, Azure, Google Cloud, Scrum, PMP, etc). If none exist, return an empty array.
 
 Return ONLY a JSON object in this exact format, no extra text, no markdown fences:
 {
@@ -68,6 +69,13 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
       "institution": "Institution name",
       "dates": "Year or Start – Present if still studying",
       "coursework": ["Relevant Course 1", "Relevant Course 2"]
+    }
+  ],
+  "certifications": [
+    {
+      "name": "Certification name e.g. AWS Certified Solutions Architect",
+      "issuer": "Issuing body e.g. Amazon Web Services",
+      "date": "Year or Month Year"
     }
   ],
   "skills": [

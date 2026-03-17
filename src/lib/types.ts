@@ -12,6 +12,12 @@ export interface Education {
   coursework?: string[];
 }
 
+export interface Certification {
+  name: string;
+  issuer: string;
+  date: string;
+}
+
 export interface SkillCategory {
   category: string;
   skills: string[];
@@ -26,6 +32,7 @@ export interface TailoredCV {
   summary: string;
   experience: Experience[];
   education: Education[];
+  certifications?: Certification[];
   skills: SkillCategory[];
   matchScore: number;
 }

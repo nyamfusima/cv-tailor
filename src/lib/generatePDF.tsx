@@ -109,6 +109,24 @@ const styles = StyleSheet.create({
     fontFamily: "Times-Bold",
     fontSize: 9,
   },
+  certHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 1,
+  },
+  certName: {
+    fontFamily: "Times-Bold",
+    fontSize: 10,
+  },
+  certDate: {
+    fontSize: 10,
+    fontFamily: "Times-Italic",
+  },
+  certIssuer: {
+    fontSize: 10,
+    fontFamily: "Times-Italic",
+    marginBottom: 4,
+  },
 });
 
 function HarvardDoc({ cv }: { cv: TailoredCV }) {
@@ -186,6 +204,23 @@ function HarvardDoc({ cv }: { cv: TailoredCV }) {
                     {edu.coursework.join(", ")}
                   </Text>
                 )}
+              </View>
+            ))}
+          </>
+        )}
+
+        {/* Professional Development */}
+        {cv.certifications && cv.certifications.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Professional Development</Text>
+            <View style={styles.sectionDivider} />
+            {cv.certifications.map((cert, i) => (
+              <View key={i} style={{ marginBottom: 6 }}>
+                <View style={styles.certHeader}>
+                  <Text style={styles.certName}>{cert.name}</Text>
+                  <Text style={styles.certDate}>{cert.date}</Text>
+                </View>
+                <Text style={styles.certIssuer}>{cert.issuer}</Text>
               </View>
             ))}
           </>
