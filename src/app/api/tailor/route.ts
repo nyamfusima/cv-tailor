@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseFile } from "@/lib/parseFile";
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 
-const client = new Anthropic();
+const client = new Groq();
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,12 +17,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Step 1: Extract text from uploaded CV
     const cvText = await parseFile(cvFile);
 
-    // Step 2: Send to Claude for tailoring
-    const message = await client.messages.create({
-      model: "claude-opus-4-5",
+    const completion = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       max_tokens: 4096,
       messages: [
         {
@@ -45,8 +43,9 @@ Rewrite the CV to:
 3. Adjust the professional summary/objective to speak directly to this role
 4. Keep all facts truthful — do not invent experience or qualifications
 5. Keep the same overall structure and sections as the original CV
+6. For education, include relevant coursework that matches the job description if known — do not invent courses
 
-Return ONLY a JSON object in this exact format, no extra text:
+Return ONLY a JSON object in this exact format, no extra text, no markdown fences:
 {
   "name": "Full name",
   "email": "email",
@@ -64,9 +63,10 @@ Return ONLY a JSON object in this exact format, no extra text:
   ],
   "education": [
     {
-      "degree": "Degree name",
-      "institution": "Institution",
-      "dates": "Year"
+      "degree": "Degree or qualification name",
+      "institution": "Institution name",
+      "dates": "Year or Start – Present if still studying",
+      "coursework": ["Relevant Course 1", "Relevant Course 2"]
     }
   ],
   "skills": ["skill1", "skill2"],
@@ -78,9 +78,7 @@ The matchScore is a number from 0–100 representing how well the tailored CV ma
       ],
     });
 
-    const raw = message.content[0].type === "text" ? message.content[0].text : "";
-
-    // Strip markdown fences if Claude wraps response
+    const raw = completion.choices[0].message.content || "";
     const cleaned = raw.replace(/```json|```/g, "").trim();
     const tailored = JSON.parse(cleaned);
 
@@ -93,9 +91,3 @@ The matchScore is a number from 0–100 representing how well the tailored CV ma
     );
   }
 }
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};

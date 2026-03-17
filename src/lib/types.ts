@@ -9,6 +9,7 @@ export interface Education {
   degree: string;
   institution: string;
   dates: string;
+  coursework?: string[];
 }
 
 export interface TailoredCV {

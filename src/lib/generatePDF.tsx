@@ -1,214 +1,200 @@
-import { Document, Page, Text, View, StyleSheet, pdf, Font } from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, pdf } from "@react-pdf/renderer";
 import { TailoredCV } from "./types";
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, fontFamily: "Helvetica", color: "#1a1a1a" },
-  name: { fontSize: 20, fontWeight: "bold", marginBottom: 4 },
-  contact: { fontSize: 9, color: "#6b7280", marginBottom: 16 },
-  sectionTitle: { fontSize: 8, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#9ca3af", marginBottom: 6, marginTop: 14 },
-  divider: { borderBottomWidth: 1, borderBottomColor: "#e5e7eb", marginBottom: 10 },
-  summary: { fontSize: 10, color: "#374151", lineHeight: 1.6, marginBottom: 4 },
-  jobHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 2 },
-  jobTitle: { fontWeight: "bold", fontSize: 10 },
-  jobCompany: { fontSize: 9, color: "#6b7280", marginBottom: 3 },
-  jobDate: { fontSize: 9, color: "#9ca3af" },
-  bullet: { fontSize: 9, color: "#374151", marginBottom: 2, paddingLeft: 8 },
-  skillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
-  skill: { fontSize: 8, backgroundColor: "#f3f4f6", color: "#374151", padding: "3 6", borderRadius: 4 },
-  eduHeader: { flexDirection: "row", justifyContent: "space-between" },
-  eduDegree: { fontWeight: "bold", fontSize: 10 },
-  eduInstitution: { fontSize: 9, color: "#6b7280" },
-  eduDate: { fontSize: 9, color: "#9ca3af" },
+  page: {
+    padding: "48 56",
+    fontSize: 10,
+    fontFamily: "Times-Roman",
+    color: "#000000",
+    lineHeight: 1.4,
+  },
+  name: {
+    fontSize: 16,
+    fontFamily: "Times-Bold",
+    textAlign: "center",
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  contact: {
+    fontSize: 9,
+    textAlign: "center",
+    color: "#000000",
+    marginBottom: 12,
+  },
+  divider: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#000000",
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 10,
+    fontFamily: "Times-Bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 2,
+    marginTop: 10,
+  },
+  sectionDivider: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#000000",
+    marginBottom: 6,
+  },
+  summary: {
+    fontSize: 10,
+    marginBottom: 4,
+    lineHeight: 1.5,
+  },
+  skillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 2,
+  },
+  skill: {
+    fontSize: 10,
+    marginRight: 4,
+  },
+  jobHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 1,
+  },
+  jobTitle: {
+    fontFamily: "Times-Bold",
+    fontSize: 10,
+  },
+  jobDate: {
+    fontSize: 10,
+    fontFamily: "Times-Italic",
+  },
+  jobCompany: {
+    fontSize: 10,
+    fontFamily: "Times-Italic",
+    marginBottom: 2,
+  },
+  bullet: {
+    fontSize: 10,
+    marginBottom: 1.5,
+    paddingLeft: 10,
+  },
+  eduHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 1,
+  },
+  eduDegree: {
+    fontFamily: "Times-Bold",
+    fontSize: 10,
+  },
+  eduDate: {
+    fontSize: 10,
+    fontFamily: "Times-Italic",
+  },
+  eduInstitution: {
+    fontSize: 10,
+    fontFamily: "Times-Italic",
+    marginBottom: 2,
+  },
+  coursework: {
+    fontSize: 9,
+    marginTop: 1,
+    marginBottom: 4,
+  },
+  courseworkLabel: {
+    fontFamily: "Times-Bold",
+    fontSize: 9,
+  },
 });
 
-const modernStyles = StyleSheet.create({
-  page: { fontSize: 10, fontFamily: "Helvetica", color: "#1a1a1a", flexDirection: "row" },
-  sidebar: { width: "33%", backgroundColor: "#4f46e5", padding: 24, color: "white" },
-  main: { flex: 1, padding: 24 },
-  name: { fontSize: 16, fontWeight: "bold", color: "#4f46e5", marginBottom: 4 },
-  sideLabel: { fontSize: 7, textTransform: "uppercase", letterSpacing: 1.5, opacity: 0.7, marginBottom: 4 },
-  sideText: { fontSize: 9, opacity: 0.9, marginBottom: 2 },
-  sectionTitle: { fontSize: 8, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#9ca3af", marginBottom: 6, marginTop: 12 },
-  jobTitle: { fontWeight: "bold", fontSize: 10 },
-  jobCompany: { fontSize: 9, color: "#6366f1", marginBottom: 3 },
-  bullet: { fontSize: 9, color: "#374151", marginBottom: 2, paddingLeft: 8 },
-  skill: { fontSize: 8, opacity: 0.9, marginBottom: 2 },
-});
+function HarvardDoc({ cv }: { cv: TailoredCV }) {
+  const contactParts = [cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean);
 
-const minimalStyles = StyleSheet.create({
-  page: { padding: 48, fontSize: 10, fontFamily: "Helvetica", color: "#1a1a1a" },
-  name: { fontSize: 22, fontWeight: "normal", marginBottom: 4, letterSpacing: -0.5 },
-  contact: { fontSize: 9, color: "#9ca3af", marginBottom: 24 },
-  row: { flexDirection: "row", gap: 16, marginBottom: 12 },
-  dateCol: { width: 40, textAlign: "right", color: "#d1d5db", fontSize: 9, paddingTop: 1 },
-  jobTitle: { fontWeight: "bold", fontSize: 10 },
-  jobCompany: { fontSize: 9, color: "#9ca3af" },
-  bullet: { fontSize: 9, color: "#6b7280", marginBottom: 2 },
-});
-
-const sharpStyles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, fontFamily: "Helvetica", backgroundColor: "#0a0a0a", color: "white" },
-  name: { fontSize: 20, fontWeight: "bold", marginBottom: 4 },
-  contact: { fontSize: 9, color: "#ef4444", marginBottom: 16 },
-  sectionTitle: { fontSize: 8, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#ef4444", marginBottom: 8, marginTop: 14 },
-  jobRow: { borderLeftWidth: 1, borderLeftColor: "#262626", paddingLeft: 8, marginBottom: 10 },
-  jobHeader: { flexDirection: "row", justifyContent: "space-between" },
-  jobTitle: { fontWeight: "bold", color: "white", fontSize: 10 },
-  jobCompany: { fontSize: 9, color: "#f87171", marginBottom: 3 },
-  jobDate: { fontSize: 9, color: "#6b7280" },
-  bullet: { fontSize: 9, color: "#9ca3af", marginBottom: 2 },
-  skillRow: { flexDirection: "row", flexWrap: "wrap", gap: 4 },
-  skill: { fontSize: 8, backgroundColor: "#1a1a1a", color: "#d1d5db", padding: "3 6", borderRadius: 3 },
-});
-
-function ClassicDoc({ cv }: { cv: TailoredCV }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+
+        {/* Name */}
         <Text style={styles.name}>{cv.name}</Text>
-        <Text style={styles.contact}>{[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join(" · ")}</Text>
+
+        {/* Contact */}
+        <Text style={styles.contact}>{contactParts.join("  ·  ")}</Text>
         <View style={styles.divider} />
-        {cv.summary && (<><Text style={styles.sectionTitle}>Summary</Text><Text style={styles.summary}>{cv.summary}</Text></>)}
-        <Text style={styles.sectionTitle}>Experience</Text>
-        {cv.experience?.map((job, i) => (
-          <View key={i} style={{ marginBottom: 10 }}>
-            <View style={styles.jobHeader}>
-              <Text style={styles.jobTitle}>{job.title} — {job.company}</Text>
-              <Text style={styles.jobDate}>{job.dates}</Text>
+
+        {/* Summary */}
+        {cv.summary && (
+          <>
+            <Text style={styles.sectionTitle}>Summary</Text>
+            <View style={styles.sectionDivider} />
+            <Text style={styles.summary}>{cv.summary}</Text>
+          </>
+        )}
+
+        {/* Key Skills */}
+        {cv.skills?.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Key Skills</Text>
+            <View style={styles.sectionDivider} />
+            <View style={styles.skillsRow}>
+              {cv.skills.map((s, i) => (
+                <Text key={i} style={styles.skill}>
+                  {s}{i < cv.skills.length - 1 ? "  ·" : ""}
+                </Text>
+              ))}
             </View>
-            {job.bullets.map((b, j) => <Text key={j} style={styles.bullet}>· {b}</Text>)}
-          </View>
-        ))}
-        <Text style={styles.sectionTitle}>Education</Text>
-        {cv.education?.map((edu, i) => (
-          <View key={i} style={{ marginBottom: 6 }}>
-            <View style={styles.eduHeader}>
-              <View><Text style={styles.eduDegree}>{edu.degree}</Text><Text style={styles.eduInstitution}>{edu.institution}</Text></View>
-              <Text style={styles.eduDate}>{edu.dates}</Text>
-            </View>
-          </View>
-        ))}
-        <Text style={styles.sectionTitle}>Skills</Text>
-        <View style={styles.skillsRow}>
-          {cv.skills?.map((s, i) => <Text key={i} style={styles.skill}>{s}</Text>)}
-        </View>
+          </>
+        )}
+
+        {/* Experience */}
+        {cv.experience?.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Experience</Text>
+            <View style={styles.sectionDivider} />
+            {cv.experience.map((job, i) => (
+              <View key={i} style={{ marginBottom: 8 }}>
+                <View style={styles.jobHeader}>
+                  <Text style={styles.jobTitle}>{job.title}</Text>
+                  <Text style={styles.jobDate}>{job.dates}</Text>
+                </View>
+                <Text style={styles.jobCompany}>{job.company}</Text>
+                {job.bullets.map((b, j) => (
+                  <Text key={j} style={styles.bullet}>•  {b}</Text>
+                ))}
+              </View>
+            ))}
+          </>
+        )}
+
+        {/* Education */}
+        {cv.education?.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Education</Text>
+            <View style={styles.sectionDivider} />
+            {cv.education.map((edu, i) => (
+              <View key={i} style={{ marginBottom: 8 }}>
+                <View style={styles.eduHeader}>
+                  <Text style={styles.eduDegree}>{edu.degree}</Text>
+                  <Text style={styles.eduDate}>{edu.dates}</Text>
+                </View>
+                <Text style={styles.eduInstitution}>{edu.institution}</Text>
+                {edu.coursework && edu.coursework.length > 0 && (
+                  <Text style={styles.coursework}>
+                    <Text style={styles.courseworkLabel}>Relevant coursework: </Text>
+                    {edu.coursework.join(", ")}
+                  </Text>
+                )}
+              </View>
+            ))}
+          </>
+        )}
+
       </Page>
     </Document>
   );
 }
 
-function ModernDoc({ cv }: { cv: TailoredCV }) {
-  return (
-    <Document>
-      <Page size="A4" style={modernStyles.page}>
-        <View style={modernStyles.sidebar}>
-          <Text style={{ fontSize: 14, fontWeight: "bold", color: "white", marginBottom: 4 }}>{cv.name}</Text>
-          <Text style={modernStyles.sideLabel}>Contact</Text>
-          <Text style={modernStyles.sideText}>{cv.email}</Text>
-          <Text style={modernStyles.sideText}>{cv.phone}</Text>
-          <Text style={{ ...modernStyles.sideText, marginBottom: 12 }}>{cv.location}</Text>
-          <Text style={modernStyles.sideLabel}>Skills</Text>
-          {cv.skills?.map((s, i) => <Text key={i} style={modernStyles.skill}>{s}</Text>)}
-        </View>
-        <View style={modernStyles.main}>
-          <Text style={modernStyles.name}>{cv.name}</Text>
-          {cv.summary && <Text style={{ fontSize: 9, color: "#6b7280", marginBottom: 12 }}>{cv.summary}</Text>}
-          <Text style={modernStyles.sectionTitle}>Experience</Text>
-          {cv.experience?.map((job, i) => (
-            <View key={i} style={{ marginBottom: 8 }}>
-              <Text style={modernStyles.jobTitle}>{job.title}</Text>
-              <Text style={modernStyles.jobCompany}>{job.company} · {job.dates}</Text>
-              {job.bullets.map((b, j) => <Text key={j} style={modernStyles.bullet}>· {b}</Text>)}
-            </View>
-          ))}
-          <Text style={modernStyles.sectionTitle}>Education</Text>
-          {cv.education?.map((edu, i) => (
-            <View key={i} style={{ marginBottom: 6 }}>
-              <Text style={{ fontWeight: "bold", fontSize: 10 }}>{edu.degree}</Text>
-              <Text style={{ fontSize: 9, color: "#6b7280" }}>{edu.institution} · {edu.dates}</Text>
-            </View>
-          ))}
-        </View>
-      </Page>
-    </Document>
-  );
-}
-
-function MinimalDoc({ cv }: { cv: TailoredCV }) {
-  return (
-    <Document>
-      <Page size="A4" style={minimalStyles.page}>
-        <Text style={minimalStyles.name}>{cv.name}</Text>
-        <Text style={minimalStyles.contact}>{[cv.email, cv.phone, cv.location].filter(Boolean).join(" · ")}</Text>
-        {cv.summary && <Text style={{ fontSize: 10, color: "#6b7280", marginBottom: 20 }}>{cv.summary}</Text>}
-        {cv.experience?.map((job, i) => (
-          <View key={i} style={minimalStyles.row}>
-            <Text style={minimalStyles.dateCol}>{job.dates.split("–")[0]?.trim()}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={minimalStyles.jobTitle}>{job.title}, <Text style={{ fontWeight: "normal", color: "#9ca3af" }}>{job.company}</Text></Text>
-              {job.bullets.map((b, j) => <Text key={j} style={minimalStyles.bullet}>{b}</Text>)}
-            </View>
-          </View>
-        ))}
-        {cv.education?.map((edu, i) => (
-          <View key={i} style={minimalStyles.row}>
-            <Text style={minimalStyles.dateCol}>{edu.dates}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={minimalStyles.jobTitle}>{edu.degree}</Text>
-              <Text style={{ fontSize: 9, color: "#9ca3af" }}>{edu.institution}</Text>
-            </View>
-          </View>
-        ))}
-      </Page>
-    </Document>
-  );
-}
-
-function SharpDoc({ cv }: { cv: TailoredCV }) {
-  return (
-    <Document>
-      <Page size="A4" style={sharpStyles.page}>
-        <Text style={sharpStyles.name}>{cv.name}</Text>
-        <Text style={sharpStyles.contact}>{[cv.email, cv.phone, cv.location].filter(Boolean).join(" · ")}</Text>
-        {cv.summary && (<><Text style={sharpStyles.sectionTitle}>Summary</Text><Text style={{ fontSize: 9, color: "#9ca3af", marginBottom: 4 }}>{cv.summary}</Text></>)}
-        <Text style={sharpStyles.sectionTitle}>Experience</Text>
-        {cv.experience?.map((job, i) => (
-          <View key={i} style={sharpStyles.jobRow}>
-            <View style={sharpStyles.jobHeader}>
-              <Text style={sharpStyles.jobTitle}>{job.title}</Text>
-              <Text style={sharpStyles.jobDate}>{job.dates}</Text>
-            </View>
-            <Text style={sharpStyles.jobCompany}>{job.company}</Text>
-            {job.bullets.map((b, j) => <Text key={j} style={sharpStyles.bullet}>· {b}</Text>)}
-          </View>
-        ))}
-        <Text style={sharpStyles.sectionTitle}>Education</Text>
-        {cv.education?.map((edu, i) => (
-          <View key={i} style={{ marginBottom: 6 }}>
-            <Text style={{ fontWeight: "bold", color: "white", fontSize: 10 }}>{edu.degree}</Text>
-            <Text style={{ fontSize: 9, color: "#9ca3af" }}>{edu.institution} · {edu.dates}</Text>
-          </View>
-        ))}
-        <Text style={sharpStyles.sectionTitle}>Skills</Text>
-        <View style={sharpStyles.skillRow}>
-          {cv.skills?.map((s, i) => <Text key={i} style={sharpStyles.skill}>{s}</Text>)}
-        </View>
-      </Page>
-    </Document>
-  );
-}
-
-export const docComponents: Record<string, React.ComponentType<{ cv: TailoredCV }>> = {
-  classic: ClassicDoc,
-  modern: ModernDoc,
-  minimal: MinimalDoc,
-  sharp: SharpDoc,
-};
-
-export async function downloadPDF(cv: TailoredCV, templateId: string) {
-  const DocComponent = docComponents[templateId];
-  if (!DocComponent) return;
-  const blob = await pdf(<DocComponent cv={cv} />).toBlob();
+export async function downloadPDF(cv: TailoredCV) {
+  const blob = await pdf(<HarvardDoc cv={cv} />).toBlob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

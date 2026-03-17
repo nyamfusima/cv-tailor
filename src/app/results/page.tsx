@@ -2,41 +2,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TailoredCV } from "@/lib/types";
-
-interface Experience {
-  title: string;
-  company: string;
-  dates: string;
-  bullets: string[];
-}
-
-interface Education {
-  degree: string;
-  institution: string;
-  dates: string;
-}
-
-interface TailoredCV {
-  name: string;
-  email: string;
-  phone: string;
-  location: string;
-  linkedin: string;
-  summary: string;
-  experience: Experience[];
-  education: Education[];
-  skills: string[];
-  matchScore: number;
-}
+import { downloadPDF } from "@/lib/generatePDF";
 
 export default function ResultsPage() {
   const router = useRouter();
   const [cv, setCV] = useState<TailoredCV | null>(null);
+  const [animatedScore, setAnimatedScore] = useState(0);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("tailoredCV");
     if (!stored) { router.push("/"); return; }
-    setCV(JSON.parse(stored));
+    const parsed = JSON.parse(stored);
+    setCV(parsed);
+    const timeout = setTimeout(() => setAnimatedScore(parsed.matchScore), 300);
+    return () => clearTimeout(timeout);
   }, [router]);
 
   if (!cv) return (
@@ -46,8 +26,25 @@ export default function ResultsPage() {
   );
 
   const scoreColor =
+    cv.matchScore >= 80 ? "#34d399" :
+    cv.matchScore >= 60 ? "#fbbf24" : "#f87171";
+
+  const scoreLabel =
+    cv.matchScore >= 80 ? "Strong match — go for it" :
+    cv.matchScore >= 60 ? "Good match — review before applying" :
+    "Weak match — consider more tailoring";
+
+  const scoreTailwind =
     cv.matchScore >= 80 ? "text-emerald-400" :
     cv.matchScore >= 60 ? "text-amber-400" : "text-red-400";
+
+  const circumference = 2 * Math.PI * 38;
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    await downloadPDF(cv);
+    setDownloading(false);
+  };
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
@@ -58,7 +55,7 @@ export default function ResultsPage() {
           <span className="text-sm font-medium text-neutral-200">TailorCV</span>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-xs text-neutral-500">Step 2 of 3 — Review</span>
+          <span className="text-xs text-neutral-500">Step 2 of 2 — Review & Download</span>
           <button
             onClick={() => router.push("/")}
             className="text-xs text-neutral-400 hover:text-white transition-colors"
@@ -69,61 +66,78 @@ export default function ResultsPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-6 py-12">
-        {/* Match score */}
+        {/* ATS Score */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 mb-8 flex items-center justify-between">
           <div>
             <p className="text-sm text-neutral-400 mb-1">ATS match score</p>
-            <p className={`text-4xl font-semibold ${scoreColor}`}>{cv.matchScore}<span className="text-xl text-neutral-500">%</span></p>
+            <p className={`text-sm font-medium mt-2 ${scoreTailwind}`}>{scoreLabel}</p>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-neutral-400 mb-1">Ready to apply?</p>
-            <p className="text-sm text-neutral-200">
-              {cv.matchScore >= 80 ? "Strong match — go for it" :
-               cv.matchScore >= 60 ? "Good match — review before applying" :
-               "Weak match — consider more tailoring"}
-            </p>
+          <div className="relative flex items-center justify-center w-24 h-24">
+            <svg width="96" height="96" className="-rotate-90">
+              <circle cx="48" cy="48" r="38" fill="none" stroke="#262626" strokeWidth="7" />
+              <circle
+                cx="48" cy="48" r="38"
+                fill="none"
+                stroke={scoreColor}
+                strokeWidth="7"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference - (animatedScore / 100) * circumference}
+                strokeLinecap="round"
+                style={{ transition: "stroke-dashoffset 1.2s ease" }}
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center">
+              <span className={`text-xl font-semibold ${scoreTailwind}`}>{cv.matchScore}</span>
+              <span className="text-[10px] text-neutral-500">/ 100</span>
+            </div>
           </div>
         </div>
 
         {/* CV Preview */}
-        <div className="bg-white text-neutral-900 rounded-2xl p-10 shadow-xl">
+        <div className="bg-white text-neutral-900 rounded-2xl p-10 shadow-xl font-serif">
           {/* Contact */}
-          <div className="border-b border-neutral-200 pb-6 mb-6">
-            <h1 className="text-2xl font-bold text-neutral-900 mb-2">{cv.name}</h1>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-neutral-500">
-              {cv.email && <span>{cv.email}</span>}
-              {cv.phone && <span>{cv.phone}</span>}
-              {cv.location && <span>{cv.location}</span>}
-              {cv.linkedin && <span>{cv.linkedin}</span>}
-            </div>
+          <div className="border-b border-neutral-200 pb-6 mb-6 text-center">
+            <h1 className="text-2xl font-bold text-neutral-900 mb-2 uppercase tracking-widest">{cv.name}</h1>
+            <p className="text-sm text-neutral-500">
+              {[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join(" · ")}
+            </p>
           </div>
 
           {/* Summary */}
           {cv.summary && (
-            <div className="mb-6">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-2">Summary</h2>
+            <div className="mb-5">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-900 mb-1">Summary</h2>
+              <hr className="border-neutral-300 mb-3" />
               <p className="text-sm text-neutral-700 leading-relaxed">{cv.summary}</p>
+            </div>
+          )}
+
+          {/* Key Skills */}
+          {cv.skills?.length > 0 && (
+            <div className="mb-5">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-900 mb-1">Key Skills</h2>
+              <hr className="border-neutral-300 mb-3" />
+              <p className="text-sm text-neutral-700">{cv.skills.join("  ·  ")}</p>
             </div>
           )}
 
           {/* Experience */}
           {cv.experience?.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-4">Experience</h2>
+            <div className="mb-5">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-900 mb-1">Experience</h2>
+              <hr className="border-neutral-300 mb-3" />
               <div className="space-y-5">
                 {cv.experience.map((job, i) => (
                   <div key={i}>
-                    <div className="flex justify-between items-start mb-1">
-                      <div>
-                        <p className="text-sm font-semibold text-neutral-900">{job.title}</p>
-                        <p className="text-sm text-neutral-500">{job.company}</p>
-                      </div>
-                      <p className="text-xs text-neutral-400 whitespace-nowrap ml-4">{job.dates}</p>
+                    <div className="flex justify-between items-start mb-0.5">
+                      <p className="text-sm font-bold text-neutral-900">{job.title}</p>
+                      <p className="text-xs italic text-neutral-500 whitespace-nowrap ml-4">{job.dates}</p>
                     </div>
-                    <ul className="mt-2 space-y-1">
+                    <p className="text-sm italic text-neutral-500 mb-2">{job.company}</p>
+                    <ul className="space-y-1">
                       {job.bullets.map((b, j) => (
                         <li key={j} className="text-sm text-neutral-700 flex gap-2">
-                          <span className="text-neutral-400 mt-0.5 shrink-0">·</span>
+                          <span className="shrink-0">•</span>
                           <span>{b}</span>
                         </li>
                       ))}
@@ -136,44 +150,52 @@ export default function ResultsPage() {
 
           {/* Education */}
           {cv.education?.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-4">Education</h2>
-              <div className="space-y-2">
+            <div className="mb-5">
+              <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-900 mb-1">Education</h2>
+              <hr className="border-neutral-300 mb-3" />
+              <div className="space-y-4">
                 {cv.education.map((edu, i) => (
-                  <div key={i} className="flex justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-neutral-900">{edu.degree}</p>
-                      <p className="text-sm text-neutral-500">{edu.institution}</p>
+                  <div key={i}>
+                    <div className="flex justify-between items-start">
+                      <p className="text-sm font-bold text-neutral-900">{edu.degree}</p>
+                      <p className="text-xs italic text-neutral-500">{edu.dates}</p>
                     </div>
-                    <p className="text-xs text-neutral-400">{edu.dates}</p>
+                    <p className="text-sm italic text-neutral-500 mb-1">{edu.institution}</p>
+                    {edu.coursework && edu.coursework.length > 0 && (
+                      <p className="text-xs text-neutral-500">
+                        <span className="font-semibold not-italic text-neutral-600">Relevant coursework: </span>
+                        {edu.coursework.join(", ")}
+                      </p>
+                    )}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Skills */}
-          {cv.skills?.length > 0 && (
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-3">Skills</h2>
-              <div className="flex flex-wrap gap-2">
-                {cv.skills.map((skill, i) => (
-                  <span key={i} className="text-xs bg-neutral-100 text-neutral-700 px-3 py-1 rounded-full">
-                    {skill}
-                  </span>
                 ))}
               </div>
             </div>
           )}
         </div>
 
-        {/* Next step */}
-        <div className="mt-6 flex justify-end">
+        {/* Download */}
+        <div className="mt-6 flex justify-between items-center">
           <button
-            onClick={() => router.push("/templates")}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-6 py-3 rounded-xl transition-colors"
+            onClick={() => router.push("/")}
+            className="text-sm text-neutral-400 hover:text-white transition-colors"
           >
-            Choose a template →
+            ← Tailor another CV
+          </button>
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-neutral-800 disabled:text-neutral-600 text-white text-sm font-medium px-6 py-3 rounded-xl transition-colors"
+          >
+            {downloading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                Generating PDF...
+              </span>
+            ) : "Download PDF →"}
           </button>
         </div>
       </main>
