@@ -153,8 +153,19 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
       callAI(tailorPrompt),
     ]);
 
-    const original = JSON.parse(rawOriginal.replace(/```json|```/g, "").trim());
-    const tailored = JSON.parse(rawTailored.replace(/```json|```/g, "").trim());
+    let original, tailored;
+
+    try {
+      original = JSON.parse(rawOriginal.replace(/```json|```/g, "").trim());
+    } catch {
+      throw new Error("Failed to parse the original CV structure. Please try again.");
+    }
+
+    try {
+      tailored = JSON.parse(rawTailored.replace(/```json|```/g, "").trim());
+    } catch {
+      throw new Error("Failed to parse the tailored CV. Please try again.");
+    }
 
     tailored.originalCV = original;
 
@@ -162,7 +173,7 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
   } catch (err: any) {
     console.error("Tailor API error:", err);
     return NextResponse.json(
-      { error: err.message || "Failed to tailor CV." },
+      { error: err.message || "Failed to tailor CV. Please try again." },
       { status: 500 }
     );
   }

@@ -13,64 +13,114 @@ export default function LoadingScreen() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+  const [retrying, setRetrying] = useState(false);
 
-  useEffect(() => {
-    // Check if there's a pending form submission
-    const formData = sessionStorage.getItem("pendingTailor");
-    if (!formData) { router.push("/"); return; }
+  const run = async () => {
+    setError("");
+    setRetrying(false);
+    setDone(false);
+    setCurrentStep(0);
 
-    const { cvBase64, cvName, cvType, jobDescription } = JSON.parse(formData);
+    const stored = sessionStorage.getItem("pendingTailor");
+    if (!stored) { router.push("/"); return; }
 
-    // Step through the UI while the real API call runs in background
-    const stepTimings = [800, 2000, 5000]; // when to advance to step 1, 2, 3
+    const { cvBase64, cvName, cvType, jobDescription } = JSON.parse(stored);
+
+    const stepTimings = [1000, 3000, 8000];
     const timers: NodeJS.Timeout[] = [];
-
     stepTimings.forEach((delay, i) => {
       timers.push(setTimeout(() => setCurrentStep(i + 1), delay));
     });
 
-    // Rebuild the File from base64 and call the API
-    async function run() {
-      try {
-        const byteString = atob(cvBase64);
-        const ab = new ArrayBuffer(byteString.length);
-        const ia = new Uint8Array(ab);
-        for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-        const blob = new Blob([ab], { type: cvType });
-        const file = new File([blob], cvName, { type: cvType });
+    try {
+      const byteString = atob(cvBase64);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+      const blob = new Blob([ab], { type: cvType });
+      const file = new File([blob], cvName, { type: cvType });
 
-        const fd = new FormData();
-        fd.append("cv", file);
-        fd.append("jobDescription", jobDescription);
+      const fd = new FormData();
+      fd.append("cv", file);
+      fd.append("jobDescription", jobDescription);
 
-        const res = await fetch("/api/tailor", { method: "POST", body: fd });
-        const data = await res.json();
+      const res = await fetch("/api/tailor", { method: "POST", body: fd });
+      const data = await res.json();
 
-        if (!res.ok) throw new Error(data.error || "Something went wrong");
+      if (!res.ok) throw new Error(data.error || "Something went wrong");
 
-        // Advance to step 4 before finishing
-        setCurrentStep(3);
-        await new Promise(r => setTimeout(r, 800));
-        setCurrentStep(4);
-        await new Promise(r => setTimeout(r, 600));
-
-        setDone(true);
-        sessionStorage.removeItem("pendingTailor");
-        sessionStorage.setItem("tailoredCV", JSON.stringify(data));
-        sessionStorage.setItem("jobDescription", jobDescription);
-
-        await new Promise(r => setTimeout(r, 400));
-        router.push("/results");
-      } catch (err: any) {
-        sessionStorage.setItem("tailorError", err.message);
-        router.push("/");
+      // Validate the response has the expected shape
+      if (!data.name || !data.experience || !data.skills) {
+        throw new Error("The AI returned an unexpected response. Please try again.");
       }
+
+      timers.forEach(clearTimeout);
+      setCurrentStep(3);
+      await new Promise(r => setTimeout(r, 600));
+      setCurrentStep(4);
+      await new Promise(r => setTimeout(r, 600));
+      setDone(true);
+
+      sessionStorage.setItem("tailoredCV", JSON.stringify(data));
+      sessionStorage.setItem("jobDescription", jobDescription);
+      sessionStorage.removeItem("pendingTailor");
+
+      await new Promise(r => setTimeout(r, 400));
+      router.push("/results");
+    } catch (err: any) {
+      timers.forEach(clearTimeout);
+      setError(err.message || "Something went wrong. Please try again.");
     }
+  };
 
-    run();
+  useEffect(() => { run(); }, []);
 
-    return () => timers.forEach(clearTimeout);
-  }, [router]);
+  if (error) return (
+    <div
+      className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 text-center"
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 max-w-md w-full">
+        {/* Icon */}
+        <div className="w-12 h-12 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-5">
+          <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+
+        <h2 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-xl text-slate-900 mb-2">
+          Something went wrong
+        </h2>
+        <p className="text-sm text-slate-500 mb-6 leading-relaxed">{error}</p>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => { setRetrying(true); run(); }}
+            disabled={retrying}
+            className="flex-1 text-white font-semibold py-3 rounded-xl text-sm transition-all"
+            style={{ backgroundColor: retrying ? "#94a3b8" : "#0d1f3c" }}
+          >
+            {retrying ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                Retrying...
+              </span>
+            ) : "↺ Try again"}
+          </button>
+          <button
+            onClick={() => router.push("/")}
+            className="flex-1 text-slate-600 font-semibold py-3 rounded-xl text-sm border border-slate-200 hover:border-slate-300 transition-all"
+          >
+            ← Start over
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -109,12 +159,11 @@ export default function LoadingScreen() {
               className="flex items-start gap-4 transition-all duration-500"
               style={{ opacity: isPending ? 0.3 : 1 }}
             >
-              {/* Icon */}
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all duration-500"
                 style={{
-                  backgroundColor: isComplete ? "#10b981" : isActive ? "#e2e8f0" : "#f1f5f9",
-                  border: isActive ? "2px solid #ececec" : "2px solid transparent",
+                  backgroundColor: isComplete ? "#0d1f3c" : isActive ? "#e2e8f0" : "#f1f5f9",
+                  border: isActive ? "2px solid #0d1f3c" : "2px solid transparent",
                 }}
               >
                 {isComplete ? (
@@ -131,7 +180,6 @@ export default function LoadingScreen() {
                 )}
               </div>
 
-              {/* Text */}
               <div className="pt-1">
                 <p
                   className="text-sm font-semibold transition-colors duration-300"
@@ -158,7 +206,7 @@ export default function LoadingScreen() {
             className="h-full rounded-full transition-all duration-700 ease-out"
             style={{
               width: `${(currentStep / steps.length) * 100}%`,
-              backgroundColor: done ? "#10b981" : "#10b981",
+              backgroundColor: done ? "#10b981" : "#0d1f3c",
             }}
           />
         </div>
