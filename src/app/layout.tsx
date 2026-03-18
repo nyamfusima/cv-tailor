@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "myCVtailor.ai — AI-powered CV tailoring for ATS",
@@ -8,7 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "myCVtailor.ai — Tailor your CV to every job",
     description: "AI rewrites your CV to match any job description and pass ATS filters. Free, no sign up required.",
-    url: "https://mycvtailor.ai",
+    url: "https://mycvtailor.vercel.app",
     siteName: "myCVtailor.ai",
     images: [
       {
@@ -26,7 +28,7 @@ export const metadata: Metadata = {
     description: "AI rewrites your CV to match any job description and pass ATS filters. Free, no sign up required.",
     images: ["/og-image.png"],
   },
-  metadataBase: new URL("https://mycvtailor.ai"),
+  metadataBase: new URL("https://mycvtailor.vercel.app"),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -34,9 +36,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <head>
         <link rel="icon" href="/favicon.ico" />
-        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap"
+          rel="stylesheet"
+        />
       </head>
-      <body style={{ fontFamily: "'DM Sans', sans-serif" }}>{children}</body>
+      <body style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        {children}
+        <Analytics />
+        <SpeedInsights />
+      </body>
     </html>
   );
 }
