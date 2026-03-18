@@ -406,7 +406,7 @@ export default function ResultsPage() {
 
   useEffect(() => {
     const stored = sessionStorage.getItem("tailoredCV");
-    if (!stored) { router.push("/"); return; }
+    if (!stored) { router.push("/upload"); return; }
     const parsed = JSON.parse(stored);
     setCV(parsed);
     const timeout = setTimeout(() => setAnimatedScore(parsed.matchScore), 300);
@@ -464,7 +464,7 @@ export default function ResultsPage() {
         <div className="flex items-center gap-3 sm:gap-5">
           <span className="hidden sm:block text-xs text-slate-400 font-medium tracking-wide uppercase">Step 2 of 2</span>
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/upload")}
             className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
           >
             ← Start over

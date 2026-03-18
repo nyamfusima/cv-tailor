@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function UploadForm() {
   const router = useRouter();
@@ -57,19 +58,31 @@ export default function UploadForm() {
 
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src="/favicon.ico" alt="TailorCV" className="w-7 h-7" />
-          <span className="font-semibold text-slate-800 tracking-tight">TailorCV</span>
+        <Link href="/" className="flex items-center">
+          <span className="font-semibold text-slate-800 tracking-tight">my</span>
+          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
+          <span className="font-semibold text-slate-800 tracking-tight">tailor.ai</span>
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
+            className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
+          >
+            ← Back to home
+          </Link>
+          <span className="text-xs text-slate-400 font-medium tracking-wide uppercase">Step 1 of 2</span>
         </div>
-        <span className="text-xs text-slate-400 font-medium tracking-wide uppercase">Step 1 of 2</span>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
 
         {/* Hero */}
         <div className="mb-10 sm:mb-12">
-          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs font-medium px-3 py-1.5 rounded-full mb-5 sm:mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+          <div
+            className="inline-flex items-center gap-2 border text-xs font-medium px-3 py-1.5 rounded-full mb-5 sm:mb-6"
+            style={{ backgroundColor: "#f0f4ff", borderColor: "#c7d2fe", color: "#0d1f3c" }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#0d1f3c" }}></span>
             AI-powered · ATS optimised
           </div>
           <h1
@@ -162,7 +175,9 @@ export default function UploadForm() {
             disabled={loading || !cvFile || !jobDesc.trim()}
             className="w-full text-white font-semibold py-4 rounded-2xl transition-all duration-200 text-sm tracking-wide"
             style={{
-              backgroundColor: loading || !cvFile || !jobDesc.trim() ? "#94a3b8" : "#0d1f3c",
+              background: loading || !cvFile || !jobDesc.trim()
+                ? "#94a3b8"
+                : "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
               cursor: loading || !cvFile || !jobDesc.trim() ? "not-allowed" : "pointer",
             }}
           >
