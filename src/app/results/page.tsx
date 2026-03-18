@@ -1,8 +1,87 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { TailoredCV, OriginalCV } from "@/lib/types";
 import { downloadPDF } from "@/lib/generatePDF";
+
+function EditableText({
+  value,
+  onChange,
+  className,
+  editing,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  editing: boolean;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (editing) ref.current?.focus(); }, [editing]);
+
+  if (!editing) return <span className={className}>{value}</span>;
+
+  return (
+    <input
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`${className} border border-indigo-400 outline-none bg-white rounded-lg px-2 py-1 w-full shadow-sm focus:ring-2 focus:ring-indigo-300`}
+    />
+  );
+}
+
+function EditableTextarea({
+  value,
+  onChange,
+  className,
+  editing,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  editing: boolean;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (editing && ref.current) {
+      ref.current.focus();
+      ref.current.style.height = "auto";
+      ref.current.style.height = ref.current.scrollHeight + "px";
+    }
+  }, [editing]);
+
+  if (!editing) return <p className={className}>{value}</p>;
+
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => {
+        onChange(e.target.value);
+        e.target.style.height = "auto";
+        e.target.style.height = e.target.scrollHeight + "px";
+      }}
+      className={`${className} border border-indigo-400 outline-none bg-white rounded-lg px-3 py-2 w-full resize-none shadow-sm focus:ring-2 focus:ring-indigo-300`}
+      rows={3}
+    />
+  );
+}
+
+function EditBtn({ active, onClick }: { active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all shrink-0"
+      style={{
+        backgroundColor: active ? "#0d1f3c" : "transparent",
+        color: active ? "white" : "#94a3b8",
+        borderColor: active ? "#0d1f3c" : "#e2e8f0",
+      }}
+    >
+      {active ? "Done" : "Edit"}
+    </button>
+  );
+}
 
 function ScoreBar({ label, before, after, weight }: { label: string; before: number; after: number; weight: number }) {
   const [animated, setAnimated] = useState(false);
@@ -51,26 +130,14 @@ function ScoreBar({ label, before, after, weight }: { label: string; before: num
   );
 }
 
-function CVCard({ cv, isOriginal = false }: { cv: TailoredCV | OriginalCV; isOriginal?: boolean }) {
+function OriginalCVCard({ cv }: { cv: OriginalCV }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-      <div
-        className="px-10 py-8 text-center"
-        style={{ backgroundColor: isOriginal ? "#ef4444" : "#10b981" }}
-      >
-        <h1
-          style={{ fontFamily: "'DM Serif Display', serif" }}
-          className="text-3xl text-white mb-2 tracking-tight"
-        >
-          {cv.name}
-        </h1>
-        <p className="text-sm text-blue-100 opacity-80">
-          {[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ")}
-        </p>
+      <div className="px-10 py-8 text-center" style={{ backgroundColor: "#64748b" }}>
+        <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-3xl text-white mb-2 tracking-tight">{cv.name}</h1>
+        <p className="text-sm text-slate-200">{[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ")}</p>
       </div>
-
       <div className="px-10 py-8 font-serif">
-
         {cv.summary && (
           <div className="mb-7">
             <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Summary</h2>
@@ -78,7 +145,6 @@ function CVCard({ cv, isOriginal = false }: { cv: TailoredCV | OriginalCV; isOri
             <p className="text-sm text-slate-700 leading-relaxed">{cv.summary}</p>
           </div>
         )}
-
         {cv.skills?.length > 0 && (
           <div className="mb-7">
             <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Key Skills</h2>
@@ -93,7 +159,6 @@ function CVCard({ cv, isOriginal = false }: { cv: TailoredCV | OriginalCV; isOri
             </div>
           </div>
         )}
-
         {cv.experience?.length > 0 && (
           <div className="mb-7">
             <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Experience</h2>
@@ -119,7 +184,6 @@ function CVCard({ cv, isOriginal = false }: { cv: TailoredCV | OriginalCV; isOri
             </div>
           </div>
         )}
-
         {cv.education?.length > 0 && (
           <div className="mb-7">
             <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Education</h2>
@@ -143,7 +207,246 @@ function CVCard({ cv, isOriginal = false }: { cv: TailoredCV | OriginalCV; isOri
             </div>
           </div>
         )}
+        {cv.certifications && cv.certifications.length > 0 && (
+          <div className="mb-2">
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Professional Development</h2>
+            <div className="h-px bg-slate-200 mb-3" />
+            <div className="space-y-3">
+              {cv.certifications.map((cert, i) => (
+                <div key={i} className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">{cert.name}</p>
+                    <p className="text-xs italic text-slate-500">{cert.issuer}</p>
+                  </div>
+                  <p className="text-xs italic text-slate-400 whitespace-nowrap ml-4">{cert.date}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
+function TailoredCVCard({
+  cv,
+  onChange,
+}: {
+  cv: TailoredCV;
+  onChange: (updated: TailoredCV) => void;
+}) {
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+
+  const toggle = (section: string) =>
+    setEditingSection(prev => prev === section ? null : section);
+
+  const updateSummary = (v: string) => onChange({ ...cv, summary: v });
+
+  const updateBullet = (jobIdx: number, bulletIdx: number, v: string) => {
+    const exp = cv.experience.map((job, i) =>
+      i === jobIdx
+        ? { ...job, bullets: job.bullets.map((b, j) => j === bulletIdx ? v : b) }
+        : job
+    );
+    onChange({ ...cv, experience: exp });
+  };
+
+  const updateJobTitle = (jobIdx: number, v: string) => {
+    const exp = cv.experience.map((job, i) => i === jobIdx ? { ...job, title: v } : job);
+    onChange({ ...cv, experience: exp });
+  };
+
+  const updateJobCompany = (jobIdx: number, v: string) => {
+    const exp = cv.experience.map((job, i) => i === jobIdx ? { ...job, company: v } : job);
+    onChange({ ...cv, experience: exp });
+  };
+
+  const updateSkill = (groupIdx: number, skillIdx: number, v: string) => {
+    const skills = cv.skills.map((g, i) =>
+      i === groupIdx
+        ? { ...g, skills: g.skills.map((s, j) => j === skillIdx ? v : s) }
+        : g
+    );
+    onChange({ ...cv, skills });
+  };
+
+  const updateCoursework = (eduIdx: number, cwIdx: number, v: string) => {
+    const education = cv.education.map((edu, i) =>
+      i === eduIdx
+        ? { ...edu, coursework: (edu.coursework || []).map((c, j) => j === cwIdx ? v : c) }
+        : edu
+    );
+    onChange({ ...cv, education });
+  };
+
+  const isEditing = (section: string) => editingSection === section;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+
+      <div className="px-10 py-8 text-center" style={{ backgroundColor: "#0d1f3c" }}>
+        <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-3xl text-white mb-2 tracking-tight">{cv.name}</h1>
+        <p className="text-sm text-blue-200">
+          {[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ")}
+        </p>
+      </div>
+
+      <div className="bg-blue-50 border-b border-blue-100 px-10 py-2 flex items-center gap-2">
+        <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        <p className="text-xs text-blue-500 font-medium">Click <span className="font-bold">Edit</span> next to any section to make changes before downloading.</p>
+      </div>
+
+      <div className="px-10 py-8 font-serif">
+
+        {/* Summary */}
+        {cv.summary && (
+          <div className="mb-7">
+            <div className="flex items-center mb-2">
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Summary</h2>
+              <EditBtn active={isEditing("summary")} onClick={() => toggle("summary")} />
+            </div>
+            <div className="h-px bg-slate-200 mb-3" />
+            <EditableTextarea
+              value={cv.summary}
+              onChange={updateSummary}
+              editing={isEditing("summary")}
+              className="text-sm text-slate-700 leading-relaxed"
+            />
+          </div>
+        )}
+
+        {/* Key Skills */}
+        {cv.skills?.length > 0 && (
+          <div className="mb-7">
+            <div className="flex items-center mb-2">
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Key Skills</h2>
+              <EditBtn active={isEditing("skills")} onClick={() => toggle("skills")} />
+            </div>
+            <div className="h-px bg-slate-200 mb-3" />
+            <div className="space-y-3">
+              {cv.skills.map((group, i) => (
+                <div key={i} className="text-sm">
+                  <span className="font-bold text-slate-800 block mb-1.5">{group.category}:</span>
+                  {isEditing("skills") ? (
+                    <div className="flex flex-wrap gap-2">
+                      {group.skills.map((skill, j) => (
+                        <input
+                          key={j}
+                          value={skill}
+                          onChange={(e) => updateSkill(i, j, e.target.value)}
+                          className="text-sm border border-indigo-400 outline-none bg-white rounded-lg px-3 py-1.5 text-slate-800 shadow-sm focus:ring-2 focus:ring-indigo-300"
+                          style={{ width: `${Math.max(skill.length + 2, 10)}ch` }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-slate-600">{group.skills.join(", ")}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Experience */}
+        {cv.experience?.length > 0 && (
+          <div className="mb-7">
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Experience</h2>
+            <div className="h-px bg-slate-200 mb-3" />
+            <div className="space-y-6">
+              {cv.experience.map((job, i) => {
+                const sectionKey = `job-${i}`;
+                const editing = isEditing(sectionKey);
+                return (
+                  <div key={i}>
+                    <div className="flex justify-between items-start mb-0.5">
+                      <div className="flex items-center gap-1 flex-1">
+                        <EditableText
+                          value={job.title}
+                          onChange={(v) => updateJobTitle(i, v)}
+                          editing={editing}
+                          className="text-sm font-bold text-slate-900"
+                        />
+                        <EditBtn active={editing} onClick={() => toggle(sectionKey)} />
+                      </div>
+                      <p className="text-xs italic text-slate-400 whitespace-nowrap ml-4">{job.dates}</p>
+                    </div>
+                    <EditableText
+                      value={job.company}
+                      onChange={(v) => updateJobCompany(i, v)}
+                      editing={editing}
+                      className="text-sm italic text-slate-500 mb-2 block"
+                    />
+                    <ul className="space-y-2 mt-2">
+                      {job.bullets.map((b, j) => (
+                        <li key={j} className="text-sm text-slate-600 flex gap-2">
+                          <span className="shrink-0 text-slate-300 mt-0.5">•</span>
+                          <EditableTextarea
+                            value={b}
+                            onChange={(v) => updateBullet(i, j, v)}
+                            editing={editing}
+                            className="text-sm text-slate-600 leading-relaxed"
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Education */}
+        {cv.education?.length > 0 && (
+          <div className="mb-7">
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Education</h2>
+            <div className="h-px bg-slate-200 mb-3" />
+            <div className="space-y-4">
+              {cv.education.map((edu, i) => {
+                const sectionKey = `edu-${i}`;
+                const editing = isEditing(sectionKey);
+                return (
+                  <div key={i}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm font-bold text-slate-900">{edu.degree}</p>
+                        <EditBtn active={editing} onClick={() => toggle(sectionKey)} />
+                      </div>
+                      <p className="text-xs italic text-slate-400">{edu.dates}</p>
+                    </div>
+                    <p className="text-sm italic text-slate-500 mb-1">{edu.institution}</p>
+                    {edu.coursework && edu.coursework.length > 0 && (
+                      <div className="text-xs text-slate-500">
+                        <span className="font-semibold not-italic text-slate-600">Relevant coursework: </span>
+                        {editing ? (
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {edu.coursework.map((c, j) => (
+                              <input
+                                key={j}
+                                value={c}
+                                onChange={(e) => updateCoursework(i, j, e.target.value)}
+                                className="text-xs border border-indigo-400 outline-none bg-white rounded-lg px-3 py-1.5 text-slate-800 shadow-sm focus:ring-2 focus:ring-indigo-300"
+                                style={{ width: `${Math.max(c.length + 2, 10)}ch` }}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          edu.coursework.join(", ")
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Professional Development */}
         {cv.certifications && cv.certifications.length > 0 && (
           <div className="mb-2">
             <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Professional Development</h2>
@@ -183,6 +486,11 @@ export default function ResultsPage() {
     return () => clearTimeout(timeout);
   }, [router]);
 
+  const handleCVChange = (updated: TailoredCV) => {
+    setCV(updated);
+    sessionStorage.setItem("tailoredCV", JSON.stringify(updated));
+  };
+
   if (!cv) return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
       <p className="text-slate-400 text-sm">Loading...</p>
@@ -220,7 +528,6 @@ export default function ResultsPage() {
   return (
     <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
-      {/* Header */}
       <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <img src="/favicon.ico" alt="TailorCV" className="w-7 h-7" />
@@ -239,7 +546,6 @@ export default function ResultsPage() {
 
       <main className="max-w-6xl mx-auto px-6 py-12">
 
-        {/* Tabs + download row */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
             {tabs.map((tab) => (
@@ -277,31 +583,30 @@ export default function ResultsPage() {
           </button>
         </div>
 
-        {/* Compare view */}
         {view === "compare" && (
           <div className="grid grid-cols-2 gap-6">
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Original</p>
               {cv.originalCV
-                ? <CVCard cv={cv.originalCV} isOriginal />
+                ? <OriginalCVCard cv={cv.originalCV} />
                 : <p className="text-sm text-slate-400 p-6">Original not available.</p>}
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Tailored</p>
-              <CVCard cv={cv} />
+              <TailoredCVCard cv={cv} onChange={handleCVChange} />
             </div>
           </div>
         )}
 
-        {/* Single view */}
         {view !== "compare" && (
           <div className="flex gap-8 items-start">
-
             <div className="flex-1 min-w-0">
-              {view === "tailored" && <CVCard cv={cv} />}
+              {view === "tailored" && (
+                <TailoredCVCard cv={cv} onChange={handleCVChange} />
+              )}
               {view === "original" && (
                 cv.originalCV
-                  ? <CVCard cv={cv.originalCV} isOriginal />
+                  ? <OriginalCVCard cv={cv.originalCV} />
                   : <p className="text-sm text-slate-400 p-6">Original not available.</p>
               )}
               <div className="flex justify-start">
@@ -314,7 +619,6 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            {/* Score panel */}
             <div className="w-80 shrink-0 sticky top-24">
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-4">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">ATS Match Score</p>
@@ -365,10 +669,8 @@ export default function ResultsPage() {
                 </div>
               )}
             </div>
-
           </div>
         )}
-
       </main>
     </div>
   );
