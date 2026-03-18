@@ -11,7 +11,6 @@ export default function UploadForm() {
   const [error, setError] = useState("");
   const [cvDragging, setCvDragging] = useState(false);
 
-  // Show error if the loading screen redirected back with an error
   useEffect(() => {
     const err = sessionStorage.getItem("tailorError");
     if (err) {
@@ -39,7 +38,6 @@ export default function UploadForm() {
     setError("");
     setLoading(true);
 
-    // Convert file to base64 so it survives sessionStorage
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = (reader.result as string).split(",")[1];
@@ -58,7 +56,7 @@ export default function UploadForm() {
     <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between">
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src="/favicon.ico" alt="TailorCV" className="w-7 h-7" />
           <span className="font-semibold text-slate-800 tracking-tight">TailorCV</span>
@@ -66,18 +64,21 @@ export default function UploadForm() {
         <span className="text-xs text-slate-400 font-medium tracking-wide uppercase">Step 1 of 2</span>
       </header>
 
-      <main className="max-w-2xl mx-auto px-6 py-16">
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
 
         {/* Hero */}
-        <div className="mb-12">
-          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs font-medium px-3 py-1.5 rounded-full mb-6">
+        <div className="mb-10 sm:mb-12">
+          <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-700 text-xs font-medium px-3 py-1.5 rounded-full mb-5 sm:mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
             AI-powered · ATS optimised
           </div>
-          <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-5xl text-slate-900 leading-tight mb-4">
+          <h1
+            style={{ fontFamily: "'DM Serif Display', serif" }}
+            className="text-4xl sm:text-5xl text-slate-900 leading-tight mb-4"
+          >
             Land more<br />interviews.
           </h1>
-          <p className="text-slate-500 text-base leading-relaxed">
+          <p className="text-slate-500 text-sm sm:text-base leading-relaxed">
             Upload your CV and paste the job description. Our AI rewrites your CV to mirror the role's keywords and pass ATS filters.
           </p>
         </div>
@@ -90,7 +91,7 @@ export default function UploadForm() {
             onDragLeave={() => setCvDragging(false)}
             onDrop={handleCvDrop}
             onClick={() => cvRef.current?.click()}
-            className="cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200 p-8 text-center"
+            className="cursor-pointer rounded-2xl border-2 border-dashed transition-all duration-200 p-6 sm:p-8 text-center"
             style={{
               borderColor: cvDragging ? "#2563eb" : cvFile ? "#0d1f3c" : "#cbd5e1",
               backgroundColor: cvDragging ? "#eff6ff" : cvFile ? "#f0f4ff" : "#ffffff",
@@ -105,13 +106,13 @@ export default function UploadForm() {
             />
             {cvFile ? (
               <div className="flex items-center justify-center gap-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "#0d1f3c" }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "#0d1f3c" }}>
                   <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-semibold text-slate-800">{cvFile.name}</p>
+                  <p className="text-sm font-semibold text-slate-800 truncate max-w-[200px] sm:max-w-xs">{cvFile.name}</p>
                   <p className="text-xs text-slate-400 mt-0.5">{(cvFile.size / 1024).toFixed(1)} KB · Click to replace</p>
                 </div>
               </div>
@@ -147,8 +148,8 @@ export default function UploadForm() {
 
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-              <svg className="w-4 h-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+              <svg className="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <p className="text-sm text-red-600">{error}</p>

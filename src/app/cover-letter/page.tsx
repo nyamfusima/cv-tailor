@@ -50,14 +50,7 @@ export default function CoverLetterPage() {
 
   const handleCopy = () => {
     if (!letter) return;
-    const text = [
-      letter.greeting,
-      "",
-      ...letter.paragraphs,
-      "",
-      letter.sign_off,
-      letter.name,
-    ].join("\n");
+    const text = [letter.greeting, "", ...letter.paragraphs, "", letter.sign_off, letter.name].join("\n");
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -65,11 +58,7 @@ export default function CoverLetterPage() {
 
   const updateParagraph = (idx: number, value: string) => {
     if (!letter) return;
-    const updated = {
-      ...letter,
-      paragraphs: letter.paragraphs.map((p, i) => i === idx ? value : p),
-    };
-    setLetter(updated);
+    setLetter({ ...letter, paragraphs: letter.paragraphs.map((p, i) => i === idx ? value : p) });
   };
 
   if (loading) return (
@@ -92,30 +81,27 @@ export default function CoverLetterPage() {
   return (
     <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-10">
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <img src="/favicon.ico" alt="TailorCV" className="w-7 h-7" />
           <span className="font-semibold text-slate-800 tracking-tight">TailorCV</span>
         </div>
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
-          >
-            ← Back to CV
-          </button>
-        </div>
+        <button
+          onClick={() => router.back()}
+          className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
+        >
+          ← Back to CV
+        </button>
       </header>
 
-      <main className="max-w-3xl mx-auto px-6 py-12">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
 
-        <div className="mb-8 flex items-end justify-between">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-3xl text-slate-900 mb-1">Cover Letter</h1>
-            <p className="text-sm text-slate-400">Click any paragraph to edit. Copy or download when ready.</p>
+            <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-2xl sm:text-3xl text-slate-900 mb-1">Cover Letter</h1>
+            <p className="text-sm text-slate-400">Click any paragraph to edit. Copy when ready.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => cv && generate(cv, sessionStorage.getItem("jobDescription") || "")}
               className="text-xs font-semibold text-slate-500 hover:text-slate-800 border border-slate-200 px-3 py-2 rounded-xl transition-colors"
@@ -124,7 +110,7 @@ export default function CoverLetterPage() {
             </button>
             <button
               onClick={handleCopy}
-              className="text-white font-semibold px-5 py-2.5 rounded-xl transition-all text-sm flex items-center gap-2"
+              className="text-white font-semibold px-4 sm:px-5 py-2.5 rounded-xl transition-all text-sm flex items-center gap-2"
               style={{ backgroundColor: copied ? "#10b981" : "#0d1f3c" }}
             >
               {copied ? (
@@ -148,25 +134,21 @@ export default function CoverLetterPage() {
 
         {letter && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-
-            {/* Letter header */}
-            <div className="px-10 py-6 border-b border-slate-100" style={{ backgroundColor: "#0d1f3c" }}>
+            <div className="px-6 sm:px-10 py-6 border-b border-slate-100" style={{ backgroundColor: "#0d1f3c" }}>
               <p className="text-xs text-blue-300 uppercase tracking-widest mb-1">Subject</p>
               <p className="text-white font-medium text-sm">{letter.subject}</p>
             </div>
 
-            <div className="bg-blue-50 border-b border-blue-100 px-10 py-2 flex items-center gap-2">
+            <div className="bg-blue-50 border-b border-blue-100 px-6 sm:px-10 py-2 flex items-center gap-2">
               <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
               <p className="text-xs text-blue-500 font-medium">Click any paragraph to edit it directly.</p>
             </div>
 
-            <div className="px-10 py-8 space-y-5 font-serif">
-              {/* Greeting */}
+            <div className="px-6 sm:px-10 py-8 space-y-5 font-serif">
               <p className="text-sm text-slate-700">{letter.greeting}</p>
 
-              {/* Paragraphs */}
               {letter.paragraphs.map((para, i) => (
                 <div key={i} onClick={() => setEditingIdx(editingIdx === i ? null : i)}>
                   {editingIdx === i ? (
@@ -186,7 +168,6 @@ export default function CoverLetterPage() {
                 </div>
               ))}
 
-              {/* Sign off */}
               <div className="pt-2">
                 <p className="text-sm text-slate-700">{letter.sign_off}</p>
                 <p className="text-sm font-semibold text-slate-900 mt-1">{letter.name}</p>
