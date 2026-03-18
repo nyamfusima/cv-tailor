@@ -2,8 +2,31 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "myCVtailor.ai",
-  description: "AI-powered CV tailoring for ATS",
+  title: "myCVtailor.ai — AI-powered CV tailoring for ATS",
+  description: "Upload your CV and paste a job description. Our AI rewrites your CV to match the role's exact keywords and pass ATS filters in under 30 seconds. Free to use.",
+  keywords: "CV tailor, ATS optimiser, resume builder, AI CV, job application, cover letter generator",
+  openGraph: {
+    title: "myCVtailor.ai — Tailor your CV to every job",
+    description: "AI rewrites your CV to match any job description and pass ATS filters. Free, no sign up required.",
+    url: "https://mycvtailor.ai",
+    siteName: "myCVtailor.ai",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "myCVtailor.ai — AI-powered CV tailoring",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "myCVtailor.ai — Tailor your CV to every job",
+    description: "AI rewrites your CV to match any job description and pass ATS filters. Free, no sign up required.",
+    images: ["/og-image.png"],
+  },
+  metadataBase: new URL("https://mycvtailor.ai"),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
