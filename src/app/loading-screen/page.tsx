@@ -57,6 +57,7 @@ export default function LoadingScreen() {
         setDone(true);
         sessionStorage.removeItem("pendingTailor");
         sessionStorage.setItem("tailoredCV", JSON.stringify(data));
+        sessionStorage.setItem("jobDescription", jobDescription);
 
         await new Promise(r => setTimeout(r, 400));
         router.push("/results");
