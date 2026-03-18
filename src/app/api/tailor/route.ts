@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseFile } from "@/lib/parseFile";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Anthropic from "@anthropic-ai/sdk";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const client = new Anthropic();
 
 async function callAI(prompt: string): Promise<string> {
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+  const message = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 4096,
+    messages: [{ role: "user", content: prompt }],
+  });
+  return message.content[0].type === "text" ? message.content[0].text : "";
 }
 
 export async function POST(req: NextRequest) {
