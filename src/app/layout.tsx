@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "myCVtailor.ai — AI-powered CV tailoring for ATS",
   description: "Upload your CV and paste a job description. Our AI rewrites your CV to match the role's exact keywords and pass ATS filters in under 30 seconds. Free to use.",
   keywords: "CV tailor, ATS optimiser, resume builder, AI CV, job application, cover letter generator",
+  verification: {
+    google: "fcDhjngF_beprPTiIrxW0bivkGK_r8QN4PxTV4xC2ak",
+  },
   openGraph: {
     title: "myCVtailor.ai — Tailor your CV to every job",
     description: "AI rewrites your CV to match any job description and pass ATS filters. Free, no sign up required.",
