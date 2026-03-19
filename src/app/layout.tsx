@@ -5,7 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "myCVtailor.ai — AI-powered CV tailoring for ATS",
-  description: "Upload your CV and paste a job description. Our AI rewrites your CV to match the role's exact keywords and pass ATS filters in under 30 seconds. Free to use.",
+  description: "Upload your CV and paste a job description. Our AI rewrites your CV to match the role's exact keywords and pass ATS filters in under 20 seconds. Free to use.",
   keywords: "CV tailor, ATS optimiser, resume builder, AI CV, job application, cover letter generator",
   verification: {
     google: "fcDhjngF_beprPTiIrxW0bivkGK_r8QN4PxTV4xC2ak",
