@@ -8,13 +8,13 @@ export const metadata: Metadata = {
   description: "Upload your CV and paste a job description. Our AI rewrites your CV to match the role's exact keywords and pass ATS filters in under 20 seconds. Free to use.",
   keywords: "CV tailor, ATS optimiser, resume builder, AI CV, job application, cover letter generator",
   verification: {
-    google: "fcDhjngF_beprPTiIrxW0bivkGK_r8QN4PxTV4xC2ak",
+  google: "1OOuvcZW_UfG52JzriZ-n6aaWwJ1VD4aW0Uvhoeo2yc",
   },
   openGraph: {
-    title: "myCVtailor.ai — Tailor your CV to every job",
+    title: "mycvtailor.ai — Tailor your CV to every job",
     description: "AI rewrites your CV to match any job description and pass ATS filters. Free, no sign up required.",
-    url: "https://mycvtailor.vercel.app",
-    siteName: "myCVtailor.ai",
+    url: "https://mycvtailor.co.za",
+    siteName: "mycvtailor..co.za",
     images: [
       {
         url: "/og-image.png",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     description: "AI rewrites your CV to match any job description and pass ATS filters. Free, no sign up required.",
     images: ["/og-image.png"],
   },
-  metadataBase: new URL("https://mycvtailor.vercel.app"),
+  metadataBase: new URL("https://mycvtailor.co.za"),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
