@@ -2,19 +2,25 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth";
 
 export default function UploadForm() {
   const router = useRouter();
+  const { user, signInWithGoogle } = useAuth();
   const cvRef = useRef<HTMLInputElement>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [jobDesc, setJobDesc] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [cvDragging, setCvDragging] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
 
   useEffect(() => {
     const err = sessionStorage.getItem("tailorError");
-    if (err) {
+    if (err === "LIMIT_REACHED") {
+      setLimitReached(true);
+      sessionStorage.removeItem("tailorError");
+    } else if (err) {
       setError(err);
       sessionStorage.removeItem("tailorError");
     }
@@ -37,6 +43,7 @@ export default function UploadForm() {
       return;
     }
     setError("");
+    setLimitReached(false);
     setLoading(true);
 
     const reader = new FileReader();
@@ -64,13 +71,38 @@ export default function UploadForm() {
           <span className="font-semibold text-slate-800 tracking-tight">tailor.ai</span>
         </Link>
         <div className="flex items-center gap-4">
+          {user ? (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500 hidden sm:block">{user.email}</span>
+              <Link
+                href="/pricing"
+                className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg"
+                style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+              >
+                Upgrade →
+              </Link>
+            </div>
+          ) : (
+            <button
+              onClick={signInWithGoogle}
+              className="text-xs font-semibold text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:border-slate-400 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Sign in
+            </button>
+          )}
           <Link
             href="/"
             className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
           >
             ← Back to home
           </Link>
-          <span className="text-xs text-slate-400 font-medium tracking-wide uppercase">Step 1 of 2</span>
+          <span className="hidden sm:block text-xs text-slate-400 font-medium tracking-wide uppercase">Step 1 of 2</span>
         </div>
       </header>
 
@@ -97,6 +129,20 @@ export default function UploadForm() {
         </div>
 
         <div className="space-y-5">
+
+          {/* Free tier counter for logged in users */}
+          {user && (
+            <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between">
+              <p className="text-xs text-slate-500">Free plan · 3 tailors/month</p>
+              <Link
+                href="/pricing"
+                className="text-xs font-semibold"
+                style={{ color: "#0d1f3c" }}
+              >
+                Upgrade to Pro →
+              </Link>
+            </div>
+          )}
 
           {/* CV Upload */}
           <div
@@ -159,6 +205,21 @@ export default function UploadForm() {
             />
           </div>
 
+          {/* Limit reached */}
+          {limitReached && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+              <p className="text-sm font-semibold text-amber-800 mb-1">You've used your 3 free tailors this month</p>
+              <p className="text-xs text-amber-600 mb-3">Upgrade to Pro for unlimited CV tailoring, cover letters, and more.</p>
+              <button
+                onClick={() => router.push("/pricing")}
+                className="w-full text-white font-semibold py-3 rounded-xl text-sm"
+                style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+              >
+                Upgrade to Pro — $9/month →
+              </button>
+            </div>
+          )}
+
           {/* Error */}
           {error && (
             <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
@@ -170,19 +231,38 @@ export default function UploadForm() {
           )}
 
           {/* Submit */}
-          <button
-            onClick={handleSubmit}
-            disabled={loading || !cvFile || !jobDesc.trim()}
-            className="w-full text-white font-semibold py-4 rounded-2xl transition-all duration-200 text-sm tracking-wide"
-            style={{
-              background: loading || !cvFile || !jobDesc.trim()
-                ? "#94a3b8"
-                : "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
-              cursor: loading || !cvFile || !jobDesc.trim() ? "not-allowed" : "pointer",
-            }}
-          >
-            {loading ? "Preparing..." : "Tailor my CV →"}
-          </button>
+          {!limitReached && (
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !cvFile || !jobDesc.trim()}
+              className="w-full text-white font-semibold py-4 rounded-2xl transition-all duration-200 text-sm tracking-wide"
+              style={{
+                background: loading || !cvFile || !jobDesc.trim()
+                  ? "#94a3b8"
+                  : "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
+                cursor: loading || !cvFile || !jobDesc.trim() ? "not-allowed" : "pointer",
+              }}
+            >
+              {loading ? "Preparing..." : "Tailor my CV →"}
+            </button>
+          )}
+
+          {/* Sign in nudge for guests */}
+          {!user && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-700">Sign in to track your usage</p>
+                <p className="text-xs text-slate-400 mt-0.5">Free plan includes 3 tailors per month</p>
+              </div>
+              <button
+                onClick={signInWithGoogle}
+                className="text-xs font-semibold text-white px-3 py-2 rounded-lg shrink-0 ml-4"
+                style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+              >
+                Sign in →
+              </button>
+            </div>
+          )}
 
           <p className="text-center text-xs text-slate-400">
             Your data is never stored. Each session is private.

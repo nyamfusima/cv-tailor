@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseFile } from "@/lib/parseFile";
 import Anthropic from "@anthropic-ai/sdk";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { getUserData, incrementTailorCount, canTailor } from "@/lib/user";
 
 const client = new Anthropic();
 
@@ -15,6 +17,24 @@ async function callAI(prompt: string): Promise<string> {
 
 export async function POST(req: NextRequest) {
   try {
+    // Check auth
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      // Check usage limit for logged in users
+      const userData = await getUserData(user.id);
+      if (userData && !canTailor(userData)) {
+        return NextResponse.json(
+          {
+            error: "LIMIT_REACHED",
+            message: "You've used all 3 free tailors this month. Upgrade to Pro for unlimited tailoring.",
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     const formData = await req.formData();
     const cvFile = formData.get("cv") as File;
     const jobDescription = formData.get("jobDescription") as string;
@@ -147,7 +167,6 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
   }
 }`;
 
-    // Run both calls in parallel
     const [rawOriginal, rawTailored] = await Promise.all([
       callAI(originalPrompt),
       callAI(tailorPrompt),
@@ -165,6 +184,11 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
       tailored = JSON.parse(rawTailored.replace(/```json|```/g, "").trim());
     } catch {
       throw new Error("Failed to parse the tailored CV. Please try again.");
+    }
+
+    // Increment tailor count for logged in users
+    if (user) {
+      await incrementTailorCount(user.id);
     }
 
     tailored.originalCV = original;

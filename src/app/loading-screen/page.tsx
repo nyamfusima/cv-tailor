@@ -48,6 +48,14 @@ export default function LoadingScreen() {
       const res = await fetch("/api/tailor", { method: "POST", body: fd });
       const data = await res.json();
 
+      // Handle limit reached
+      if (data.error === "LIMIT_REACHED") {
+        timers.forEach(clearTimeout);
+        sessionStorage.setItem("tailorError", "LIMIT_REACHED");
+        router.push("/upload");
+        return;
+      }
+
       if (!res.ok) throw new Error(data.error || "Something went wrong");
 
       // Validate the response has the expected shape
@@ -82,7 +90,6 @@ export default function LoadingScreen() {
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 max-w-md w-full">
-        {/* Icon */}
         <div className="w-12 h-12 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-5">
           <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -128,9 +135,10 @@ export default function LoadingScreen() {
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 mb-16">
-        <img src="/favicon.ico" alt="TailorCV" className="w-7 h-7" />
-        <span className="font-semibold text-slate-800 tracking-tight">TailorCV</span>
+      <div className="flex items-center mb-16">
+        <span className="font-semibold text-slate-800 tracking-tight">my</span>
+        <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
+        <span className="font-semibold text-slate-800 tracking-tight">tailor.ai</span>
       </div>
 
       {/* Heading */}
