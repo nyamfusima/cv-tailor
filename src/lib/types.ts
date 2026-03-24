@@ -60,3 +60,11 @@ export interface TailoredCV {
   scoreBreakdown: ScoreBreakdown;
   originalCV?: OriginalCV;
 }
+
+export interface UserCredits {
+  id: string;
+  email: string;
+  tailor_credits: number;
+  pdf_credits: number;
+  total_tailors_used: number;
+}

@@ -49,14 +49,28 @@ export default function LoadingScreen() {
       const data = await res.json();
 
       // Handle limit reached
-      if (data.error === "LIMIT_REACHED") {
-        timers.forEach(clearTimeout);
-        sessionStorage.setItem("tailorError", "LIMIT_REACHED");
-        router.push("/upload");
-        return;
-      }
+      if (data.error === "SIGN_IN_REQUIRED") {
+  timers.forEach(clearTimeout);
+  sessionStorage.setItem("tailorError", "SIGN_IN_REQUIRED");
+  router.push("/upload");
+  return;
+}
 
-      if (!res.ok) throw new Error(data.error || "Something went wrong");
+if (data.error === "NO_CREDITS") {
+  timers.forEach(clearTimeout);
+  sessionStorage.setItem("tailorError", "NO_CREDITS");
+  router.push("/upload");
+  return;
+}
+
+if (data.error === "LIMIT_REACHED") {
+  timers.forEach(clearTimeout);
+  sessionStorage.setItem("tailorError", "LIMIT_REACHED");
+  router.push("/upload");
+  return;
+}
+
+if (!res.ok) throw new Error(data.error || "Something went wrong");
 
       // Validate the response has the expected shape
       if (!data.name || !data.experience || !data.skills) {

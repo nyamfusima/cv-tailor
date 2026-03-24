@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseFile } from "@/lib/parseFile";
 import Anthropic from "@anthropic-ai/sdk";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { getUserData, incrementTailorCount, canTailor } from "@/lib/user";
+import { getUserCredits, deductTailorCredit, hasTailorCredits } from "@/lib/user";
 
 const client = new Anthropic();
 
@@ -17,22 +17,24 @@ async function callAI(prompt: string): Promise<string> {
 
 export async function POST(req: NextRequest) {
   try {
-    // Check auth
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (user) {
-      // Check usage limit for logged in users
-      const userData = await getUserData(user.id);
-      if (userData && !canTailor(userData)) {
-        return NextResponse.json(
-          {
-            error: "LIMIT_REACHED",
-            message: "You've used all 3 free tailors this month. Upgrade to Pro for unlimited tailoring.",
-          },
-          { status: 403 }
-        );
-      }
+    // Must be signed in
+    if (!user) {
+      return NextResponse.json(
+        { error: "SIGN_IN_REQUIRED", message: "Please sign in to tailor your CV." },
+        { status: 401 }
+      );
+    }
+
+    // Check credits
+    const userData = await getUserCredits(user.id);
+    if (!userData || !hasTailorCredits(userData)) {
+      return NextResponse.json(
+        { error: "NO_CREDITS", message: "You have no tailor credits left. Buy more to continue." },
+        { status: 403 }
+      );
     }
 
     const formData = await req.formData();
@@ -107,17 +109,17 @@ ${jobDescription}
 
 YOUR RULES — follow these without exception:
 
-1. **Rewrite every bullet point** to use the exact language, keywords, and phrases from the job description. Do not keep original wording if better wording exists in the job description.
-2. **Rewrite the summary completely** — it must read as if this person was born to do this specific job. Use the job title, the company's language, and mirror their priorities directly.
-3. **Reorder experience bullets** — most relevant to the job description goes first. Bury or cut bullets that are irrelevant.
-4. **Inject keywords aggressively** — scan the job description for every technical skill, tool, methodology, and buzzword. If the candidate has touched anything related, name it explicitly using the job description's exact terminology.
-5. **Reframe job titles and responsibilities** — if the candidate was a "developer" but the job says "engineer", use "engineer". If they built "websites" but the job says "scalable web applications", say "scalable web applications".
-6. **Skills section** — reorder categories and skills so the most job-relevant ones appear first. Add any skills mentioned in the job description that are clearly implied by the candidate's experience.
-7. **Never invent qualifications, companies, or degrees** — you can reframe and strengthen real experience, but do not fabricate.
-8. **The matchScore must reflect YOUR rewrite** — after your aggressive rewrite, the score should be 75 or above in almost all cases.
-9. **Certifications** — extract any certificates or credentials from the CV. Do not invent any.
-10. **Education coursework** — list relevant coursework based on the job description if the candidate's field of study supports it.
-11. **Score breakdown** — provide honest before/after scores for each dimension.
+1. **Rewrite every bullet point** to use the exact language, keywords, and phrases from the job description.
+2. **Rewrite the summary completely** — it must read as if this person was born to do this specific job.
+3. **Reorder experience bullets** — most relevant to the job description goes first.
+4. **Inject keywords aggressively** — every technical skill, tool, methodology, and buzzword from the job description.
+5. **Reframe job titles and responsibilities** to match the job description's language.
+6. **Skills section** — reorder so most job-relevant appear first.
+7. **Never invent qualifications, companies, or degrees.**
+8. **matchScore should be 75+ after your rewrite.**
+9. **Certifications** — extract from CV only, do not invent.
+10. **Education coursework** — list relevant coursework based on job description.
+11. **Score breakdown** — honest before/after scores.
 
 Return ONLY a JSON object in this exact format, no extra text, no markdown fences:
 {
@@ -186,10 +188,8 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
       throw new Error("Failed to parse the tailored CV. Please try again.");
     }
 
-    // Increment tailor count for logged in users
-    if (user) {
-      await incrementTailorCount(user.id);
-    }
+    // Deduct credit after successful tailor
+    await deductTailorCredit(user.id);
 
     tailored.originalCV = original;
 

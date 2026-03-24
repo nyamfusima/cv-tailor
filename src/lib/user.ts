@@ -1,16 +1,7 @@
 import { createSupabaseServerClient } from "./supabase-server";
+import { UserCredits } from "./types";
 
-export interface UserData {
-  id: string;
-  email: string;
-  plan: "free" | "pro";
-  tailor_count: number;
-  tailor_reset_date: string;
-  lemonsqueezy_customer_id: string | null;
-  lemonsqueezy_subscription_id: string | null;
-}
-
-export async function getUserData(userId: string): Promise<UserData | null> {
+export async function getUserCredits(userId: string): Promise<UserCredits | null> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("users")
@@ -19,46 +10,60 @@ export async function getUserData(userId: string): Promise<UserData | null> {
     .single();
 
   if (error || !data) return null;
-  return data as UserData;
+  return data as UserCredits;
 }
 
-export async function incrementTailorCount(userId: string): Promise<void> {
+export async function deductTailorCredit(userId: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
+  const user = await getUserCredits(userId);
+  if (!user || user.tailor_credits <= 0) return false;
 
-  const userData = await getUserData(userId);
-  if (!userData) return;
+  const { error } = await supabase
+    .from("users")
+    .update({
+      tailor_credits: user.tailor_credits - 1,
+      total_tailors_used: user.total_tailors_used + 1,
+    })
+    .eq("id", userId);
 
-  // Reset count if month has passed
-  const resetDate = new Date(userData.tailor_reset_date);
-  const now = new Date();
+  return !error;
+}
 
-  if (now > resetDate) {
-    await supabase
-      .from("users")
-      .update({
-        tailor_count: 1,
-        tailor_reset_date: new Date(
-          new Date().getFullYear(),
-          new Date().getMonth() + 1,
-          1
-        ).toISOString(),
-      })
-      .eq("id", userId);
-    return;
-  }
+export async function deductPDFCredit(userId: string): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const user = await getUserCredits(userId);
+  if (!user || user.pdf_credits <= 0) return false;
+
+  const { error } = await supabase
+    .from("users")
+    .update({ pdf_credits: user.pdf_credits - 1 })
+    .eq("id", userId);
+
+  return !error;
+}
+
+export async function addCredits(
+  userId: string,
+  tailorCredits: number,
+  pdfCredits: number
+): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  const user = await getUserCredits(userId);
+  if (!user) return;
 
   await supabase
     .from("users")
-    .update({ tailor_count: userData.tailor_count + 1 })
+    .update({
+      tailor_credits: user.tailor_credits + tailorCredits,
+      pdf_credits: user.pdf_credits + pdfCredits,
+    })
     .eq("id", userId);
 }
 
-export function canTailor(userData: UserData): boolean {
-  if (userData.plan === "pro") return true;
-  return userData.tailor_count < 3;
+export function hasTailorCredits(user: UserCredits): boolean {
+  return user.tailor_credits > 0;
 }
 
-export function tailorsRemaining(userData: UserData): number {
-  if (userData.plan === "pro") return Infinity;
-  return Math.max(0, 3 - userData.tailor_count);
+export function hasPDFCredits(user: UserCredits): boolean {
+  return user.pdf_credits > 0;
 }
