@@ -261,7 +261,7 @@ export default function LandingPage() {
               className="cta-btn inline-block text-white font-semibold px-8 py-4 rounded-2xl text-sm"
               style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
             >
-              Get started — it's free →
+              Get started now →
             </button>
           </div>
         </div>
@@ -543,13 +543,17 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-100 px-4 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <div className="flex items-center">
-          <span className="text-sm text-slate-400">my</span>
-          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-4 h-4" />
-          <span className="text-sm text-slate-400">tailor.ai</span>
-        </div>
-        <p className="text-xs text-slate-400">Free to use · Your data is never stored</p>
-      </footer>
+  <div className="flex items-center">
+    <span className="text-sm text-slate-400">my</span>
+    <img src="/favicon.ico" alt="myCVtailor.ai" className="w-4 h-4" />
+    <span className="text-sm text-slate-400">tailor.ai</span>
+  </div>
+  <div className="flex items-center gap-4 text-xs text-slate-400">
+    <Link href="/terms" className="hover:text-slate-700">Terms</Link>
+    <Link href="/privacy" className="hover:text-slate-700">Privacy</Link>
+    <Link href="/refunds" className="hover:text-slate-700">Refunds</Link>
+  </div>
+</footer>
 
     </div>
   );
