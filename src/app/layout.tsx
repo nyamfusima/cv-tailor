@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     google: "1OOuvcZW_UfG52JzriZ-n6aaWwJ1VD4aW0Uvhoeo2yc",
   },
   openGraph: {
-    title: "myCVtailor.ai — Tailor your CV to every job",
+    title: "myCVtailor.co.za — Tailor your CV to every job",
     description: "AI rewrites your CV to match any job description and pass ATS filters. Free, no sign up required.",
     url: "https://mycvtailor.co.za",
     siteName: "myCVtailor.ai",
