@@ -10,6 +10,10 @@ export default function UploadForm() {
   const cvRef = useRef<HTMLInputElement>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [jobDesc, setJobDesc] = useState("");
+  const [jobUrl, setJobUrl] = useState("");
+  const [jobInputMode, setJobInputMode] = useState<"paste" | "url">("paste");
+  const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [fetchError, setFetchError] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [cvDragging, setCvDragging] = useState(false);
@@ -44,13 +48,36 @@ export default function UploadForm() {
     }
   };
 
+  const handleFetchUrl = async () => {
+    if (!jobUrl.trim()) return;
+    setFetchingUrl(true);
+    setFetchError("");
+    setJobDesc("");
+
+    try {
+      const res = await fetch("/api/fetch-job", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: jobUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to fetch");
+      setJobDesc(data.text);
+      setJobInputMode("paste");
+    } catch (err: any) {
+      setFetchError(err.message);
+    } finally {
+      setFetchingUrl(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!user) {
       await signInWithGoogle();
       return;
     }
     if (!cvFile || !jobDesc.trim()) {
-      setError("Please upload your CV and paste the job description.");
+      setError("Please upload your CV and add a job description.");
       return;
     }
     setError("");
@@ -154,25 +181,11 @@ export default function UploadForm() {
             Land more<br />interviews.
           </h1>
           <p className="text-slate-500 text-sm sm:text-base leading-relaxed">
-            Upload your CV and paste the job description. Our AI rewrites your CV to mirror the role's keywords and pass ATS filters.
+            Upload your CV and add the job description. Our AI rewrites your CV to mirror the role's keywords and pass ATS filters.
           </p>
         </div>
 
         <div className="space-y-5">
-
-          {/* Credits counter for signed in users */}
-          {user && (
-            <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between">
-              <p className="text-xs text-slate-500">Signed in as <span className="font-medium text-slate-700">{user.email}</span></p>
-              <Link
-                href="/pricing"
-                className="text-xs font-semibold"
-                style={{ color: "#0d1f3c" }}
-              >
-                Buy credits →
-              </Link>
-            </div>
-          )}
 
           {/* Sign in prompt for guests */}
           {!user && (
@@ -194,6 +207,16 @@ export default function UploadForm() {
                 </svg>
                 Sign in with Google
               </button>
+            </div>
+          )}
+
+          {/* Credits counter */}
+          {user && (
+            <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between">
+              <p className="text-xs text-slate-500">Signed in as <span className="font-medium text-slate-700">{user.email}</span></p>
+              <Link href="/pricing" className="text-xs font-semibold" style={{ color: "#0d1f3c" }}>
+                Buy credits →
+              </Link>
             </div>
           )}
 
@@ -243,26 +266,117 @@ export default function UploadForm() {
             )}
           </div>
 
-          {/* Job Description */}
+          {/* Job Description — toggle */}
           <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-            <div className="px-4 pt-4 pb-1 flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Job Description</label>
-              <span className="text-xs text-slate-300">{jobDesc.length} chars</span>
+
+            {/* Tab switcher */}
+            <div className="flex border-b border-slate-200">
+              <button
+                onClick={() => { setJobInputMode("paste"); setFetchError(""); }}
+                className="flex-1 py-3 text-xs font-semibold transition-all"
+                style={{
+                  backgroundColor: jobInputMode === "paste" ? "#f0f4ff" : "transparent",
+                  color: jobInputMode === "paste" ? "#0d1f3c" : "#94a3b8",
+                  borderBottom: jobInputMode === "paste" ? "2px solid #0d1f3c" : "2px solid transparent",
+                }}
+              >
+                ✎ Paste description
+              </button>
+              <button
+                onClick={() => { setJobInputMode("url"); setFetchError(""); }}
+                className="flex-1 py-3 text-xs font-semibold transition-all"
+                style={{
+                  backgroundColor: jobInputMode === "url" ? "#f0f4ff" : "transparent",
+                  color: jobInputMode === "url" ? "#0d1f3c" : "#94a3b8",
+                  borderBottom: jobInputMode === "url" ? "2px solid #0d1f3c" : "2px solid transparent",
+                }}
+              >
+                🔗 Use job URL
+              </button>
             </div>
-            <textarea
-              value={jobDesc}
-              onChange={(e) => setJobDesc(e.target.value)}
-              placeholder="Paste the full job description here — the more detail, the better the tailoring..."
-              rows={10}
-              className="w-full px-4 py-3 text-sm text-slate-700 placeholder-slate-300 focus:outline-none resize-none"
-            />
+
+            {/* Paste mode */}
+            {jobInputMode === "paste" && (
+              <>
+                <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Job Description</label>
+                  <span className="text-xs text-slate-300">{jobDesc.length} chars</span>
+                </div>
+                <textarea
+                  value={jobDesc}
+                  onChange={(e) => setJobDesc(e.target.value)}
+                  placeholder="Paste the full job description here — the more detail, the better the tailoring..."
+                  rows={10}
+                  className="w-full px-4 py-3 text-sm text-slate-700 placeholder-slate-300 focus:outline-none resize-none"
+                />
+              </>
+            )}
+
+            {/* URL mode */}
+            {jobInputMode === "url" && (
+              <div className="p-4">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-3">Job Posting URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={jobUrl}
+                    onChange={(e) => setJobUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleFetchUrl()}
+                    placeholder="https://company.com/careers/job-title"
+                    className="flex-1 text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-slate-400 transition-colors"
+                  />
+                  <button
+                    onClick={handleFetchUrl}
+                    disabled={fetchingUrl || !jobUrl.trim()}
+                    className="text-white font-semibold px-4 py-3 rounded-xl text-sm shrink-0 transition-all disabled:opacity-50"
+                    style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+                  >
+                    {fetchingUrl ? (
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      </svg>
+                    ) : "Fetch →"}
+                  </button>
+                </div>
+
+                {/* Fetch error */}
+                {fetchError && (
+                  <div className="mt-3 flex items-start gap-2 bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                    <svg className="w-4 h-4 text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-red-600">{fetchError}</p>
+                      <p className="text-xs text-red-400 mt-0.5">Try copying the job description manually instead.</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Success — description fetched */}
+                {jobDesc && !fetchError && (
+                  <div className="mt-3 flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
+                    <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-xs text-emerald-700 font-medium">
+                      Job description fetched — {jobDesc.length} characters extracted
+                    </p>
+                  </div>
+                )}
+
+                <p className="text-xs text-slate-400 mt-3">
+                  Works best with company career pages. LinkedIn and Indeed may not work due to their restrictions.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* No credits prompt */}
           {limitReached && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
               <p className="text-sm font-semibold text-amber-800 mb-1">You've used all your tailor credits</p>
-              <p className="text-xs text-amber-600 mb-3">Buy more credits to continue tailoring your CV. They never expire.</p>
+              <p className="text-xs text-amber-600 mb-3">Buy more credits to continue. They never expire.</p>
               <button
                 onClick={() => router.push("/pricing")}
                 className="w-full text-white font-semibold py-3 rounded-xl text-sm"
