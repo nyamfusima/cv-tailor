@@ -1,9 +1,18 @@
 "use client";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
   const { user, signInWithGoogle } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+  if (user) {
+    router.push("/upload");
+  }
+}, [user]);
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -381,6 +390,7 @@ export default function LandingPage() {
           pdfs: "5 PDF downloads",
           popular: false,
           param: "starter",
+          coverLetter: false,
         },
         {
           name: "Growth Mode",
@@ -390,6 +400,7 @@ export default function LandingPage() {
           pdfs: "20 PDF downloads",
           popular: true,
           param: "growth",
+          coverLetter: true,
         },
         {
           name: "Unlimited",
@@ -399,11 +410,12 @@ export default function LandingPage() {
           pdfs: "Unlimited PDFs",
           popular: false,
           param: "ninja",
+          coverLetter: true,
         },
       ].map((plan) => (
         <div
           key={plan.name}
-          className="relative rounded-2xl overflow-hidden"
+          className="relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-50"
           style={{
             background: plan.popular ? "linear-gradient(135deg, #0d1f3c 0%, #1a3a6b 100%)" : "white",
             border: plan.popular ? "none" : "1px solid #e2e8f0",
@@ -456,22 +468,46 @@ export default function LandingPage() {
 
             <ul className="space-y-2.5 mb-8">
               {[
-                plan.credits,
-                plan.pdfs,
-                "ATS match score",
-                "Unlimited edits",
-                "Cover letter generator",
+                { text: plan.credits, included: true },
+                { text: plan.pdfs, included: true },
+                { text: "ATS match score", included: true },
+                { text: "Unlimited edits", included: true },
+                { text: "Cover letter generator", included: plan.coverLetter },
               ].map((f) => (
-                <li key={f} className="flex items-center gap-3 text-sm">
-                  <svg
-                    className="w-4 h-4 shrink-0"
-                    style={{ color: plan.popular ? "rgba(255,255,255,0.6)" : "#10b981" }}
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                <li key={f.text} className="flex items-center gap-3 text-sm">
+                  {f.included ? (
+                    <svg
+                      className="w-4 h-4 shrink-0"
+                      style={{ color: plan.popular ? "rgba(255,255,255,0.6)" : "#10b981" }}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-4 h-4 shrink-0"
+                      style={{ color: plan.popular ? "rgba(255,255,255,0.2)" : "#cbd5e1" }}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
+                  <span
+                    style={{
+                      color: f.included
+                        ? plan.popular
+                          ? "rgba(255,255,255,0.85)"
+                          : "#374151"
+                        : plan.popular
+                          ? "rgba(255,255,255,0.3)"
+                          : "#cbd5e1",
+                    }}
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span style={{ color: plan.popular ? "rgba(255,255,255,0.85)" : "#374151" }}>
-                    {f}
+                    {f.text}
                   </span>
                 </li>
               ))}
