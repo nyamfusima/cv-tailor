@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
 import { TailoredCV } from "@/lib/types";
 
 interface CoverLetter {
@@ -11,6 +12,51 @@ interface CoverLetter {
   name: string;
 }
 
+const letterStyles = StyleSheet.create({
+  page: {
+    padding: 48,
+    fontSize: 11,
+    fontFamily: "Times-Roman",
+    lineHeight: 1.6,
+    color: "#0f172a",
+  },
+  subject: {
+    fontSize: 12,
+    marginBottom: 16,
+    fontFamily: "Times-Bold",
+  },
+  paragraph: {
+    marginBottom: 12,
+  },
+  signOff: {
+    marginTop: 8,
+  },
+  name: {
+    marginTop: 4,
+    fontFamily: "Times-Bold",
+  },
+});
+
+function CoverLetterDoc({ letter }: { letter: CoverLetter }) {
+  return (
+    <Document>
+      <Page size="A4" style={letterStyles.page}>
+        <Text style={letterStyles.subject}>{letter.subject}</Text>
+        <Text style={letterStyles.paragraph}>{letter.greeting}</Text>
+        {letter.paragraphs.map((p, i) => (
+          <Text key={i} style={letterStyles.paragraph}>
+            {p}
+          </Text>
+        ))}
+        <View style={letterStyles.signOff}>
+          <Text>{letter.sign_off}</Text>
+          <Text style={letterStyles.name}>{letter.name}</Text>
+        </View>
+      </Page>
+    </Document>
+  );
+}
+
 export default function CoverLetterPage() {
   const router = useRouter();
   const [cv, setCV] = useState<TailoredCV | null>(null);
@@ -19,6 +65,7 @@ export default function CoverLetterPage() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("tailoredCV");
@@ -59,6 +106,23 @@ export default function CoverLetterPage() {
   const updateParagraph = (idx: number, value: string) => {
     if (!letter) return;
     setLetter({ ...letter, paragraphs: letter.paragraphs.map((p, i) => i === idx ? value : p) });
+  };
+
+  const handleDownload = async () => {
+    if (!letter) return;
+    setDownloading(true);
+    try {
+      const blob = await pdf(<CoverLetterDoc letter={letter} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeName = letter.name ? letter.name.replace(/\s+/g, "_") : "cover_letter";
+      a.download = `${safeName}_Cover_Letter.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (loading) return (
@@ -107,6 +171,16 @@ export default function CoverLetterPage() {
               className="text-xs font-semibold text-slate-500 hover:text-slate-800 border border-slate-200 px-3 py-2 rounded-xl transition-colors"
             >
               ↺ Regenerate
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="text-slate-700 font-semibold px-4 sm:px-5 py-2.5 rounded-xl transition-all text-sm flex items-center gap-2 border border-slate-200 bg-white hover:border-slate-300 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M7 10l5 5 5-5M12 15V3" />
+              </svg>
+              {downloading ? "Preparing..." : "Download"}
             </button>
             <button
               onClick={handleCopy}
