@@ -3,6 +3,7 @@ import { parseFile } from "@/lib/parseFile";
 import Anthropic from "@anthropic-ai/sdk";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { getUserCredits, deductTailorCredit, hasTailorCredits } from "@/lib/user";
+import { createClient } from "@supabase/supabase-js";
 
 const client = new Anthropic();
 
@@ -192,6 +193,27 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
     await deductTailorCredit(user.id);
 
     tailored.originalCV = original;
+
+
+    // Save session to Supabase
+try {
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  await supabaseAdmin.from("tailor_sessions").insert({
+    user_id: user.id,
+    user_email: user.email,
+    cv_text: cvText,
+    job_description: jobDescription,
+    tailored_cv: tailored,
+    match_score: tailored.matchScore || null,
+  });
+} catch (err) {
+  console.error("Failed to save session:", err);
+  // Don't block the response if saving fails
+}
 
     return NextResponse.json(tailored);
   } catch (err: any) {
