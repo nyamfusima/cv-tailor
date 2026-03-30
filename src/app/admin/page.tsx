@@ -2,15 +2,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 
-const ADMIN_EMAIL = "nyamfusima@gmail.com";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "nyamfusima@gmail.com";
 
 interface Session {
   id: string;
@@ -47,31 +41,14 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     setFetching(true);
-    const { data } = await supabaseAdmin
-      .from("tailor_sessions")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (data) {
+    try {
+      const res = await fetch("/api/admin/sessions", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch admin data");
+      const { sessions: data, stats } = await res.json();
       setSessions(data);
-
-      const totalSessions = data.length;
-      const uniqueUsers = new Set(data.map((s: Session) => s.user_email)).size;
-      const avgScore = data.length > 0
-        ? Math.round(data.reduce((sum: number, s: Session) => sum + (s.match_score || 0), 0) / data.length)
-        : 0;
-
-      const today = new Date().toISOString().split("T")[0];
-      const todaySessions = data.filter((s: Session) =>
-        s.created_at.startsWith(today)
-      ).length;
-
-      setStats({
-        totalSessions,
-        totalUsers: uniqueUsers,
-        avgScore,
-        todaySessions,
-      });
+      setStats(stats);
+    } catch (err) {
+      console.error(err);
     }
     setFetching(false);
   };
