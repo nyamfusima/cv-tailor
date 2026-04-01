@@ -50,7 +50,7 @@ export default function LandingPage() {
                 onClick={signInWithGoogle}
                 className="cta-btn text-slate-900 text-sm font-semibold px-4 py-2 rounded-xl bg-white"
               >
-                Sign up
+                Sign in
               </button>
             </>
           )}
@@ -74,7 +74,7 @@ export default function LandingPage() {
             style={{ backgroundColor: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.85)" }}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-white float"></span>
-            AI-powered · ATS optimised · Free to use
+            AI-powered · ATS optimised · Sign-in required
           </div>
 
           <h1
@@ -113,21 +113,14 @@ export default function LandingPage() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
-                  Get your free tailored CV
+                  Sign in with Google to start
                 </button>
-                <Link
-                  href="/upload"
-                  className="text-sm font-medium"
-                  style={{ color: "rgba(255,255,255,0.55)" }}
-                >
-                  Continue without signing in →
-                </Link>
               </>
             )}
           </div>
 
           <p className="text-xs mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
-            No credit card · 3 free tailors/month · Cancel anytime
+            Sign in required · New users get 3 free tailors · Credits never expire
           </p>
         </div>
 
@@ -368,7 +361,7 @@ export default function LandingPage() {
       Simple, transparent pricing
     </h2>
     <p className="text-slate-500 text-center text-base mb-14">
-      Pay once. Credits never expire. Start free.
+            Pay once. Credits never expire. New users get 3 free tailors.
     </p>
 
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -529,7 +522,7 @@ export default function LandingPage() {
     </div>
 
     <p className="text-center text-xs text-slate-400 mt-8">
-      Every new account gets 3 free tailors to try first · Credits never expire
+            Every new account gets 3 free tailors to try first · Credits never expire
     </p>
   </div>
 </section>
@@ -556,7 +549,7 @@ export default function LandingPage() {
                 <path fill="rgba(255,255,255,0.9)" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="rgba(255,255,255,0.9)" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              Sign up free with Google
+              Sign in with Google to start
             </button>
             <Link
               href="/upload"
