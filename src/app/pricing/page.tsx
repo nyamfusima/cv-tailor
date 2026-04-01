@@ -1,9 +1,67 @@
 "use client";
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
+import { getPaddle, PRICE_IDS } from "@/lib/paddle";
+import type { Paddle } from "@paddle/paddle-js";
 
 export default function PricingPage() {
   const { user, signInWithGoogle } = useAuth();
+  const paddleRef = useRef<Paddle | undefined>(undefined);
+
+  useEffect(() => {
+    getPaddle().then((p) => {
+      paddleRef.current = p;
+    });
+  }, []);
+
+  const handleCheckout = async (priceId: string) => {
+    if (!user) {
+      signInWithGoogle();
+      return;
+    }
+
+    const paddle = paddleRef.current;
+    if (!paddle) return;
+
+    paddle.Checkout.open({
+      items: [{ priceId, quantity: 1 }],
+      customer: { email: user.email! },
+    });
+  };
+
+  const plans = [
+    {
+      name: "Starter Pack",
+      price: "$5",
+      desc: "Perfect for a single job search sprint.",
+      credits: "5 tailor credits",
+      pdfs: "5 PDF downloads",
+      popular: false,
+      priceId: PRICE_IDS.starter,
+      coverLetter: false,
+    },
+    {
+      name: "Growth Mode",
+      price: "$20",
+      desc: "For active job seekers applying to multiple roles.",
+      credits: "20 tailor credits",
+      pdfs: "20 PDF downloads",
+      popular: true,
+      priceId: PRICE_IDS.growth,
+      coverLetter: true,
+    },
+    {
+      name: "Unlimited",
+      price: "$50",
+      desc: "Apply to as many roles as you want. No limits.",
+      credits: "Unlimited tailors",
+      pdfs: "Unlimited PDFs",
+      popular: false,
+      priceId: PRICE_IDS.unlimited,
+      coverLetter: true,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -30,10 +88,7 @@ export default function PricingPage() {
         </div>
         <div className="flex items-center gap-3">
           {user ? (
-            <Link
-              href="/upload"
-              className="cta-btn text-slate-900 text-sm font-semibold px-4 py-2 rounded-xl bg-white"
-            >
+            <Link href="/upload" className="cta-btn text-slate-900 text-sm font-semibold px-4 py-2 rounded-xl bg-white">
               Go to app →
             </Link>
           ) : (
@@ -73,38 +128,7 @@ export default function PricingPage() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {[
-              {
-                name: "Starter Pack",
-                price: "$5",
-                desc: "Perfect for a single job search sprint.",
-                credits: "5 tailor credits",
-                pdfs: "5 PDF downloads",
-                popular: false,
-                param: "starter",
-                coverLetter: false,
-              },
-              {
-                name: "Growth Mode",
-                price: "$20",
-                desc: "For active job seekers applying to multiple roles.",
-                credits: "20 tailor credits",
-                pdfs: "20 PDF downloads",
-                popular: true,
-                param: "growth",
-                coverLetter: true,
-              },
-              {
-                name: "Unlimited",
-                price: "$50",
-                desc: "Apply to as many roles as you want. No limits.",
-                credits: "Unlimited tailors",
-                pdfs: "Unlimited PDFs",
-                popular: false,
-                param: "ninja",
-                coverLetter: true,
-              },
-            ].map((plan) => (
+            {plans.map((plan) => (
               <div
                 key={plan.name}
                 className="relative rounded-2xl overflow-hidden"
@@ -136,25 +160,16 @@ export default function PricingPage() {
                   <div className="flex items-end gap-1 mb-2">
                     <span
                       className="text-4xl font-bold"
-                      style={{
-                        fontFamily: "'DM Serif Display', serif",
-                        color: plan.popular ? "white" : "#0d1f3c",
-                      }}
+                      style={{ fontFamily: "'DM Serif Display', serif", color: plan.popular ? "white" : "#0d1f3c" }}
                     >
                       {plan.price}
                     </span>
-                    <span
-                      className="text-sm mb-1.5"
-                      style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}
-                    >
+                    <span className="text-sm mb-1.5" style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}>
                       one-off
                     </span>
                   </div>
 
-                  <p
-                    className="text-xs mb-6 leading-relaxed"
-                    style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}
-                  >
+                  <p className="text-xs mb-6 leading-relaxed" style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}>
                     {plan.desc}
                   </p>
 
@@ -168,35 +183,19 @@ export default function PricingPage() {
                     ].map((f) => (
                       <li key={f.text} className="flex items-center gap-3 text-sm">
                         {f.included ? (
-                          <svg
-                            className="w-4 h-4 shrink-0"
-                            style={{ color: plan.popular ? "rgba(255,255,255,0.6)" : "#10b981" }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
+                          <svg className="w-4 h-4 shrink-0" style={{ color: plan.popular ? "rgba(255,255,255,0.6)" : "#10b981" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                         ) : (
-                          <svg
-                            className="w-4 h-4 shrink-0"
-                            style={{ color: plan.popular ? "rgba(255,255,255,0.2)" : "#cbd5e1" }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
+                          <svg className="w-4 h-4 shrink-0" style={{ color: plan.popular ? "rgba(255,255,255,0.2)" : "#cbd5e1" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         )}
                         <span
                           style={{
                             color: f.included
-                              ? plan.popular
-                                ? "rgba(255,255,255,0.85)"
-                                : "#374151"
-                              : plan.popular
-                                ? "rgba(255,255,255,0.3)"
-                                : "#cbd5e1",
+                              ? plan.popular ? "rgba(255,255,255,0.85)" : "#374151"
+                              : plan.popular ? "rgba(255,255,255,0.3)" : "#cbd5e1",
                           }}
                         >
                           {f.text}
@@ -206,13 +205,7 @@ export default function PricingPage() {
                   </ul>
 
                   <button
-                    onClick={() => {
-                      if (!user) {
-                        signInWithGoogle();
-                      } else {
-                        window.location.href = `/api/checkout?type=${plan.param}`;
-                      }
-                    }}
+                    onClick={() => handleCheckout(plan.priceId)}
                     className="w-full font-semibold py-3 rounded-xl text-sm transition-all cta-btn"
                     style={
                       plan.popular
