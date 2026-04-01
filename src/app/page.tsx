@@ -1,18 +1,9 @@
 "use client";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
   const { user, signInWithGoogle } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-  if (user) {
-    router.push("/upload");
-  }
-}, [user]);
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>

@@ -102,15 +102,15 @@ export default function UploadForm() {
     <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between">
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link href="/" className="flex items-center">
           <span className="font-semibold text-slate-800 tracking-tight">my</span>
           <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
           <span className="font-semibold text-slate-800 tracking-tight">tailor.ai</span>
         </Link>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full">
           {user ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
               <span className="text-xs text-slate-500 hidden sm:block">{user.email}</span>
               <Link
                 href="/account"
@@ -142,7 +142,7 @@ export default function UploadForm() {
           )}
           <Link
             href="/"
-            className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
+            className="text-xs font-semibold text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:border-slate-400 transition-colors bg-white w-full sm:w-auto text-center"
           >
             ← Back to home
           </Link>
@@ -240,7 +240,7 @@ export default function UploadForm() {
               onChange={(e) => e.target.files && setCvFile(e.target.files[0])}
             />
             {cvFile ? (
-              <div className="flex items-center justify-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center text-center sm:text-left gap-3 sm:gap-4">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "#0d1f3c" }}>
                   <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -316,19 +316,19 @@ export default function UploadForm() {
             {jobInputMode === "url" && (
               <div className="p-4">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-3">Job Posting URL</label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="url"
                     value={jobUrl}
                     onChange={(e) => setJobUrl(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleFetchUrl()}
                     placeholder="https://company.com/careers/job-title"
-                    className="flex-1 text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-slate-400 transition-colors"
+                    className="flex-1 w-full min-w-0 text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-slate-400 transition-colors"
                   />
                   <button
                     onClick={handleFetchUrl}
                     disabled={fetchingUrl || !jobUrl.trim()}
-                    className="text-white font-semibold px-4 py-3 rounded-xl text-sm shrink-0 transition-all disabled:opacity-50"
+                    className="text-white font-semibold px-4 py-3 rounded-xl text-sm shrink-0 transition-all disabled:opacity-50 w-full sm:w-auto"
                     style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
                   >
                     {fetchingUrl ? (
