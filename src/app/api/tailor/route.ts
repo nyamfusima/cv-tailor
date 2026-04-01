@@ -212,25 +212,36 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
     };
 
 
-    // Save session to Supabase
+    // Save session to Supabase (fail loudly so we can debug)
     try {
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
 
-  await supabaseAdmin.from("tailor_sessions").insert({
-    user_id: user.id,
-    user_email: user.email,
-    cv_text: cvText,
-    job_description: jobDescription,
-    tailored_cv: tailored,
-    match_score: tailored.matchScore || null,
-  });
-} catch (err) {
-  console.error("Failed to save session:", err);
-  // Don't block the response if saving fails
-}
+      const { error: insertError } = await supabaseAdmin.from("tailor_sessions").insert({
+        user_id: user.id,
+        user_email: user.email,
+        cv_text: cvText,
+        job_description: jobDescription,
+        tailored_cv: tailored,
+        match_score: tailored.matchScore || null,
+      });
+
+      if (insertError) {
+        console.error("Failed to save session:", insertError);
+        return NextResponse.json(
+          { error: "DB_INSERT_FAILED", message: insertError.message },
+          { status: 500 }
+        );
+      }
+    } catch (err: any) {
+      console.error("Failed to save session (unexpected):", err);
+      return NextResponse.json(
+        { error: "DB_INSERT_FAILED", message: err.message || "Supabase insert failed" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(tailored);
   } catch (err: any) {
