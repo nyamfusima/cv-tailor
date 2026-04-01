@@ -23,11 +23,14 @@ interface Stats {
   todaySessions: number;
 }
 
+type RoleBreakdown = { role: string; count: number };
+
 export default function AdminPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [roles, setRoles] = useState<RoleBreakdown[]>([]);
   const [fetching, setFetching] = useState(true);
   const [selected, setSelected] = useState<Session | null>(null);
   const [activeTab, setActiveTab] = useState<"cv" | "job" | "tailored">("tailored");
@@ -47,10 +50,29 @@ export default function AdminPage() {
       const { sessions: data, stats } = await res.json();
       setSessions(data);
       setStats(stats);
+      setRoles(buildRoleBreakdown(data));
     } catch (err) {
       console.error(err);
     }
     setFetching(false);
+  };
+
+  const primaryRole = (session: Session) =>
+    (session.tailored_cv?.meta?.primaryRole ||
+      session.tailored_cv?.experience?.[0]?.title ||
+      session.tailored_cv?.originalCV?.experience?.[0]?.title ||
+      "Unknown") as string;
+
+  const buildRoleBreakdown = (data: Session[]): RoleBreakdown[] => {
+    const counts: Record<string, number> = {};
+    data.forEach((s) => {
+      const role = primaryRole(s).trim() || "Unknown";
+      counts[role] = (counts[role] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([role, count]) => ({ role, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
   };
 
   if (loading || fetching) return (
@@ -109,6 +131,24 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* Top roles */}
+        {roles.length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm mb-8">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Top roles (uploads)</p>
+            <div className="flex flex-wrap gap-2">
+              {roles.map((role) => (
+                <span
+                  key={role.role}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-full border"
+                  style={{ borderColor: "#e2e8f0", backgroundColor: "#f8fafc", color: "#0d1f3c" }}
+                >
+                  {role.role} â€¢ {role.count}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-6 items-start">
 
           {/* Sessions list */}
@@ -145,6 +185,7 @@ export default function AdminPage() {
                     </span>
                   </div>
                   <p className="text-xs text-slate-400 truncate">{session.user_email}</p>
+                  <p className="text-xs text-slate-500 truncate mt-0.5">{primaryRole(session)}</p>
                   <p className="text-xs text-slate-300 mt-1">
                     {new Date(session.created_at).toLocaleDateString("en-GB", {
                       day: "numeric", month: "short", year: "numeric",
@@ -174,6 +215,7 @@ export default function AdminPage() {
                     <p className="text-white font-bold text-lg" style={{ fontFamily: "'DM Serif Display', serif" }}>
                       {selected.tailored_cv?.name}
                     </p>
+                    <p className="text-blue-100 text-xs mt-0.5">{primaryRole(selected)}</p>
                     <p className="text-blue-200 text-xs mt-0.5">{selected.user_email}</p>
                   </div>
                   <div className="text-right">

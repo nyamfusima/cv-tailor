@@ -7,6 +7,17 @@ import { createClient } from "@supabase/supabase-js";
 
 const client = new Anthropic();
 
+function derivePrimaryRole(tailored: any, original: any) {
+  // Prefer the tailored first experience title, then original, then summary snippet
+  const title =
+    tailored?.experience?.[0]?.title ||
+    original?.experience?.[0]?.title ||
+    "";
+  if (title) return title;
+  const summary = (tailored?.summary || original?.summary || "").trim();
+  return summary ? summary.split(/[.|\n]/)[0].slice(0, 80) : "Unknown";
+}
+
 async function callAI(prompt: string): Promise<string> {
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
@@ -192,7 +203,13 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
     // Deduct credit after successful tailor
     await deductTailorCredit(user.id);
 
+    const primaryRole = derivePrimaryRole(tailored, original);
     tailored.originalCV = original;
+    tailored.meta = {
+      fileName: cvFile.name || "upload",
+      primaryRole,
+      jobDescriptionPreview: jobDescription.slice(0, 200),
+    };
 
 
     // Save session to Supabase
