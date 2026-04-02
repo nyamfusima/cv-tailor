@@ -40,13 +40,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check credits
-    const userData = await getUserCredits(user.id);
-    if (!userData || !hasTailorCredits(userData)) {
-      return NextResponse.json(
-        { error: "NO_CREDITS", message: "You have no tailor credits left. Buy more to continue." },
-        { status: 403 }
-      );
+    // Check credits (skip for admin accounts)
+    const ADMIN_EMAILS = [
+      "nyamfusima@gmail.com",
+      "hamza26mohamud@gmail.com",
+      "zengetwasisipho@gmail.com",
+    ];
+    const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
+
+    if (!isAdmin) {
+      const userData = await getUserCredits(user.id);
+      if (!userData || !hasTailorCredits(userData)) {
+        return NextResponse.json(
+          { error: "NO_CREDITS", message: "You have no tailor credits left. Buy more to continue." },
+          { status: 403 }
+        );
+      }
     }
 
     const formData = await req.formData();
@@ -200,8 +209,10 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
       throw new Error("Failed to parse the tailored CV. Please try again.");
     }
 
-    // Deduct credit after successful tailor
-    await deductTailorCredit(user.id);
+    // Deduct credit after successful tailor (skip for admins)
+    if (!isAdmin) {
+      await deductTailorCredit(user.id);
+    }
 
     const primaryRole = derivePrimaryRole(tailored, original);
     tailored.originalCV = original;
