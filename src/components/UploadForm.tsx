@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function UploadForm() {
   const router = useRouter();
-  const { user, signInWithGoogle } = useAuth();
+  const { user, signInWithGoogle, signOut } = useAuth();
   const cvRef = useRef<HTMLInputElement>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [jobDesc, setJobDesc] = useState("");
@@ -157,12 +157,21 @@ export default function UploadForm() {
               Sign in
             </button>
           )}
-          <Link
-            href="/"
-            className="text-xs font-semibold text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:border-slate-400 transition-colors bg-white w-full sm:w-auto text-center"
-          >
-            Back to home
-          </Link>
+          {user ? (
+            <button
+              onClick={signOut}
+              className="text-xs font-semibold text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:border-slate-400 transition-colors bg-white w-full sm:w-auto text-center"
+            >
+              Log out
+            </button>
+          ) : (
+            <Link
+              href="/"
+              className="text-xs font-semibold text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:border-slate-400 transition-colors bg-white w-full sm:w-auto text-center"
+            >
+              Back to home
+            </Link>
+          )}
           <span className="hidden sm:block text-xs text-slate-400 font-medium tracking-wide uppercase">Step 1 of 2</span>
         </div>
       </header>
