@@ -1,174 +1,354 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { TestimonialsColumn, testimonials } from "@/components/ui/testimonials-columns-1";
+import { motion } from "motion/react";
+
+/* ─── Count-up number hook ─── */
+function useCountUp(to: number, duration = 1400, start = false) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!start) return;
+    let startTime: number | null = null;
+    const step = (ts: number) => {
+      if (!startTime) startTime = ts;
+      const p = Math.min((ts - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setCount(Math.floor(eased * to));
+      if (p < 1) requestAnimationFrame(step);
+      else setCount(to);
+    };
+    requestAnimationFrame(step);
+  }, [start, to, duration]);
+  return count;
+}
+
+function StatNumber({ to, suffix, start }: { to: number; suffix: string; start: boolean }) {
+  const count = useCountUp(to, 1400, start);
+  return <>{count}{suffix}</>;
+}
+
+/* ─── Scroll-triggered animation hook ─── */
+function useInView(threshold = 0.12) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+}
 
 export default function LandingPage() {
   const { user, signInWithGoogle, signInWithEmailLink, signInWithPassword, signUp, resetPassword, signOut } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
+  useEffect(() => { if (user) router.push("/upload"); }, [user, router]);
   useEffect(() => {
-    if (user) router.push("/upload");
-  }, [user, router]);
+    setMounted(true);
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const hero     = useInView(0.05);
+  const steps    = useInView(0.08);
+  const features = useInView(0.08);
+  const pricing  = useInView(0.08);
+  const cta      = useInView(0.08);
+
+  const openSignup = () => { setAuthMode("signup"); setAuthOpen(true); };
+  const openSignin = () => { setAuthMode("signin"); setAuthOpen(true); };
 
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-
+    <div className="min-h-screen bg-white overflow-x-hidden" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-6px); }
+        @keyframes fadeUp   { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+        @keyframes slideRight { from { opacity:0; transform:translateX(32px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes float    { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
+        @keyframes pulse-dot { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+        @keyframes shimmer  { 0%{background-position:-200% center;} 100%{background-position:200% center;} }
+        @keyframes glow     { 0%,100%{box-shadow:0 0 20px rgba(13,31,60,0.15);} 50%{box-shadow:0 0 40px rgba(13,31,60,0.30);} }
+        @keyframes orb      { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(20px,-15px) scale(1.06);} }
+
+        .anim-up    { animation: fadeUp    0.6s ease both; }
+        .anim-in    { animation: fadeIn    0.6s ease both; }
+        .anim-right { animation: slideRight 0.6s ease both; }
+        .float      { animation: float     4s ease-in-out infinite; }
+
+        .d0  { animation-delay:0s;    }
+        .d1  { animation-delay:0.08s; }
+        .d2  { animation-delay:0.16s; }
+        .d3  { animation-delay:0.24s; }
+        .d4  { animation-delay:0.32s; }
+        .d5  { animation-delay:0.40s; }
+        .d6  { animation-delay:0.48s; }
+
+        @keyframes lightning-sweep {
+          0%   { transform: translateX(-120%) skewX(-15deg); opacity: 0; }
+          5%   { opacity: 1; }
+          40%  { transform: translateX(120%) skewX(-15deg); opacity: 0; }
+          100% { transform: translateX(120%) skewX(-15deg); opacity: 0; }
         }
-        .float { animation: float 3s ease-in-out infinite; }
-        .feature-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .feature-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(13,31,60,0.10); }
-        .cta-btn { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(13,31,60,0.3); }
-        .step-card { transition: box-shadow 0.2s ease, transform 0.2s ease; }
-        .step-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(13,31,60,0.12); }
+        .lightning-btn { position: relative; overflow: hidden; }
+        .lightning-btn::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.55) 50%, transparent 70%);
+          animation: lightning-sweep 2.8s ease-in-out infinite;
+          pointer-events: none;
+        }
+
+        .card-hover { transition: transform 0.22s ease, box-shadow 0.22s ease; cursor:pointer; }
+        .card-hover:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(13,31,60,0.11); }
+
+        .btn-primary {
+          background: linear-gradient(135deg,#0d1f3c,#1a3a6b);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .btn-primary:hover { transform:translateY(-2px); box-shadow:0 12px 32px rgba(13,31,60,0.28); }
+
+        .btn-white  { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .btn-white:hover  { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.12); }
+
+        .nav-glass {
+          background: rgba(255,255,255,0.88);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-bottom: 1px solid rgba(13,31,60,0.07);
+          box-shadow: 0 2px 20px rgba(13,31,60,0.06);
+        }
+        .nav-clear { background: transparent; }
+
+        .hero-grad {
+          background-color: #0a1628;
+          background-image: linear-gradient(135deg,#0a1628 0%,#0d1f3c 40%,#1a3a6b 75%,#0f2d5e 100%);
+        }
+        .grid-bg {
+          background-image:
+            linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),
+            linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px),
+            linear-gradient(135deg,#0a1628 0%,#0d1f3c 40%,#1a3a6b 75%,#0f2d5e 100%);
+          background-size:56px 56px, 56px 56px, cover;
+        }
+        .step-img { transition: transform 0.3s ease; }
+        .step-img:hover { transform: scale(1.02); }
+
+        .badge-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+        .pricing-popular-glow { animation: glow 3s ease-in-out infinite; }
+
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after { animation-duration:0.01ms !important; transition-duration:0.01ms !important; }
+        }
+        html { scroll-behavior: smooth; }
       `}</style>
 
-      {/* Nav */}
-      <nav className="absolute top-0 left-0 right-0 z-10 px-4 sm:px-8 py-5 flex items-center justify-between">
-        <div className="flex items-center">
-          <span className="font-semibold text-white tracking-tight text-lg">my</span>
-          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
-          <span className="font-semibold text-white tracking-tight text-lg">tailor.ai</span>
-        </div>
-        <div className="flex items-center gap-3">
-          {user ? (
-            <Link href="/upload" className="cta-btn text-slate-900 text-sm font-semibold px-4 py-2 rounded-xl bg-white">
-              Go to app →
-            </Link>
-          ) : (
-            <>
-              <button
-                onClick={() => { setAuthMode("signin"); setAuthOpen(true); }}
-                className="text-sm font-semibold px-4 py-2 rounded-xl transition-all"
-                style={{ color: "rgba(255,255,255,0.85)", border: "1px solid rgba(255,255,255,0.2)" }}
-              >
-                Sign in
-              </button>
-              <button
-                onClick={() => { setAuthMode("signup"); setAuthOpen(true); }}
-                className="cta-btn text-slate-900 text-sm font-semibold px-4 py-2 rounded-xl bg-white"
-              >
-                Sign up
-              </button>
-            </>
-          )}
-          {user && (
-            <button
-              onClick={signOut}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
-              style={{ color: "rgba(255,255,255,0.85)", border: "1px solid rgba(255,255,255,0.2)" }}
-            >
-              Sign out
-            </button>
-          )}
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section
-        className="relative overflow-hidden pt-32 pb-32 px-4 sm:px-6 text-center"
-        style={{
-          background: "linear-gradient(135deg, #0d1f3c 0%, #1a3a6b 40%, #0f2d5e 70%, #0d1f3c 100%)",
-        }}
-      >
-        <div className="absolute top-16 left-10 w-64 h-64 rounded-full opacity-5" style={{ background: "radial-gradient(circle, white, transparent)" }} />
-        <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full opacity-5" style={{ background: "radial-gradient(circle, white, transparent)" }} />
-        <div className="absolute top-32 right-1/4 w-32 h-32 rounded-full opacity-5" style={{ background: "radial-gradient(circle, white, transparent)" }} />
-
-        <div className="relative max-w-4xl mx-auto">
-          <div
-            className="inline-flex items-center gap-2 border text-xs font-medium px-4 py-2 rounded-full mb-8"
-            style={{ backgroundColor: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.85)" }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-white float"></span>
-            AI-powered · ATS optimised · Sign-in required
+      {/* ──────────── NAV ──────────── */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "nav-glass" : "nav-clear"}`}>
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center">
+            <span className={`font-bold text-base tracking-tight transition-colors duration-300 mr-1 ${scrolled ? "text-slate-900" : "text-white"}`}>my</span>
+            <img src="/favicon.ico" alt="" className="w-4 h-4" />
+            <span className={`font-bold text-base tracking-tight transition-colors duration-300 ${scrolled ? "text-slate-900" : "text-white"}`}>tailor.ai</span>
           </div>
 
-          <h1
-            style={{ fontFamily: "'DM Serif Display', serif" }}
-            className="text-5xl sm:text-6xl lg:text-7xl text-white leading-tight mb-6"
-          >
-            Your CV, tailored<br />to every job.
-          </h1>
+          {/* Center links */}
+          <div className="hidden md:flex items-center gap-7">
+            {["Features", "How it works", "Pricing"].map((label) => (
+              <a key={label}
+                href={`#${label.toLowerCase().replace(/ /g, "-")}`}
+                className={`text-sm font-medium transition-colors duration-200 cursor-pointer ${scrolled ? "text-slate-600 hover:text-slate-900" : "text-white hover:text-white"}`}>
+                {label}
+              </a>
+            ))}
+          </div>
 
-          <p
-            className="text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto mb-10"
-            style={{ color: "rgba(255,255,255,0.65)" }}
-          >
-            Upload your CV and paste a job description. Our AI rewrites your CV to match the role's exact keywords and pass ATS filters — in under 30 seconds.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          {/* Auth */}
+          <div className="flex items-center gap-2">
             {user ? (
-            <Link href="/upload" className="cta-btn text-slate-900 text-sm font-semibold px-4 py-2 rounded-xl bg-white">
-              Go to app →
-            </Link>
-          ) : (
               <>
-                <button
-                  onClick={() => { setAuthMode("signup"); setAuthOpen(true); }}
-                  className="cta-btn w-full sm:w-auto bg-white font-semibold px-8 py-4 rounded-2xl text-base flex items-center justify-center gap-3"
-                  style={{ color: "#0d1f3c" }}
-                >
-                  Start free – create account
+                <Link href="/upload"
+                  className="btn-primary cursor-pointer text-white text-sm font-semibold px-4 py-2 rounded-xl">
+                  Go to app →
+                </Link>
+                <button onClick={signOut}
+                  className={`hidden sm:block text-xs font-medium px-3 py-1.5 rounded-xl transition-colors cursor-pointer ${scrolled ? "text-slate-500 border border-slate-200 hover:bg-slate-50" : "text-white/70 border border-white/20 hover:text-white"}`}>
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={openSignin}
+                  className={`hidden sm:block text-sm font-medium px-4 py-2 rounded-xl border transition-colors cursor-pointer ${scrolled ? "text-slate-600 hover:text-slate-900 border-[#1a3a6b]" : "text-white hover:text-white border-[#1a3a6b]"}`}>
+                  Sign in
+                </button>
+                <button onClick={openSignup}
+                  className={`btn-primary cursor-pointer text-sm font-semibold px-4 py-2 rounded-xl text-white`}>
+                  Get started free
                 </button>
               </>
             )}
           </div>
+        </div>
+      </nav>
 
-          <p className="text-xs mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
-            Sign in required · New users get 3 free tailors · Credits never expire
-          </p>
+      {/* ──────────── HERO ──────────── */}
+      <section id="how-it-works" className="hero-grad relative overflow-hidden pt-24 pb-0 min-h-[88vh] flex flex-col">
+        {/* Orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full opacity-[0.07]"
+            style={{ background:"radial-gradient(circle,#4a90d9,transparent 65%)", animation:"orb 18s ease-in-out infinite" }} />
+          <div className="absolute top-1/3 -right-40 w-[500px] h-[500px] rounded-full opacity-[0.05]"
+            style={{ background:"radial-gradient(circle,#93c5fd,transparent 65%)", animation:"orb 14s ease-in-out infinite reverse" }} />
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0 60L60 50C120 40 240 20 360 15C480 10 600 20 720 25C840 30 960 30 1080 25C1200 20 1320 10 1380 5L1440 0V60H0Z" fill="white"/>
+        <div ref={hero.ref} className="relative max-w-7xl mx-auto px-5 sm:px-8 flex-1 flex flex-col lg:flex-row items-center gap-12 lg:gap-16 py-16 lg:py-20">
+          {/* LEFT — copy */}
+          <div className="flex-1 text-center lg:text-left">
+            {/* Badge */}
+            <div className={`inline-flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-full mb-7 border ${mounted ? "anim-up d0" : "opacity-0"}`}
+              style={{ backgroundColor:"rgba(255,255,255,0.1)", borderColor:"rgba(255,255,255,0.22)", color:"rgba(255,255,255,0.92)" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 badge-dot" />
+              Your first 3 tailors are free — no card needed
+            </div>
+
+            {/* Headline */}
+            <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.1] mb-5 ${mounted ? "anim-up d1" : "opacity-0"}`}>
+              Tailor your CV to<br />
+              <span style={{ background:"linear-gradient(90deg,#7dd3fc,#93c5fd,#c4b5fd)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
+                every job in 30 seconds.
+              </span>
+            </h1>
+
+            {/* Sub */}
+            <p className={`text-base sm:text-lg leading-relaxed mb-8 max-w-lg mx-auto lg:mx-0 ${mounted ? "anim-up d2" : "opacity-0"}`}
+              style={{ color:"rgba(255,255,255,0.78)" }}>
+              Upload your CV and paste a job description. Our AI rewrites it to match the role&apos;s exact keywords and pass ATS filters instantly.
+            </p>
+
+            {/* CTAs */}
+            <div className={`flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start mb-10 ${mounted ? "anim-up d3" : "opacity-0"}`}>
+              <button onClick={openSignup}
+                className="btn-white lightning-btn cursor-pointer w-full sm:w-auto bg-white font-bold px-8 py-4 rounded-2xl text-base flex items-center justify-center gap-2.5"
+                style={{ color:"#0d1f3c" }}>
+                Get my free AI-tailored CV
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div className={`flex flex-wrap items-center gap-x-4 gap-y-3 justify-center lg:justify-start ${mounted ? "anim-up d4" : "opacity-0"}`}>
+              {[
+                { value: null, to: 500, suffix: "+", label: "CVs tailored" },
+                { value: "~60s", to: null, suffix: "", label: "Average time" },
+                { value: "3",    to: null, suffix: "", label: "Free tailors" },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-white">
+                    {s.to !== null
+                      ? <StatNumber to={s.to} suffix={s.suffix} start={hero.visible} />
+                      : s.value}
+                  </span>
+                  <span className="text-sm" style={{ color:"rgba(255,255,255,0.7)" }}>{s.label}</span>
+                </div>
+              ))}
+              <div className="w-px h-4 bg-white/20 hidden sm:block" />
+              {/* Avatar cluster — job seekers joined */}
+              <div className="flex items-center gap-0 pr-1">
+                <div className="flex -space-x-1.5 mr-2">
+                  {[
+                    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=face",
+                    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face",
+                    "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face",
+                    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=40&h=40&fit=crop&crop=face",
+                  ].map((src, i) => (
+                    <img key={i} src={src} width={22} height={22} alt=""
+                      className="rounded-full object-cover"
+                      style={{ width:22, height:22, outline:"2px solid rgba(255,255,255,0.2)" }} />
+                  ))}
+                </div>
+                <p className="text-xs" style={{ color:"rgba(255,255,255,0.85)" }}>
+                  <strong className="font-semibold text-white">+200</strong> job seekers joined this week
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT — product screenshot */}
+          <div className={`flex-1 w-full max-w-xl lg:max-w-none ${mounted ? "anim-right d2" : "opacity-0"}`}>
+            <div className="relative">
+              {/* Browser chrome mockup */}
+              <div className="rounded-2xl overflow-hidden shadow-[0_32px_80px_rgba(0,0,0,0.4)]"
+                style={{ background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.1)" }}>
+                {/* Browser bar */}
+                <div className="flex items-center gap-1.5 px-4 py-3 border-b" style={{ borderColor:"rgba(255,255,255,0.08)", background:"rgba(0,0,0,0.2)" }}>
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-400/70" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400/70" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/70" />
+                  <div className="flex-1 mx-3 h-5 rounded-full flex items-center px-3" style={{ background:"rgba(255,255,255,0.07)" }}>
+                    <span className="text-[10px]" style={{ color:"rgba(255,255,255,0.55)" }}>mycvtailor.co.za/results</span>
+                  </div>
+                </div>
+                {/* Screenshot */}
+                <img
+                  src="/images/step-result.png"
+                  alt="AI-tailored CV result"
+                  className="w-full block float"
+                  style={{ maxHeight:"420px", objectFit:"cover", objectPosition:"top" }}
+                />
+              </div>
+              {/* Floating badge */}
+              <div className="hidden sm:flex absolute -bottom-4 -left-4 bg-white rounded-xl shadow-xl px-4 py-3 items-center gap-2.5"
+                style={{ border:"1px solid #e2e8f0" }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background:"linear-gradient(135deg,#0d1f3c,#1a3a6b)" }}>
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900">ATS Score improved</p>
+                  <p className="text-xs text-slate-500">Keywords matched ↑</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Wave */}
+        <div className="relative w-full" style={{ marginBottom:"-2px" }}>
+          <svg viewBox="0 0 1440 72" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full block">
+            <path d="M0 72L60 62C120 52 240 32 360 26C480 20 600 28 720 34C840 40 960 42 1080 36C1200 30 1320 14 1380 8L1440 2V72H0Z" fill="white"/>
           </svg>
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="py-24 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 text-center mb-3">How it works</p>
-          <h2
-            style={{ fontFamily: "'DM Serif Display', serif" }}
-            className="text-3xl sm:text-4xl text-slate-900 text-center mb-16"
-          >
+      {/* ──────────── HOW IT WORKS ──────────── */}
+      <section id="features" className="py-16 sm:py-24 bg-white">
+        <div ref={steps.ref} className="max-w-6xl mx-auto px-5 sm:px-8">
+          <p className={`text-xs font-semibold uppercase tracking-widest text-slate-400 text-center mb-3 ${steps.visible ? "anim-up d0" : "opacity-0"}`}>
+            How it works
+          </p>
+          <h2 className={`text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 text-center mb-4 ${steps.visible ? "anim-up d1" : "opacity-0"}`}>
             Three steps to your dream job
           </h2>
+          <p className={`text-slate-500 text-center text-base mb-16 max-w-xl mx-auto ${steps.visible ? "anim-up d2" : "opacity-0"}`}>
+            No complex setup. Just upload, paste, and download.
+          </p>
 
-          {/* Timeline */}
-          <div className="relative flex items-center justify-between mb-10 px-10 sm:px-20">
-            <div
-              className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px mx-16 sm:mx-28"
-              style={{ background: "linear-gradient(90deg, #0d1f3c, #1a3a6b, #0d1f3c)" }}
-            />
-            {["01", "02", "03"].map((num, i) => (
-              <div
-                key={num}
-                className="relative z-10 w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold border-2"
-                style={{
-                  backgroundColor: i === 2 ? "#0d1f3c" : "white",
-                  borderColor: "#0d1f3c",
-                  color: i === 2 ? "white" : "#0d1f3c",
-                }}
-              >
-                {num}
-              </div>
-            ))}
-          </div>
-
-          {/* Step cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {[
               {
@@ -204,10 +384,10 @@ export default function LandingPage() {
                 image: "/images/step-result.png",
                 active: true,
               },
-            ].map((step) => (
+            ].map((step, i) => (
               <div
                 key={step.title}
-                className="step-card rounded-2xl border overflow-hidden"
+                className={`step-card rounded-2xl border overflow-hidden ${steps.visible ? `anim-up d${i + 3}` : "opacity-0"}`}
                 style={{
                   borderColor: step.active ? "#0d1f3c" : "#e2e8f0",
                   borderWidth: step.active ? "2px" : "1px",
@@ -253,11 +433,10 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="text-center mt-12">
-              <button
-              onClick={() => { setAuthMode("signup"); setAuthOpen(true); }}
-              className="cta-btn inline-block text-white font-semibold px-8 py-4 rounded-2xl text-sm"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+          <div className={`text-center mt-12 ${steps.visible ? "anim-up d6" : "opacity-0"}`}>
+            <button
+              onClick={openSignup}
+              className="btn-primary cursor-pointer inline-block text-white font-semibold px-8 py-4 rounded-2xl text-sm"
             >
               Get started now →
             </button>
@@ -265,89 +444,40 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features */}
-      <section
-        className="py-20"
-        style={{ background: "linear-gradient(180deg, #ffffff 0%, #f0f4ff 100%)" }}
-      >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 text-center mb-4">What you get</p>
-          <h2
-            style={{ fontFamily: "'DM Serif Display', serif" }}
-            className="text-3xl sm:text-4xl text-slate-900 text-center mb-12"
-          >
+      {/* ──────────── FEATURES ──────────── */}
+      <section id="features-section" className="py-14 sm:py-20" style={{ background:"linear-gradient(180deg,#f8faff 0%,#eef3ff 100%)" }}>
+        <div ref={features.ref} className="max-w-5xl mx-auto px-5 sm:px-8">
+          <p className={`text-xs font-semibold uppercase tracking-widest text-slate-400 text-center mb-3 ${features.visible ? "anim-up d0" : "opacity-0"}`}>
+            What you get
+          </p>
+          <h2 className={`text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 text-center mb-12 ${features.visible ? "anim-up d1" : "opacity-0"}`}>
             Everything you need to get hired
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              {
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                ),
-                title: "ATS keyword injection",
-                desc: "We scan the job description and rewrite your CV to mirror its exact language and keywords.",
-              },
-              {
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                ),
-                title: "Match score breakdown",
-                desc: "See a before/after score for keywords, skills, and experience relevance.",
-              },
-              {
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                ),
-                title: "Harvard format PDF",
-                desc: "Your tailored CV exports as a clean, professional Harvard-style PDF — ready to send.",
-              },
-              {
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                ),
-                title: "Cover letter generator",
-                desc: "Generate a matching cover letter in one click using your tailored CV and the job description.",
-              },
-              {
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                ),
-                title: "Inline edit mode",
-                desc: "Review and tweak any section of the tailored CV before downloading.",
-              },
-              {
-                icon: (
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
-                ),
-                title: "Before / after compare",
-                desc: "Toggle between your original and tailored CV to see exactly what changed.",
-              },
-            ].map((feature) => (
-              <div
-                key={feature.title}
-                className="feature-card flex gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm"
-              >
-                <span
-                  className="shrink-0 mt-0.5 w-9 h-9 rounded-xl flex items-center justify-center text-white"
-                  style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
-                >
-                  {feature.icon}
+              { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+                title:"ATS keyword injection", desc:"Rewrites your CV to mirror the job description's exact language so you pass automated filters." },
+              { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+                title:"Match score breakdown", desc:"See a before/after score for keywords, skills, and experience relevance." },
+              { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+                title:"Harvard format PDF", desc:"Exports as a clean, professional Harvard-style PDF — ready to send directly." },
+              { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+                title:"Cover letter generator", desc:"One-click matching cover letter using your tailored CV and the job description." },
+              { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
+                title:"Inline edit mode", desc:"Review and tweak any section of the tailored CV before downloading." },
+              { icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>,
+                title:"Before / after compare", desc:"Toggle between your original and tailored CV to see exactly what changed." },
+            ].map((f, i) => (
+              <div key={f.title}
+                className={`card-hover flex gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm ${features.visible ? `anim-up d${Math.min(i + 2, 6)}` : "opacity-0"}`}>
+                <span className="shrink-0 mt-0.5 w-9 h-9 rounded-xl flex items-center justify-center text-white"
+                  style={{ background:"linear-gradient(135deg,#0d1f3c,#1a3a6b)" }}>
+                  {f.icon}
                 </span>
                 <div>
-                  <p className="font-semibold text-slate-800 mb-1">{feature.title}</p>
-                  <p className="text-sm text-slate-500 leading-relaxed">{feature.desc}</p>
+                  <p className="font-semibold text-slate-800 mb-1 text-sm">{f.title}</p>
+                  <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -355,225 +485,188 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing */}
-<section className="py-24 bg-white">
-  <div className="max-w-5xl mx-auto px-4 sm:px-6">
-    <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 text-center mb-3">Pricing</p>
-    <h2
-      style={{ fontFamily: "'DM Serif Display', serif" }}
-      className="text-3xl sm:text-4xl text-slate-900 text-center mb-4"
-    >
-      Simple, transparent pricing
-    </h2>
-    <p className="text-slate-500 text-center text-base mb-14">
-            Pay once. Credits never expire. New users get 3 free tailors.
-    </p>
-
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-      {[
-        {
-          name: "Starter Pack",
-          price: "$5",
-          desc: "Perfect for a single job search sprint.",
-          credits: "5 tailor credits",
-          pdfs: "5 PDF downloads",
-          popular: false,
-          param: "starter",
-          coverLetter: false,
-        },
-        {
-          name: "Growth Mode",
-          price: "$20",
-          desc: "For active job seekers applying to multiple roles.",
-          credits: "20 tailor credits",
-          pdfs: "20 PDF downloads",
-          popular: true,
-          param: "growth",
-          coverLetter: true,
-        },
-        {
-          name: "Unlimited",
-          price: "$50",
-          desc: "Apply to as many roles as you want. No limits.",
-          credits: "Unlimited tailors",
-          pdfs: "Unlimited PDFs",
-          popular: false,
-          param: "ninja",
-          coverLetter: true,
-        },
-      ].map((plan) => (
-        <div
-          key={plan.name}
-          className="relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-50"
-          style={{
-            background: plan.popular ? "linear-gradient(135deg, #0d1f3c 0%, #1a3a6b 100%)" : "white",
-            border: plan.popular ? "none" : "1px solid #e2e8f0",
-            boxShadow: plan.popular ? "0 20px 60px rgba(13,31,60,0.2)" : "0 2px 8px rgba(0,0,0,0.04)",
-          }}
-        >
-          {plan.popular && (
-            <div className="absolute top-4 right-4">
-              <span
-                className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
-                style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }}
-              >
-                Most popular
-              </span>
-            </div>
-          )}
-
-          <div className="p-7">
-            <p
-              className="text-xs font-semibold uppercase tracking-widest mb-3"
-              style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}
-            >
-              {plan.name}
-            </p>
-
-            <div className="flex items-end gap-1 mb-2">
-              <span
-                className="text-4xl font-bold"
-                style={{
-                  fontFamily: "'DM Serif Display', serif",
-                  color: plan.popular ? "white" : "#0d1f3c",
-                }}
-              >
-                {plan.price}
-              </span>
-              <span
-                className="text-sm mb-1.5"
-                style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}
-              >
-                one-off
-              </span>
-            </div>
-
-            <p
-              className="text-xs mb-6 leading-relaxed"
-              style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}
-            >
-              {plan.desc}
-            </p>
-
-            <ul className="space-y-2.5 mb-8">
-              {[
-                { text: plan.credits, included: true },
-                { text: plan.pdfs, included: true },
-                { text: "ATS match score", included: true },
-                { text: "Unlimited edits", included: true },
-                { text: "Cover letter generator", included: plan.coverLetter },
-              ].map((f) => (
-                <li key={f.text} className="flex items-center gap-3 text-sm">
-                  {f.included ? (
-                    <svg
-                      className="w-4 h-4 shrink-0"
-                      style={{ color: plan.popular ? "rgba(255,255,255,0.6)" : "#10b981" }}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-4 h-4 shrink-0"
-                      style={{ color: plan.popular ? "rgba(255,255,255,0.2)" : "#cbd5e1" }}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  )}
-                  <span
-                    style={{
-                      color: f.included
-                        ? plan.popular
-                          ? "rgba(255,255,255,0.85)"
-                          : "#374151"
-                        : plan.popular
-                          ? "rgba(255,255,255,0.3)"
-                          : "#cbd5e1",
-                    }}
-                  >
-                    {f.text}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => {
-                if (!user) {
-                  signInWithGoogle();
-                } else {
-                  window.location.href = `/api/checkout?type=${plan.param}`;
-                }
-              }}
-              className="w-full font-semibold py-3 rounded-xl text-sm transition-all cta-btn"
-              style={plan.popular ? {
-                backgroundColor: "white",
-                color: "#0d1f3c",
-              } : {
-                background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
-                color: "white",
-              }}
-            >
-              Get {plan.name} →
-            </button>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    <p className="text-center text-xs text-slate-400 mt-8">
-            Every new account gets 3 free tailors to try first · Credits never expire
-    </p>
-  </div>
-</section>
-
-      {/* CTA */}
-      <section className="py-24 bg-white">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
-          <h2
-            style={{ fontFamily: "'DM Serif Display', serif" }}
-            className="text-4xl sm:text-5xl text-slate-900 mb-4"
+      {/* ──────────── TESTIMONIALS ──────────── */}
+      <section className="py-16 sm:py-24 bg-slate-50 overflow-hidden">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            viewport={{ once: true }}
+            className="flex flex-col items-center justify-center max-w-[540px] mx-auto mb-10"
           >
-            Ready to land more interviews?
-          </h2>
-          <p className="text-slate-500 mb-8 text-base">Sign in to get 3 free tailors on your first account.</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={() => { setAuthMode("signin"); setAuthOpen(true); }}
-              className="cta-btn w-full sm:w-auto inline-flex items-center justify-center gap-3 text-white font-semibold px-8 py-4 rounded-2xl text-base"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="rgba(255,255,255,0.9)" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="rgba(255,255,255,0.9)" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="rgba(255,255,255,0.9)" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                <path fill="rgba(255,255,255,0.9)" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-              Sign in with Google to start
-            </button>
-            <span className="text-sm text-slate-400">Sign-in required</span>
+            <div className="flex justify-center">
+              <div className="border border-slate-200 bg-white py-1 px-4 rounded-lg text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                Testimonials
+              </div>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 mt-5 text-center">
+              What our users say
+            </h2>
+            <p className="text-center mt-4 text-slate-500 text-base">
+              Join thousands of job seekers who landed interviews with CV Tailor.
+            </p>
+          </motion.div>
+
+          <div className="flex justify-center gap-6 [mask-image:linear-gradient(to_bottom,transparent,black_20%,black_80%,transparent)] max-h-[680px] overflow-hidden">
+            <TestimonialsColumn testimonials={testimonials.slice(0, 3)} duration={15} />
+            <TestimonialsColumn testimonials={testimonials.slice(3, 6)} className="hidden md:block" duration={19} />
+            <TestimonialsColumn testimonials={testimonials.slice(6, 9)} className="hidden lg:block" duration={17} />
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-100 px-4 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-2">
-  <div className="flex items-center">
-    <span className="text-sm text-slate-400">my</span>
-    <img src="/favicon.ico" alt="myCVtailor.ai" className="w-4 h-4" />
-    <span className="text-sm text-slate-400">tailor.ai</span>
-  </div>
-  <div className="flex items-center gap-4 text-xs text-slate-400">
-    <Link href="/terms" className="hover:text-slate-700">Terms</Link>
-    <Link href="/privacy" className="hover:text-slate-700">Privacy</Link>
-    <Link href="/refunds" className="hover:text-slate-700">Refunds</Link>
-  </div>
-</footer>
+      {/* ---- PRICING ---- */}
+      <section id="pricing" className="bg-white py-16 sm:py-24">
+        <div ref={pricing.ref} className="max-w-5xl mx-auto px-5 sm:px-8">
+          {/* Header */}
+          <div className="flex justify-center mb-5">
+            <div className={`border border-slate-200 bg-white py-1 px-4 rounded-lg text-xs font-semibold text-slate-500 uppercase tracking-widest ${pricing.visible ? "anim-up d0" : "opacity-0"}`}>
+              Pricing
+            </div>
+          </div>
+          <h2 className={`text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 text-center mb-3 ${pricing.visible ? "anim-up d1" : "opacity-0"}`}>
+            Simple, transparent pricing
+          </h2>
+          <p className={`text-slate-500 text-center text-base mb-14 ${pricing.visible ? "anim-up d2" : "opacity-0"}`}>
+            Pay once. Credits never expire. Start free.
+          </p>
+
+          {/* Cards */}
+          <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch ${pricing.visible ? "anim-up d3" : "opacity-0"}`}>
+
+            {/* Starter Pack */}
+            <div className="card-hover flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Starter Pack</p>
+              <div className="flex items-end gap-1 mb-1">
+                <span className="text-5xl font-bold tracking-tight text-slate-900">$5</span>
+              </div>
+              <p className="text-xs text-slate-400 mb-6">once-off</p>
+              <p className="text-sm text-slate-500 mb-8">Perfect for a single job search sprint.</p>
+              <ul className="space-y-3 mb-10 flex-1">
+                {["5 tailor credits","5 PDF downloads","ATS match score","Unlimited edits"].map((item) => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm text-slate-700">
+                    <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ background:"linear-gradient(135deg,#0d1f3c,#1a3a6b)" }}>
+                      <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>
+                    </span>
+                    {item}
+                  </li>
+                ))}
+                <li className="flex items-center gap-2.5 text-sm text-slate-400">
+                  <span className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                    <svg className="w-2.5 h-2.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/></svg>
+                  </span>
+                  <span className="line-through">Cover letter generator</span>
+                </li>
+              </ul>
+              <button onClick={openSignup} className="w-full btn-primary cursor-pointer text-white font-semibold py-3 rounded-xl text-sm">
+                Get Starter Pack →
+              </button>
+            </div>
+
+            {/* Growth Mode — Most Popular */}
+            <div className="card-hover pricing-popular-glow flex flex-col rounded-2xl border-2 p-8 relative mt-6 md:mt-0" style={{ borderColor:"#0d1f3c", background:"linear-gradient(160deg,#0d1f3c 0%,#1a3a6b 100%)" }}>
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-white text-[#0d1f3c] text-xs font-bold px-4 py-1 rounded-full shadow-md border border-slate-200 whitespace-nowrap">
+                Most popular
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-sky-300 mb-4">Growth Mode</p>
+              <div className="flex items-end gap-1 mb-1">
+                <span className="text-5xl font-bold tracking-tight text-white">$20</span>
+              </div>
+              <p className="text-xs text-white/50 mb-6">once-off</p>
+              <p className="text-sm text-white/70 mb-8">For active job seekers applying to multiple roles.</p>
+              <ul className="space-y-3 mb-10 flex-1">
+                {["20 tailor credits","20 PDF downloads","ATS match score","Unlimited edits","Cover letter generator"].map((item) => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm text-white/90">
+                    <span className="w-4 h-4 rounded-full bg-emerald-400/20 flex items-center justify-center shrink-0">
+                      <svg className="w-2.5 h-2.5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <button onClick={openSignup} className="w-full cursor-pointer bg-white font-bold py-3 rounded-xl text-sm transition hover:bg-slate-100" style={{ color:"#0d1f3c" }}>
+                Get Growth Mode →
+              </button>
+            </div>
+
+            {/* Unlimited */}
+            <div className="card-hover flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Unlimited</p>
+              <div className="flex items-end gap-1 mb-1">
+                <span className="text-5xl font-bold tracking-tight text-slate-900">$50</span>
+              </div>
+              <p className="text-xs text-slate-400 mb-6">once-off</p>
+              <p className="text-sm text-slate-500 mb-8">Apply to as many roles as you want. No limits.</p>
+              <ul className="space-y-3 mb-10 flex-1">
+                {["Unlimited tailors","Unlimited PDFs","ATS match score","Unlimited edits","Cover letter generator"].map((item) => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm text-slate-700">
+                    <span className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ background:"linear-gradient(135deg,#0d1f3c,#1a3a6b)" }}>
+                      <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <button onClick={openSignup} className="w-full btn-primary cursor-pointer text-white font-semibold py-3 rounded-xl text-sm">
+                Get Unlimited →
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ──────────── FINAL CTA ──────────── */}
+      <section className="py-16 sm:py-24 hero-grad relative overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -bottom-20 -right-20 w-96 h-96 rounded-full opacity-[0.06]"
+            style={{ background:"radial-gradient(circle,#60a5fa,transparent 65%)", animation:"orb 14s ease-in-out infinite" }} />
+        </div>
+        <div ref={cta.ref} className="relative max-w-2xl mx-auto px-5 sm:px-8 text-center">
+          <h2 className={`text-4xl sm:text-5xl font-bold tracking-tight text-white mb-4 leading-tight ${cta.visible ? "anim-up d0" : "opacity-0"}`}>
+            Ready to land more interviews?
+          </h2>
+          <p className={`text-base mb-10 ${cta.visible ? "anim-up d1" : "opacity-0"}`}
+            style={{ color:"rgba(255,255,255,0.78)" }}>
+            Join 200+ job seekers using myCVtailor.ai. Get 3 free tailors when you sign up.
+          </p>
+          <div className={`flex flex-col sm:flex-row items-center justify-center gap-3 ${cta.visible ? "anim-up d2" : "opacity-0"}`}>
+            <button onClick={openSignup}
+              className="btn-white cursor-pointer w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-white font-bold px-8 py-4 rounded-2xl text-base"
+              style={{ color:"#0d1f3c" }}>
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Continue with Google
+            </button>
+            <button onClick={openSignup}
+              className="w-full sm:w-auto text-sm font-medium px-7 py-4 rounded-2xl cursor-pointer transition-all"
+              style={{ color:"rgba(255,255,255,0.9)", border:"1px solid rgba(255,255,255,0.3)" }}>
+              Sign up with email
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ──────────── FOOTER ──────────── */}
+      <footer className="bg-white border-t border-slate-100 px-5 sm:px-8 py-6">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-1">
+            <span className="text-sm font-semibold text-slate-600">my</span>
+            <img src="/favicon.ico" alt="myCVtailor.ai" className="w-4 h-4" />
+            <span className="text-sm font-semibold text-slate-600">tailor.ai</span>
+          </div>
+          <div className="flex items-center gap-5 text-xs text-slate-500">
+            <Link href="/terms"   className="hover:text-slate-800 transition-colors cursor-pointer">Terms</Link>
+            <Link href="/privacy" className="hover:text-slate-800 transition-colors cursor-pointer">Privacy</Link>
+            <Link href="/refunds" className="hover:text-slate-800 transition-colors cursor-pointer">Refunds</Link>
+          </div>
+        </div>
+      </footer>
 
       {authOpen && (
         <AuthModal
@@ -588,21 +681,13 @@ export default function LandingPage() {
           onSignedIn={() => router.push("/upload")}
         />
       )}
-
     </div>
   );
 }
 
+/* ──────────────────────────────────────── */
 function AuthModal({
-  onClose,
-  mode,
-  setMode,
-  signInWithGoogle,
-  signInWithEmailLink,
-  signInWithPassword,
-  signUp,
-  resetPassword,
-  onSignedIn,
+  onClose, mode, setMode, signInWithGoogle, signInWithEmailLink, signInWithPassword, signUp, resetPassword, onSignedIn,
 }: {
   onClose: () => void;
   mode: "signin" | "signup";
@@ -620,158 +705,113 @@ function AuthModal({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [showReset, setShowReset] = useState(false);
 
   const run = async (fn: () => Promise<void>) => {
-    setLoading(true);
-    setError("");
-    setMessage("");
-    try {
-      await fn();
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong. Try again.");
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true); setError(""); setMessage("");
+    try { await fn(); }
+    catch (err: any) { setError(err?.message || "Something went wrong. Try again."); }
+    finally { setLoading(false); }
   };
 
-  const handleSignIn = () => run(async () => {
-    await signInWithPassword(email, password);
-    onSignedIn();
-  });
-  const handleSignUp = () => run(() => signUp(email, password, name || undefined));
-  const handleMagicLink = () => run(async () => {
-    await signInWithEmailLink(email);
-    setMessage("Magic link sent. Check your inbox.");
-  });
-  const handleReset = () => run(async () => {
-    await resetPassword(email);
-    setMessage("Password reset link sent. Check your email.");
-  });
+  const handleSignIn    = () => run(async () => { await signInWithPassword(email, password); onSignedIn(); });
+  const handleSignUp    = () => run(() => signUp(email, password, name || undefined));
+  const handleMagicLink = () => run(async () => { await signInWithEmailLink(email); setMessage("Magic link sent. Check your inbox."); });
+  const handleReset     = () => run(async () => { await resetPassword(email); setMessage("Password reset link sent. Check your email."); });
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-slate-900/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 p-8">
-        <button onClick={onClose} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600">×</button>
-        <div className="text-center mb-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">myCVtailor</p>
-          <h3 className="text-2xl font-bold text-slate-900 mt-1">
-            {mode === "signin" ? "Sign in" : "Create account"}
-          </h3>
-          <p className="text-sm text-slate-500 mt-1">3 free tailors for new users.</p>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor:"rgba(10,22,40,0.72)", backdropFilter:"blur(10px)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative" style={{ animation:"fadeUp 0.3s ease both" }}>
+        <button onClick={onClose}
+          className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer text-slate-400 hover:bg-slate-100 transition-colors">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
 
-        <div className="space-y-4">
-          <button
-            onClick={() => run(signInWithGoogle)}
-            className="w-full inline-flex items-center justify-center gap-3 border border-slate-200 text-slate-700 font-semibold px-4 py-3 rounded-xl text-sm bg-white hover:border-slate-300 transition-colors"
-            disabled={loading}
-          >
-            <GoogleIcon />
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 mb-1">
+          {showReset ? "Reset password" : mode === "signin" ? "Welcome back" : "Create your account"}
+        </h2>
+        <p className="text-sm text-slate-500 mb-6">
+          {showReset ? "Enter your email to receive a reset link." : mode === "signup" ? "Get 3 free CV tailors when you sign up — no card needed." : "Sign in to access your tailored CVs."}
+        </p>
+
+        {!showReset && (
+          <button onClick={() => run(signInWithGoogle)}
+            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer mb-4">
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
             Continue with Google
           </button>
+        )}
 
-          <div className="flex items-center gap-3 text-slate-400 text-xs uppercase tracking-[0.2em] justify-center">
-            <span className="flex-1 h-px bg-slate-200" />
-            or
-            <span className="flex-1 h-px bg-slate-200" />
+        {!showReset && (
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-px bg-slate-100" />
+            <span className="text-xs text-slate-400">or continue with email</span>
+            <div className="flex-1 h-px bg-slate-100" />
           </div>
+        )}
 
-          {mode === "signup" && (
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Full name"
-              className="w-full text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400 transition-colors"
-            />
+        <div className="space-y-3">
+          {mode === "signup" && !showReset && (
+            <div>
+              <label htmlFor="modal-name" className="block text-xs font-medium text-slate-600 mb-1">Full name</label>
+              <input id="modal-name" type="text" placeholder="Jane Smith" value={name} onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all" />
+            </div>
           )}
+          <div>
+            <label htmlFor="modal-email" className="block text-xs font-medium text-slate-600 mb-1">Email address</label>
+            <input id="modal-email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all" />
+          </div>
+          {!showReset && (
+            <div>
+              <label htmlFor="modal-password" className="block text-xs font-medium text-slate-600 mb-1">Password</label>
+              <input id="modal-password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all" />
+            </div>
+          )}
+        </div>
 
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email address"
-            className="w-full text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400 transition-colors"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400 transition-colors"
-          />
+        {error   && <p className="mt-3 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+        {message && <p className="mt-3 text-xs text-emerald-600 bg-emerald-50 rounded-lg px-3 py-2">{message}</p>}
 
-          {error && <p className="text-xs text-red-500">{error}</p>}
-          {message && <p className="text-xs text-emerald-600">{message}</p>}
+        <button
+          onClick={showReset ? handleReset : mode === "signin" ? handleSignIn : handleSignUp}
+          disabled={loading}
+          className="mt-4 w-full text-white font-semibold py-3 rounded-xl text-sm transition-all cursor-pointer disabled:opacity-60"
+          style={{ background:"linear-gradient(135deg,#0d1f3c,#1a3a6b)" }}>
+          {loading ? "Please wait…" : showReset ? "Send reset link" : mode === "signin" ? "Sign in" : "Create account — it's free"}
+        </button>
 
-          {mode === "signin" ? (
-            <button
-              onClick={handleSignIn}
-              disabled={loading}
-              className="w-full text-white font-semibold px-4 py-3 rounded-xl text-sm transition-all disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </button>
+        {!showReset && (
+          <button onClick={() => run(handleMagicLink)} disabled={loading}
+            className="mt-2 w-full text-slate-500 text-sm py-2 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer">
+            Send magic link instead
+          </button>
+        )}
+
+        <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+          {!showReset ? (
+            <>
+              <button onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="hover:text-slate-700 cursor-pointer transition-colors">
+                {mode === "signin" ? "No account? Sign up free" : "Already have an account? Sign in"}
+              </button>
+              {mode === "signin" && (
+                <button onClick={() => setShowReset(true)} className="hover:text-slate-700 cursor-pointer transition-colors">Forgot password?</button>
+              )}
+            </>
           ) : (
-            <button
-              onClick={handleSignUp}
-              disabled={loading}
-              className="w-full text-white font-semibold px-4 py-3 rounded-xl text-sm transition-all disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
-            >
-              {loading ? "Creating..." : "Create account"}
-            </button>
+            <button onClick={() => setShowReset(false)} className="hover:text-slate-700 cursor-pointer transition-colors">← Back to sign in</button>
           )}
-
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <button onClick={handleReset} className="hover:text-slate-700">Forgot password?</button>
-            <button onClick={handleMagicLink} className="hover:text-slate-700">Send magic link</button>
-          </div>
-
-          <div className="text-center text-sm text-slate-500">
-            {mode === "signin" ? (
-              <>
-                New to myCVtailor?{" "}
-                <button className="text-slate-900 font-semibold" onClick={() => { setMode("signup"); setError(""); setMessage(""); }}>
-                  Create an account
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <button className="text-slate-900 font-semibold" onClick={() => { setMode("signin"); setError(""); setMessage(""); }}>
-                  Sign in
-                </button>
-              </>
-            )}
-          </div>
         </div>
       </div>
     </div>
   );
 }
-
-function GoogleIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.68 30.47 0 24 0 14.62 0 6.51 5.45 2.56 13.36l7.98 6.19C12.61 13.04 17.8 9.5 24 9.5z"/>
-      <path fill="#4285F4" d="M46.5 24.5c0-1.57-.15-3.08-.43-4.55H24v9.02h12.65c-.55 2.97-2.23 5.48-4.74 7.18l7.35 5.7C43.9 38.07 46.5 31.83 46.5 24.5z"/>
-      <path fill="#FBBC05" d="M10.54 28.45c-.48-1.41-.76-2.91-.76-4.45s.27-3.04.76-4.45l-7.98-6.19C.92 16.49 0 20.13 0 24c0 3.87.92 7.51 2.56 10.64l7.98-6.19z"/>
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.81l-7.35-5.7c-2.04 1.38-4.65 2.2-8.56 2.2-6.2 0-11.39-3.54-13.46-8.55l-7.98 6.19C6.51 42.55 14.62 48 24 48z"/>
-      <path fill="none" d="M0 0h48v48H0z"/>
-    </svg>
-  );
-}
-
-
-
-
-
-
-
-
-
-
-

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"career SaaS AI resume job search professional dark navy\" --design-system -p \"myCVtailor\")",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"career SaaS AI resume job search professional dark navy\" --design-system -p \"myCVtailor\")",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"scroll animation entrance fade slide saas\" --domain ux)",
+      "Bash(python .claude/skills/ui-ux-pro-max/scripts/search.py \"hero landing saas cta social proof\" --domain landing)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)"
+    ]
+  }
+}

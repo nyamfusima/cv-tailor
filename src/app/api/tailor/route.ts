@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
     const ADMIN_EMAILS = [
       "nyamfusima@gmail.com",
       "hamza26mohamud@gmail.com",
+      "ngqongwaayandisa@gmail.com",
       "zengetwasisipho@gmail.com",
     ];
     const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
