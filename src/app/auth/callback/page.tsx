@@ -2,20 +2,22 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 
 export default function AuthCallbackPage() {
-  const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     async function handleRedirect() {
       try {
-        // Supabase automatically parses the session from the URL
-        // just reload the page to trigger onAuthStateChange
-        router.replace("/upload"); // redirect after login
+        const code = new URLSearchParams(window.location.search).get("code");
+        if (code) {
+          await supabase.auth.exchangeCodeForSession(code);
+        }
+        router.replace("/upload");
       } catch (error) {
         console.error("OAuth callback error:", error);
+        router.replace("/upload");
       }
     }
 

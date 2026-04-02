@@ -1,9 +1,18 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
-  const { user, signInWithGoogle } = useAuth();
+  const { user, signInWithGoogle, signInWithEmailLink, signInWithPassword, signUp, resetPassword, signOut } = useAuth();
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user) router.push("/upload");
+  }, [user, router]);
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -31,28 +40,34 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center gap-3">
           {user ? (
-            <Link
-              href="/upload"
-              className="cta-btn text-slate-900 text-sm font-semibold px-4 py-2 rounded-xl bg-white"
-            >
+            <Link href="/upload" className="cta-btn text-slate-900 text-sm font-semibold px-4 py-2 rounded-xl bg-white">
               Go to app →
             </Link>
           ) : (
             <>
               <button
-                onClick={signInWithGoogle}
+                onClick={() => { setAuthMode("signin"); setAuthOpen(true); }}
                 className="text-sm font-semibold px-4 py-2 rounded-xl transition-all"
                 style={{ color: "rgba(255,255,255,0.85)", border: "1px solid rgba(255,255,255,0.2)" }}
               >
                 Sign in
               </button>
               <button
-                onClick={signInWithGoogle}
+                onClick={() => { setAuthMode("signup"); setAuthOpen(true); }}
                 className="cta-btn text-slate-900 text-sm font-semibold px-4 py-2 rounded-xl bg-white"
               >
-                Sign in
+                Sign up
               </button>
             </>
+          )}
+          {user && (
+            <button
+              onClick={signOut}
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+              style={{ color: "rgba(255,255,255,0.85)", border: "1px solid rgba(255,255,255,0.2)" }}
+            >
+              Sign out
+            </button>
           )}
         </div>
       </nav>
@@ -93,27 +108,17 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             {user ? (
-              <Link
-                href="/upload"
-                className="cta-btn w-full sm:w-auto bg-white font-semibold px-8 py-4 rounded-2xl text-base"
-                style={{ color: "#0d1f3c" }}
-              >
-                Tailor my CV →
-              </Link>
-            ) : (
+            <Link href="/upload" className="cta-btn text-slate-900 text-sm font-semibold px-4 py-2 rounded-xl bg-white">
+              Go to app →
+            </Link>
+          ) : (
               <>
                 <button
-                  onClick={signInWithGoogle}
+                  onClick={() => { setAuthMode("signup"); setAuthOpen(true); }}
                   className="cta-btn w-full sm:w-auto bg-white font-semibold px-8 py-4 rounded-2xl text-base flex items-center justify-center gap-3"
                   style={{ color: "#0d1f3c" }}
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                  Sign in with Google to start
+                  Start free – create account
                 </button>
               </>
             )}
@@ -249,8 +254,8 @@ export default function LandingPage() {
           </div>
 
           <div className="text-center mt-12">
-            <button
-              onClick={signInWithGoogle}
+              <button
+              onClick={() => { setAuthMode("signup"); setAuthOpen(true); }}
               className="cta-btn inline-block text-white font-semibold px-8 py-4 rounded-2xl text-sm"
               style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
             >
@@ -536,10 +541,10 @@ export default function LandingPage() {
           >
             Ready to land more interviews?
           </h2>
-          <p className="text-slate-500 mb-8 text-base">Free to use. No account needed. Takes 30 seconds.</p>
+          <p className="text-slate-500 mb-8 text-base">Sign in to get 3 free tailors on your first account.</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={signInWithGoogle}
+              onClick={() => { setAuthMode("signin"); setAuthOpen(true); }}
               className="cta-btn w-full sm:w-auto inline-flex items-center justify-center gap-3 text-white font-semibold px-8 py-4 rounded-2xl text-base"
               style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
             >
@@ -551,12 +556,7 @@ export default function LandingPage() {
               </svg>
               Sign in with Google to start
             </button>
-            <Link
-              href="/upload"
-              className="text-sm text-slate-400 hover:text-slate-700 transition-colors"
-            >
-              Continue without signing in →
-            </Link>
+            <span className="text-sm text-slate-400">Sign-in required</span>
           </div>
         </div>
       </section>
@@ -575,6 +575,203 @@ export default function LandingPage() {
   </div>
 </footer>
 
+      {authOpen && (
+        <AuthModal
+          onClose={() => setAuthOpen(false)}
+          mode={authMode}
+          setMode={setAuthMode}
+          signInWithGoogle={signInWithGoogle}
+          signInWithEmailLink={signInWithEmailLink}
+          signInWithPassword={signInWithPassword}
+          signUp={signUp}
+          resetPassword={resetPassword}
+          onSignedIn={() => router.push("/upload")}
+        />
+      )}
+
     </div>
   );
 }
+
+function AuthModal({
+  onClose,
+  mode,
+  setMode,
+  signInWithGoogle,
+  signInWithEmailLink,
+  signInWithPassword,
+  signUp,
+  resetPassword,
+  onSignedIn,
+}: {
+  onClose: () => void;
+  mode: "signin" | "signup";
+  setMode: (m: "signin" | "signup") => void;
+  signInWithGoogle: () => Promise<void>;
+  signInWithEmailLink: (email: string) => Promise<void>;
+  signInWithPassword: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, name?: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  onSignedIn: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const run = async (fn: () => Promise<void>) => {
+    setLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      await fn();
+    } catch (err: any) {
+      setError(err?.message || "Something went wrong. Try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignIn = () => run(async () => {
+    await signInWithPassword(email, password);
+    onSignedIn();
+  });
+  const handleSignUp = () => run(() => signUp(email, password, name || undefined));
+  const handleMagicLink = () => run(async () => {
+    await signInWithEmailLink(email);
+    setMessage("Magic link sent. Check your inbox.");
+  });
+  const handleReset = () => run(async () => {
+    await resetPassword(email);
+    setMessage("Password reset link sent. Check your email.");
+  });
+
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-slate-900/60" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 p-8">
+        <button onClick={onClose} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600">×</button>
+        <div className="text-center mb-6">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">myCVtailor</p>
+          <h3 className="text-2xl font-bold text-slate-900 mt-1">
+            {mode === "signin" ? "Sign in" : "Create account"}
+          </h3>
+          <p className="text-sm text-slate-500 mt-1">3 free tailors for new users.</p>
+        </div>
+
+        <div className="space-y-4">
+          <button
+            onClick={() => run(signInWithGoogle)}
+            className="w-full inline-flex items-center justify-center gap-3 border border-slate-200 text-slate-700 font-semibold px-4 py-3 rounded-xl text-sm bg-white hover:border-slate-300 transition-colors"
+            disabled={loading}
+          >
+            <GoogleIcon />
+            Continue with Google
+          </button>
+
+          <div className="flex items-center gap-3 text-slate-400 text-xs uppercase tracking-[0.2em] justify-center">
+            <span className="flex-1 h-px bg-slate-200" />
+            or
+            <span className="flex-1 h-px bg-slate-200" />
+          </div>
+
+          {mode === "signup" && (
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Full name"
+              className="w-full text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400 transition-colors"
+            />
+          )}
+
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email address"
+            className="w-full text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400 transition-colors"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            className="w-full text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400 transition-colors"
+          />
+
+          {error && <p className="text-xs text-red-500">{error}</p>}
+          {message && <p className="text-xs text-emerald-600">{message}</p>}
+
+          {mode === "signin" ? (
+            <button
+              onClick={handleSignIn}
+              disabled={loading}
+              className="w-full text-white font-semibold px-4 py-3 rounded-xl text-sm transition-all disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+            >
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
+          ) : (
+            <button
+              onClick={handleSignUp}
+              disabled={loading}
+              className="w-full text-white font-semibold px-4 py-3 rounded-xl text-sm transition-all disabled:opacity-50"
+              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+            >
+              {loading ? "Creating..." : "Create account"}
+            </button>
+          )}
+
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <button onClick={handleReset} className="hover:text-slate-700">Forgot password?</button>
+            <button onClick={handleMagicLink} className="hover:text-slate-700">Send magic link</button>
+          </div>
+
+          <div className="text-center text-sm text-slate-500">
+            {mode === "signin" ? (
+              <>
+                New to myCVtailor?{" "}
+                <button className="text-slate-900 font-semibold" onClick={() => { setMode("signup"); setError(""); setMessage(""); }}>
+                  Create an account
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button className="text-slate-900 font-semibold" onClick={() => { setMode("signin"); setError(""); setMessage(""); }}>
+                  Sign in
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.68 30.47 0 24 0 14.62 0 6.51 5.45 2.56 13.36l7.98 6.19C12.61 13.04 17.8 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.5 24.5c0-1.57-.15-3.08-.43-4.55H24v9.02h12.65c-.55 2.97-2.23 5.48-4.74 7.18l7.35 5.7C43.9 38.07 46.5 31.83 46.5 24.5z"/>
+      <path fill="#FBBC05" d="M10.54 28.45c-.48-1.41-.76-2.91-.76-4.45s.27-3.04.76-4.45l-7.98-6.19C.92 16.49 0 20.13 0 24c0 3.87.92 7.51 2.56 10.64l7.98-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.81l-7.35-5.7c-2.04 1.38-4.65 2.2-8.56 2.2-6.2 0-11.39-3.54-13.46-8.55l-7.98 6.19C6.51 42.55 14.62 48 24 48z"/>
+      <path fill="none" d="M0 0h48v48H0z"/>
+    </svg>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+

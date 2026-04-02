@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 
 export default function UploadForm() {
   const router = useRouter();
@@ -19,6 +20,17 @@ export default function UploadForm() {
   const [cvDragging, setCvDragging] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
   const [upgradeSuccess, setUpgradeSuccess] = useState(false);
+  const [tailorCredits, setTailorCredits] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) { setTailorCredits(null); return; }
+    supabase
+      .from("users")
+      .select("tailor_credits")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => { if (data) setTailorCredits(data.tailor_credits); });
+  }, [user]);
 
   useEffect(() => {
     const err = sessionStorage.getItem("tailorError");
@@ -112,6 +124,11 @@ export default function UploadForm() {
           {user ? (
             <div className="flex items-center gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
               <span className="text-xs text-slate-500 hidden sm:block">{user.email}</span>
+              {tailorCredits !== null && (
+                <span className="text-xs font-medium text-slate-500 hidden sm:block">
+                  {tailorCredits} tailor{tailorCredits !== 1 ? "s" : ""} left
+                </span>
+              )}
               <Link
                 href="/account"
                 className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
@@ -123,7 +140,7 @@ export default function UploadForm() {
                 className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg"
                 style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
               >
-                Buy credits →
+                Buy credits
               </Link>
             </div>
           ) : (
@@ -144,7 +161,7 @@ export default function UploadForm() {
             href="/"
             className="text-xs font-semibold text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:border-slate-400 transition-colors bg-white w-full sm:w-auto text-center"
           >
-            ← Back to home
+            Back to home
           </Link>
           <span className="hidden sm:block text-xs text-slate-400 font-medium tracking-wide uppercase">Step 1 of 2</span>
         </div>
@@ -207,16 +224,6 @@ export default function UploadForm() {
                 </svg>
                 Sign in with Google
               </button>
-            </div>
-          )}
-
-          {/* Credits counter */}
-          {user && (
-            <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 flex items-center justify-between">
-              <p className="text-xs text-slate-500">Signed in as <span className="font-medium text-slate-700">{user.email}</span></p>
-              <Link href="/pricing" className="text-xs font-semibold" style={{ color: "#0d1f3c" }}>
-                Buy credits →
-              </Link>
             </div>
           )}
 
@@ -336,7 +343,7 @@ export default function UploadForm() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                       </svg>
-                    ) : "Fetch →"}
+                    ) : "Fetch"}
                   </button>
                 </div>
 
@@ -382,7 +389,7 @@ export default function UploadForm() {
                 className="w-full text-white font-semibold py-3 rounded-xl text-sm"
                 style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
               >
-                Buy credits →
+                Buy credits
               </button>
             </div>
           )}
@@ -411,10 +418,10 @@ export default function UploadForm() {
               }}
             >
               {!user
-                ? "Sign in to tailor my CV →"
+                ? "Sign in to tailor my CV"
                 : loading
                 ? "Preparing..."
-                : "Tailor my CV →"}
+                : "Tailor my CV"}
             </button>
           )}
 
