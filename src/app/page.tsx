@@ -773,11 +773,11 @@ export default function LandingPage() {
                 a: "Over 75% of resumes are rejected by ATS before reaching a recruiter. Tailoring your CV to each job's exact language dramatically increases your chances of making it through to the interview stage.",
               },
               {
-                q: "Are all resumes created with cvtailor.ai ATS-friendly?",
+                q: "Are all resumes created with mycvtailor ATS-friendly?",
                 a: "Yes. Every tailored CV we generate follows ATS-safe formatting — clean sections, no tables or graphics that confuse parsers, and keywords aligned to the job description you provided.",
               },
               {
-                q: "How does cvtailor.ai tailor resumes to job applications?",
+                q: "How does mycvtailor tailor resumes to job applications?",
                 a: "You upload your existing CV and paste a job description. Our AI analyses the role's required skills and keywords, then rewrites your CV to mirror that language — without fabricating any experience.",
               },
               {
