@@ -45,6 +45,12 @@ export interface OriginalCV {
   skills: SkillCategory[];
 }
 
+export interface CVMeta {
+  fileName: string;
+  primaryRole: string;
+  jobDescriptionPreview: string;
+}
+
 export interface TailoredCV {
   name: string;
   email: string;
@@ -59,6 +65,17 @@ export interface TailoredCV {
   matchScore: number;
   scoreBreakdown: ScoreBreakdown;
   originalCV?: OriginalCV;
+  meta?: CVMeta;
+}
+
+export interface JobListing {
+  title: string;
+  company: string;
+  location: string;
+  applyUrl: string;
+  matchScore: number;
+  matchedSkills: string[];
+  missingSkills: string[];
 }
 
 export interface UserCredits {
