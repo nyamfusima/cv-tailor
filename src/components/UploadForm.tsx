@@ -21,15 +21,21 @@ export default function UploadForm() {
   const [limitReached, setLimitReached] = useState(false);
   const [upgradeSuccess, setUpgradeSuccess] = useState(false);
   const [tailorCredits, setTailorCredits] = useState<number | null>(null);
+  const [jobCredits, setJobCredits] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!user) { setTailorCredits(null); return; }
+    if (!user) { setTailorCredits(null); setJobCredits(null); return; }
     supabase
       .from("users")
-      .select("tailor_credits")
+      .select("tailor_credits, job_credits")
       .eq("id", user.id)
       .single()
-      .then(({ data }) => { if (data) setTailorCredits(data.tailor_credits); });
+      .then(({ data }) => {
+        if (data) {
+          setTailorCredits(data.tailor_credits);
+          setJobCredits(data.job_credits ?? 0);
+        }
+      });
   }, [user]);
 
   useEffect(() => {
@@ -87,14 +93,15 @@ export default function UploadForm() {
     if (!user) { await signInWithGoogle(); return; }
     if (!cvFile) { setError("Please upload your CV first."); return; }
     setError("");
+    setLimitReached(false);
     setLoading(true);
     try {
       const form = new FormData();
       form.append("cv", cvFile);
       const res = await fetch("/api/parse-cv", { method: "POST", body: form });
       const data = await res.json();
+      if (data.error === "NO_CREDITS") { setLimitReached(true); return; }
       if (!res.ok) throw new Error(data.error || "Failed to parse CV.");
-      // Store parsed CV as a minimal TailoredCV (no score fields needed for job matching)
       sessionStorage.setItem("jobMatchCV", JSON.stringify({
         ...data.cv,
         matchScore: 0,
@@ -152,6 +159,11 @@ export default function UploadForm() {
               {tailorCredits !== null && (
                 <span className="text-xs font-medium text-slate-500 hidden sm:block">
                   {tailorCredits} tailor{tailorCredits !== 1 ? "s" : ""} left
+                </span>
+              )}
+              {jobCredits !== null && (
+                <span className="text-xs font-medium text-slate-500 hidden sm:block">
+                  {jobCredits} job search{jobCredits !== 1 ? "es" : ""} left
                 </span>
               )}
               <Link

@@ -60,10 +60,27 @@ export async function addCredits(
     .eq("id", userId);
 }
 
+export async function deductJobCredit(userId: string): Promise<boolean> {
+  const supabase = await createSupabaseServerClient();
+  const user = await getUserCredits(userId);
+  if (!user || (user.job_credits ?? 0) <= 0) return false;
+
+  const { error } = await supabase
+    .from("users")
+    .update({ job_credits: user.job_credits - 1 })
+    .eq("id", userId);
+
+  return !error;
+}
+
 export function hasTailorCredits(user: UserCredits): boolean {
   return user.tailor_credits > 0;
 }
 
 export function hasPDFCredits(user: UserCredits): boolean {
   return user.pdf_credits > 0;
+}
+
+export function hasJobCredits(user: UserCredits): boolean {
+  return (user.job_credits ?? 0) > 0;
 }

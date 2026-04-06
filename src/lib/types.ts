@@ -83,5 +83,6 @@ export interface UserCredits {
   email: string;
   tailor_credits: number;
   pdf_credits: number;
+  job_credits: number;
   total_tailors_used: number;
 }
