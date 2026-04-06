@@ -8,13 +8,13 @@ const RAPIDAPI_HEADERS = {
   "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
 };
 
-async function searchJobs(query: string, pages = 1): Promise<{ jobs: any[]; raw: any }> {
+async function searchJobs(query: string, pages = 1): Promise<any[]> {
   const res = await fetch(
     `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(query)}&num_pages=${pages}`,
     { headers: RAPIDAPI_HEADERS }
   );
   const data = await res.json();
-  return { jobs: data.data || [], raw: { status: res.status, keys: Object.keys(data), message: data.message } };
+  return data.data || [];
 }
 
 export async function POST(req: NextRequest) {
@@ -48,17 +48,14 @@ Return ONLY a JSON object, no markdown:
     const jobQuery = JSON.parse(raw.replace(/```json|```/g, "").trim());
 
     // Step 2 — Fetch jobs, with fallback to broader title if first attempt returns nothing
-    let { jobs: rawJobs, raw: debug1 } = await searchJobs(jobQuery.primaryTitle, 2);
-    let debug2 = null;
+    let rawJobs = await searchJobs(jobQuery.primaryTitle, 2);
 
     // Fallback: strip seniority words and retry with just the core role
     if (rawJobs.length === 0) {
       const broaderTitle = jobQuery.primaryTitle
         .replace(/\b(senior|junior|lead|principal|staff|associate|entry.level)\b/gi, "")
         .trim();
-      const result = await searchJobs(broaderTitle, 2);
-      rawJobs = result.jobs;
-      debug2 = result.raw;
+      rawJobs = await searchJobs(broaderTitle, 2);
     }
 
     // Step 3 — Score each job against CV skills (lenient — show any related role)
@@ -97,7 +94,7 @@ Return ONLY a JSON object, no markdown:
 
     const sorted = scoredJobs.sort((a: any, b: any) => b.matchScore - a.matchScore);
 
-    return NextResponse.json({ jobs: sorted, query: jobQuery, debug: { debug1, debug2 } });
+    return NextResponse.json({ jobs: sorted, query: jobQuery });
   } catch (err: any) {
     console.error("Jobs API error:", err);
     return NextResponse.json(
