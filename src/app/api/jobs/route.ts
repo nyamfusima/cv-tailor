@@ -43,7 +43,7 @@ Return ONLY a JSON object, no extra text, no markdown:
     // Step 2 — Fetch real jobs from JSearch
     const searchQuery = encodeURIComponent(`${jobQuery.query}`);
     const jobsRes = await fetch(
-      `https://jsearch.p.rapidapi.com/search?query=${searchQuery}&num_pages=1&date_posted=week`,
+      `https://jsearch.p.rapidapi.com/search?query=${searchQuery}&num_pages=2&date_posted=month`,
       {
         headers: {
           "X-RapidAPI-Key": process.env.RAPID_API_KEY!,
@@ -58,7 +58,7 @@ Return ONLY a JSON object, no extra text, no markdown:
     // Step 3 — Score each job against CV skills
     const userSkills = jobQuery.skills.map((s: string) => s.toLowerCase());
 
-    const scoredJobs = rawJobs.slice(0, 10).map((job: any) => {
+    const scoredJobs = rawJobs.slice(0, 20).map((job: any) => {
       const jobText = `${job.job_title} ${job.job_description || ""} ${job.job_highlights?.Qualifications?.join(" ") || ""}`.toLowerCase();
 
       const matchedSkills = userSkills.filter((skill: string) =>

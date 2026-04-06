@@ -85,12 +85,32 @@ export default function JobMatches({
   );
 
   if (error) return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-6">
-      <p className="text-sm text-slate-400 text-center">Could not load job matches right now.</p>
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-6 text-center">
+      <p className="text-sm text-slate-700 font-medium mb-1">Could not load job matches</p>
+      <p className="text-xs text-slate-400 mb-4">{error}</p>
+      <button
+        onClick={fetchJobs}
+        className="text-xs font-semibold px-4 py-2 rounded-lg text-white"
+        style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+      >
+        Try again
+      </button>
     </div>
   );
 
-  if (jobs.length === 0) return null;
+  if (jobs.length === 0) return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-6 text-center">
+      <p className="text-sm text-slate-700 font-medium mb-1">No matching jobs found</p>
+      <p className="text-xs text-slate-400 mb-4">Try refreshing — listings update frequently.</p>
+      <button
+        onClick={fetchJobs}
+        className="text-xs font-semibold px-4 py-2 rounded-lg text-white"
+        style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+      >
+        Try again
+      </button>
+    </div>
+  );
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-6">
