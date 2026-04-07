@@ -9,14 +9,14 @@ const supabaseAdmin = createClient(
 const PLAN_CREDITS = {
   starter: { tailorCredits: 5, pdfCredits: 5 },
   growth: { tailorCredits: 20, pdfCredits: 20 },
-  ninja: { tailorCredits: 999999, pdfCredits: 999999 },
+  unlimited: { tailorCredits: 999999, pdfCredits: 999999 },
 };
 
 // Map Gumroad product URLs to plan types
 const PRODUCT_MAP: Record<string, string> = {
-  "mycvtailor-starter": "starter",
-  "mycvtailor-growth": "growth",
-  "mycvtailor-unlimited": "ninja",
+  starter: "starter",
+  growth: "growth",
+  unlimited: "unlimited",
 };
 
 export async function POST(req: NextRequest) {
@@ -94,11 +94,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Add credits
-    const newTailorCredits = planType === "ninja"
+    const newTailorCredits = planType === "unlimited"
       ? 999999
       : userData.tailor_credits + plan.tailorCredits;
 
-    const newPdfCredits = planType === "ninja"
+    const newPdfCredits = planType === "unlimited"
       ? 999999
       : userData.pdf_credits + plan.pdfCredits;
 

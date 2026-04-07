@@ -12,8 +12,8 @@ const PLANS = {
     tailorCredits: 20,
     pdfCredits: 20,
   },
-  ninja: {
-    url: process.env.GUMROAD_NINJA_URL!,
+  unlimited: {
+    url: process.env.GUMROAD_UNLIMITED_URL!,
     tailorCredits: 999999,
     pdfCredits: 999999,
   },

@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 const PLAN_CREDITS: Record<string, { tailorCredits: number; pdfCredits: number; unlimited: boolean }> = {
   starter: { tailorCredits: 5,         pdfCredits: 5,         unlimited: false },
   growth:  { tailorCredits: 20,        pdfCredits: 20,        unlimited: false },
-  ninja:   { tailorCredits: 999999,    pdfCredits: 999999,    unlimited: true  },
+  unlimited:   { tailorCredits: 999999,    pdfCredits: 999999,    unlimited: true  },
 };
 
 function verifySignature(payload: string, signature: string, secret: string): boolean {

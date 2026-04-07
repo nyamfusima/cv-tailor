@@ -624,7 +624,7 @@ export default function LandingPage() {
                 credits: "Unlimited tailors",
                 pdfs: "Unlimited PDFs",
                 popular: false,
-                param: "ninja",
+                param: "unlimited",
                 coverLetter: true,
               },
             ].map((plan) => (

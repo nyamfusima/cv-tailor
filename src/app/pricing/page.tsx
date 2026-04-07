@@ -1,33 +1,16 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
-import { getPaddle, PRICE_IDS } from "@/lib/paddle";
-import type { Paddle } from "@paddle/paddle-js";
 
 export default function PricingPage() {
   const { user, signInWithGoogle } = useAuth();
-  const paddleRef = useRef<Paddle | undefined>(undefined);
-
-  useEffect(() => {
-    getPaddle().then((p) => {
-      paddleRef.current = p;
-    });
-  }, []);
-
-  const handleCheckout = async (priceId: string) => {
+  const handleCheckout = async (planType: string) => {
     if (!user) {
-      signInWithGoogle();
+      await signInWithGoogle();
       return;
     }
 
-    const paddle = paddleRef.current;
-    if (!paddle) return;
-
-    paddle.Checkout.open({
-      items: [{ priceId, quantity: 1 }],
-      customer: { email: user.email! },
-    });
+    window.location.href = `/api/checkout?type=${planType}`;
   };
 
   const plans = [
@@ -38,7 +21,7 @@ export default function PricingPage() {
       credits: "5 tailor credits",
       pdfs: "5 PDF downloads",
       popular: false,
-      priceId: PRICE_IDS.starter,
+      planType: "starter",
       coverLetter: false,
     },
     {
@@ -48,7 +31,7 @@ export default function PricingPage() {
       credits: "20 tailor credits",
       pdfs: "20 PDF downloads",
       popular: true,
-      priceId: PRICE_IDS.growth,
+      planType: "growth",
       coverLetter: true,
     },
     {
@@ -58,7 +41,7 @@ export default function PricingPage() {
       credits: "Unlimited tailors",
       pdfs: "Unlimited PDFs",
       popular: false,
-      priceId: PRICE_IDS.unlimited,
+      planType: "unlimited",
       coverLetter: true,
     },
   ];
@@ -205,7 +188,7 @@ export default function PricingPage() {
                   </ul>
 
                   <button
-                    onClick={() => handleCheckout(plan.priceId)}
+                    onClick={() => handleCheckout(plan.planType)}
                     className="w-full font-semibold py-3 rounded-xl text-sm transition-all cta-btn"
                     style={
                       plan.popular
