@@ -161,6 +161,7 @@ export default function PricingPage() {
                       { text: plan.credits, included: true },
                       { text: plan.pdfs, included: true },
                       { text: "ATS match score", included: true },
+                      { text: "Job search & match", included: true },
                       { text: "Unlimited edits", included: true },
                       { text: "Cover letter generator", included: plan.coverLetter },
                     ].map((f) => (
