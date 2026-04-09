@@ -56,7 +56,7 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const router = useRouter();
 
-  useEffect(() => { if (user) router.push("/upload"); }, [user, router]);
+  useEffect(() => { if (user) router.push("/dashboard"); }, [user, router]);
   useEffect(() => {
     setMounted(true);
     const onScroll = () => setScrolled(window.scrollY > 40);
