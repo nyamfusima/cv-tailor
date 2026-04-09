@@ -14,10 +14,10 @@ export default function AuthCallbackPage() {
         if (code) {
           await supabase.auth.exchangeCodeForSession(code);
         }
-        router.replace("/upload");
+        router.replace("/dashboard");
       } catch (error) {
         console.error("OAuth callback error:", error);
-        router.replace("/upload");
+        router.replace("/dashboard");
       }
     }
 
