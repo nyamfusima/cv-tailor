@@ -43,16 +43,10 @@ export default function DashboardPage() {
   const fetchAll = async () => {
     if (!user) return;
     setFetching(true);
-
     const [{ data: ud }, { data: sessions }] = await Promise.all([
       supabase.from("users").select("*").eq("id", user.id).single(),
-      supabase
-        .from("tailor_sessions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false }),
+      supabase.from("tailor_sessions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
     ]);
-
     if (ud) setUserData(ud);
     if (sessions) {
       setSessions(sessions);
@@ -69,21 +63,11 @@ export default function DashboardPage() {
   const handleMasterCVUpload = async (file: File) => {
     if (!user) return;
     setUploadingCV(true);
-
     try {
       const path = `${user.id}/master-cv.${file.name.split(".").pop()}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("master-cvs")
-        .upload(path, file, { upsert: true });
-
+      const { error: uploadError } = await supabase.storage.from("master-cvs").upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
-
-      await supabase.from("users").update({
-        master_cv_path: path,
-        master_cv_name: file.name,
-      }).eq("id", user.id);
-
+      await supabase.from("users").update({ master_cv_path: path, master_cv_name: file.name }).eq("id", user.id);
       await fetchAll();
     } catch (err) {
       console.error("Upload error:", err);
@@ -94,9 +78,7 @@ export default function DashboardPage() {
 
   const handleDownloadMasterCV = async () => {
     if (!userData?.master_cv_path) return;
-    const { data } = await supabase.storage
-      .from("master-cvs")
-      .download(userData.master_cv_path);
+    const { data } = await supabase.storage.from("master-cvs").download(userData.master_cv_path);
     if (data) {
       const url = URL.createObjectURL(data);
       const a = document.createElement("a");
@@ -108,9 +90,7 @@ export default function DashboardPage() {
 
   const handleUseMasterCV = async () => {
     if (!userData?.master_cv_path) return;
-    const { data } = await supabase.storage
-      .from("master-cvs")
-      .download(userData.master_cv_path);
+    const { data } = await supabase.storage.from("master-cvs").download(userData.master_cv_path);
     if (data) {
       const reader = new FileReader();
       reader.onload = () => {
@@ -137,93 +117,110 @@ export default function DashboardPage() {
     return { bg: "#fee2e2", text: "#991b1b" };
   };
 
+  const firstName = user?.user_metadata?.full_name?.split(" ")[0] || null;
+
   if (loading || fetching) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <div className="min-h-screen bg-[#f9fafb] flex items-center justify-center" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <div className="flex items-center gap-3">
-        <svg className="animate-spin w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24">
+        <svg className="animate-spin w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
         </svg>
-        <p className="text-slate-400 text-sm">Loading your dashboard...</p>
+        <p className="text-slate-400 text-sm">Loading your workspace...</p>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-[#f9fafb]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-3 sm:px-4 lg:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-        <Link href="/" className="flex items-center gap-1 shrink-0">
-          <span className="font-semibold text-slate-800 tracking-tight text-sm sm:text-base">my</span>
-          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-4 sm:w-5 h-4 sm:h-5" />
-          <span className="font-semibold text-slate-800 tracking-tight hidden sm:inline text-sm sm:text-base">tailor.ai</span>
+      {/* ── Header ── */}
+      <header className="bg-white border-b border-slate-100 px-4 sm:px-6 lg:px-10 py-3.5 flex items-center justify-between sticky top-0 z-20">
+        <Link href="/" className="flex items-center gap-0.5 shrink-0 cursor-pointer">
+          <span className="font-semibold text-[#0d1f3c] tracking-tight text-sm">my</span>
+          <img src="/favicon.ico" alt="myCVtailor" className="w-4 h-4 mx-0.5" />
+          <span className="font-semibold text-[#0d1f3c] tracking-tight text-sm hidden sm:inline">tailor.ai</span>
         </Link>
-        <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
-          <span className="text-xs text-slate-500 hidden md:block order-4 sm:order-none">{user?.email}</span>
+
+        <nav className="flex items-center gap-1.5 sm:gap-3">
+          <span className="text-xs text-slate-400 hidden lg:block">{user?.email}</span>
+          <div className="w-px h-4 bg-slate-200 hidden lg:block" />
+          <Link
+            href="/upload"
+            className="text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors px-3 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer hidden sm:block"
+          >
+            New tailor
+          </Link>
           <Link
             href="/pricing"
-            className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg whitespace-nowrap"
+            className="text-xs font-semibold text-white px-3.5 py-1.5 rounded-lg cursor-pointer transition-all hover:opacity-90"
             style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
           >
-            <span className="hidden sm:inline">Buy credits →</span>
-            <span className="sm:hidden">Credits →</span>
+            Buy credits
           </Link>
           <button
             onClick={async () => { await signOut(); router.push("/"); }}
-            className="text-xs text-slate-400 hover:text-red-500 transition-colors font-medium whitespace-nowrap"
+            className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium px-2 py-1.5 cursor-pointer"
           >
-            <span className="hidden sm:inline">Sign out</span>
-            <span className="sm:hidden">Out</span>
+            Sign out
           </button>
-        </div>
+        </nav>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+
+        {/* ── Page title ── */}
+        <div className="mb-8">
+          <h1
+            className="text-3xl sm:text-4xl text-[#0d1f3c] mb-1.5"
+            style={{ fontFamily: "'DM Serif Display', serif" }}
+          >
+            {firstName ? `Welcome back, ${firstName}.` : "Your workspace."}
+          </h1>
+          <p className="text-sm text-slate-400">
+            {sessions.length > 0
+              ? `${sessions.length} tailored CV${sessions.length !== 1 ? "s" : ""} · avg ATS score ${avgScore}%`
+              : "Get started by uploading your CV and tailoring it to a job."}
+          </p>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-6 lg:items-start">
 
-          {/* Main content */}
-          <div className="flex-1 min-w-0 space-y-6 lg:order-1">
-
-            {/* Welcome */}
-            <div>
-              <h1
-                style={{ fontFamily: "'DM Serif Display', serif" }}
-                className="text-2xl sm:text-3xl text-slate-900 mb-1"
-              >
-                Welcome back{user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name.split(" ")[0]}` : ""} 👋
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-400">Here's your CV tailoring history and tools.</p>
-            </div>
+          {/* ── Main column ── */}
+          <div className="flex-1 min-w-0 space-y-5">
 
             {/* Master CV */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                <div className="flex items-center gap-3 sm:gap-4">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+              <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: userData?.master_cv_path ? "#f0f4ff" : "#f8f9fc" }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+                    style={{ backgroundColor: userData?.master_cv_path ? "#eef2ff" : "#f1f5f9" }}
                   >
-                    <svg className="w-6 h-6" style={{ color: userData?.master_cv_path ? "#0d1f3c" : "#cbd5e1" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg
+                      className="w-5 h-5 transition-colors"
+                      style={{ color: userData?.master_cv_path ? "#0d1f3c" : "#94a3b8" }}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800">Master CV</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-400 mt-0.5 truncate">
                       {userData?.master_cv_name
-                        ? `${userData.master_cv_name} · Stored`
-                        : "Upload your base CV — reuse it for every application"}
+                        ? userData.master_cv_name
+                        : "Upload your base CV to reuse across applications"}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 w-full sm:w-auto">
+                <div className="flex items-center gap-2 shrink-0">
                   {userData?.master_cv_path && (
                     <>
                       <button
                         onClick={handleDownloadMasterCV}
-                        className="text-xs font-medium text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-slate-400 transition-all flex items-center justify-center gap-1.5"
+                        className="text-xs font-medium text-slate-500 border border-slate-200 px-3 py-1.5 rounded-lg hover:border-slate-300 hover:text-slate-700 transition-all cursor-pointer flex items-center gap-1.5"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -232,20 +229,20 @@ export default function DashboardPage() {
                       </button>
                       <button
                         onClick={handleUseMasterCV}
-                        className="text-xs font-semibold text-white px-3 py-2 rounded-xl flex items-center justify-center gap-1.5"
+                        className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all hover:opacity-90"
                         style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Use this CV
+                        Use CV
                       </button>
                     </>
                   )}
                   <button
                     onClick={() => fileRef.current?.click()}
                     disabled={uploadingCV}
-                    className="text-xs font-medium text-slate-500 border border-slate-200 px-3 py-2 rounded-xl hover:border-slate-400 transition-all flex items-center justify-center gap-1.5"
+                    className="text-xs font-medium text-slate-500 border border-slate-200 px-3 py-1.5 rounded-lg hover:border-slate-300 hover:text-slate-700 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                   >
                     {uploadingCV ? (
                       <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
@@ -270,72 +267,74 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Tailored CVs history */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-4 sm:px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            {/* Tailored CVs */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-slate-800">Tailored CVs</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{sessions.length} sessions total</p>
+                  <p className="text-sm font-semibold text-slate-800">Tailored CVs</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{sessions.length} session{sessions.length !== 1 ? "s" : ""}</p>
                 </div>
                 <Link
                   href="/upload"
-                  className="text-xs font-semibold text-white px-4 py-2 rounded-xl flex items-center justify-center gap-1.5 w-full sm:w-auto"
+                  className="text-xs font-semibold text-white px-3.5 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer transition-all hover:opacity-90"
                   style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                   </svg>
                   New tailor
                 </Link>
               </div>
 
               {sessions.length === 0 ? (
-                <div className="py-12 sm:py-16 text-center">
-                  <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-6 h-6 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="py-14 text-center px-6">
+                  <div className="w-11 h-11 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-5 h-5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">No tailored CVs yet</p>
-                  <p className="text-xs text-slate-400 mb-4 sm:mb-5">Create your first tailored CV to get started</p>
+                  <p className="text-sm font-medium text-slate-600 mb-1">No tailored CVs yet</p>
+                  <p className="text-xs text-slate-400 mb-5 max-w-xs mx-auto">Upload a CV and a job description to create your first ATS-optimised application.</p>
                   <Link
                     href="/upload"
-                    className="inline-block text-white font-semibold px-5 py-2.5 rounded-xl text-sm"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-white px-5 py-2.5 rounded-xl cursor-pointer transition-all hover:opacity-90"
                     style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
                   >
-                    Tailor my first CV →
+                    Tailor my first CV
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </Link>
                 </div>
               ) : (
                 <div>
-                  {/* Table header - hidden on mobile */}
-                  <div className="hidden sm:grid grid-cols-12 gap-4 px-5 py-3 bg-slate-50 border-b border-slate-100">
-                    <p className="col-span-5 text-xs font-semibold text-slate-400 uppercase tracking-wider">Job Position</p>
-                    <p className="col-span-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">ATS Score</p>
-                    <p className="col-span-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Improvement</p>
-                    <p className="col-span-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Date</p>
-                    <p className="col-span-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">View</p>
+                  {/* Desktop table header */}
+                  <div className="hidden sm:grid grid-cols-12 gap-4 px-5 py-2.5 bg-slate-50 border-b border-slate-100">
+                    <p className="col-span-5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Job Position</p>
+                    <p className="col-span-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">ATS Score</p>
+                    <p className="col-span-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Improvement</p>
+                    <p className="col-span-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Date</p>
+                    <p className="col-span-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">View</p>
                   </div>
 
-                  {/* Table rows */}
+                  {/* Desktop rows */}
                   <div className="divide-y divide-slate-50">
                     {sessions.map((session) => {
                       const scoreColor = getScoreColor(session.match_score);
                       const before = session.tailored_cv?.scoreBreakdown?.keywordsBefore || 0;
                       const improvement = session.match_score - before;
-
                       return (
                         <div
                           key={session.id}
-                          className="hidden sm:grid sm:grid-cols-12 gap-4 px-5 py-4 hover:bg-slate-50 transition-colors items-center"
+                          className="hidden sm:grid sm:grid-cols-12 gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors items-center"
                         >
                           <div className="col-span-5">
                             <p className="text-sm font-medium text-slate-800 truncate">{getJobTitle(session)}</p>
-                            <p className="text-xs text-slate-400 mt-0.5">{session.tailored_cv?.name}</p>
+                            <p className="text-xs text-slate-400 mt-0.5 truncate">{session.tailored_cv?.name}</p>
                           </div>
                           <div className="col-span-2">
                             <span
-                              className="text-xs font-bold px-2.5 py-1 rounded-full"
+                              className="text-xs font-semibold px-2 py-0.5 rounded-full"
                               style={{ backgroundColor: scoreColor.bg, color: scoreColor.text }}
                             >
                               {session.match_score}%
@@ -348,15 +347,13 @@ export default function DashboardPage() {
                           </div>
                           <div className="col-span-2">
                             <p className="text-xs text-slate-400">
-                              {new Date(session.created_at).toLocaleDateString("en-GB", {
-                                day: "numeric", month: "short"
-                              })}
+                              {new Date(session.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                             </p>
                           </div>
                           <div className="col-span-1">
                             <button
                               onClick={() => { setSelectedSession(session); setSessionTab("tailored"); }}
-                              className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-400 transition-all text-slate-600"
+                              className="text-xs font-medium text-slate-500 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-slate-300 hover:text-slate-700 transition-all cursor-pointer"
                             >
                               View
                             </button>
@@ -365,45 +362,34 @@ export default function DashboardPage() {
                       );
                     })}
 
-                    {/* Mobile card layout */}
+                    {/* Mobile cards */}
                     {sessions.map((session) => {
                       const scoreColor = getScoreColor(session.match_score);
                       const before = session.tailored_cv?.scoreBreakdown?.keywordsBefore || 0;
                       const improvement = session.match_score - before;
-
                       return (
                         <div
-                          key={`mobile-${session.id}`}
-                          className="sm:hidden bg-white p-4 border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition-colors cursor-pointer"
+                          key={`m-${session.id}`}
+                          className="sm:hidden p-4 hover:bg-slate-50 transition-colors cursor-pointer"
                           onClick={() => { setSelectedSession(session); setSessionTab("tailored"); }}
                         >
-                          <div className="space-y-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-800 truncate">{getJobTitle(session)}</p>
-                                <p className="text-xs text-slate-400 mt-0.5 truncate">{session.tailored_cv?.name}</p>
-                              </div>
-                              <span
-                                className="text-xs font-bold px-2.5 py-1 rounded-full shrink-0"
-                                style={{ backgroundColor: scoreColor.bg, color: scoreColor.text }}
-                              >
-                                {session.match_score}%
-                              </span>
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-800 truncate">{getJobTitle(session)}</p>
+                              <p className="text-xs text-slate-400 mt-0.5 truncate">{session.tailored_cv?.name}</p>
                             </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="space-y-1">
-                                <p className="text-slate-400">Improvement</p>
-                                <p className="text-emerald-600 font-semibold">+{improvement}%</p>
-                              </div>
-                              <div className="space-y-1 text-right">
-                                <p className="text-slate-400">Date</p>
-                                <p className="text-slate-600 font-medium">
-                                  {new Date(session.created_at).toLocaleDateString("en-GB", {
-                                    day: "numeric", month: "short"
-                                  })}
-                                </p>
-                              </div>
-                            </div>
+                            <span
+                              className="text-xs font-semibold px-2 py-0.5 rounded-full shrink-0"
+                              style={{ backgroundColor: scoreColor.bg, color: scoreColor.text }}
+                            >
+                              {session.match_score}%
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-emerald-600 font-semibold">+{improvement}% improvement</p>
+                            <p className="text-xs text-slate-400">
+                              {new Date(session.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                            </p>
                           </div>
                         </div>
                       );
@@ -414,34 +400,37 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="w-full lg:w-72 lg:shrink-0 space-y-4 lg:sticky lg:top-24 lg:order-2">
+          {/* ── Sidebar ── */}
+          <div className="w-full lg:w-64 lg:shrink-0 space-y-4 lg:sticky lg:top-20">
 
-            {/* Credits */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* Credits card */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
               <div
-                className="px-5 py-4"
-                style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+                className="px-5 py-5"
+                style={{ background: "linear-gradient(135deg, #0d1f3c 0%, #1a3a6b 100%)" }}
               >
-                <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "rgba(255,255,255,0.5)" }}>
-                  Credits
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  Your credits
                 </p>
-                <p className="text-2xl font-bold text-white" style={{ fontFamily: "'DM Serif Display', serif" }}>
+                <p
+                  className="text-4xl text-white leading-none mb-1"
+                  style={{ fontFamily: "'DM Serif Display', serif" }}
+                >
                   {userData?.tailor_credits === 999999 ? "∞" : userData?.tailor_credits ?? 0}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>tailors remaining</p>
+                <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>tailoring credits remaining</p>
               </div>
 
               <div className="px-5 py-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    <p className="text-xs text-slate-600">Tailoring</p>
+                    <p className="text-xs text-slate-500">Tailoring</p>
                   </div>
                   <span
-                    className="text-xs font-bold px-2 py-0.5 rounded-full"
+                    className="text-xs font-semibold px-2 py-0.5 rounded-full"
                     style={{
                       backgroundColor: (userData?.tailor_credits ?? 0) > 0 ? "#d1fae5" : "#fee2e2",
                       color: (userData?.tailor_credits ?? 0) > 0 ? "#065f46" : "#991b1b",
@@ -453,13 +442,13 @@ export default function DashboardPage() {
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    <p className="text-xs text-slate-600">PDF Downloads</p>
+                    <p className="text-xs text-slate-500">PDF exports</p>
                   </div>
                   <span
-                    className="text-xs font-bold px-2 py-0.5 rounded-full"
+                    className="text-xs font-semibold px-2 py-0.5 rounded-full"
                     style={{
                       backgroundColor: (userData?.pdf_credits ?? 0) > 0 ? "#d1fae5" : "#fee2e2",
                       color: (userData?.pdf_credits ?? 0) > 0 ? "#065f46" : "#991b1b",
@@ -469,115 +458,85 @@ export default function DashboardPage() {
                   </span>
                 </div>
 
-                <div className="h-px bg-slate-100" />
-
-                <Link
-                  href="/pricing"
-                  className="block w-full text-center text-sm font-semibold text-white py-3 rounded-xl transition-all"
-                  style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
-                >
-                  Get More Credits →
-                </Link>
+                <div className="pt-1">
+                  <Link
+                    href="/pricing"
+                    className="block w-full text-center text-xs font-semibold text-[#0d1f3c] py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all cursor-pointer"
+                  >
+                    Get more credits →
+                  </Link>
+                </div>
               </div>
             </div>
 
-            {/* ATS Progress */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">ATS Progress</p>
-              <div className="text-center mb-4">
-                <p
-                  className="text-5xl font-bold"
-                  style={{ fontFamily: "'DM Serif Display', serif", color: "#0d1f3c" }}
-                >
-                  {avgScore}%
-                </p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Average ATS score across {sessions.length} tailored CV{sessions.length !== 1 ? "s" : ""}
-                </p>
-              </div>
-
-              {sessions.length > 0 && (
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            {/* ATS score */}
+            {sessions.length > 0 && (
+              <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-4">Avg ATS score</p>
+                <div className="flex items-end gap-2 mb-3">
+                  <p
+                    className="text-4xl leading-none text-[#0d1f3c]"
+                    style={{ fontFamily: "'DM Serif Display', serif" }}
+                  >
+                    {avgScore}%
+                  </p>
+                  <p className="text-xs text-slate-400 mb-0.5">across {sessions.length} CV{sessions.length !== 1 ? "s" : ""}</p>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: `${avgScore}%`,
-                      background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
-                    }}
+                    style={{ width: `${avgScore}%`, background: "linear-gradient(90deg, #0d1f3c, #1a3a6b)" }}
                   />
                 </div>
-              )}
-            </div>
-
-            {/* Quick actions */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Quick actions</p>
-              <div className="space-y-1">
-                <Link
-                  href="/upload"
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors"
-                >
-                  <span className="text-sm font-medium text-slate-700">New tailor</span>
-                  <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-                <div className="h-px bg-slate-100" />
-                <Link
-                  href="/pricing"
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors"
-                >
-                  <span className="text-sm font-medium text-slate-700">Buy credits</span>
-                  <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
               </div>
-            </div>
+            )}
 
           </div>
         </div>
       </div>
 
-      {/* Session detail modal */}
+      {/* ── Session modal ── */}
       {selectedSession && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ backgroundColor: "rgba(15,23,42,0.55)", backdropFilter: "blur(4px)" }}
           onClick={() => setSelectedSession(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden"
+            className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[92vh] sm:max-h-[85vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
             <div
-              className="px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+              className="px-5 sm:px-6 py-4 sm:py-5 flex items-start justify-between gap-4 shrink-0"
+              style={{ background: "linear-gradient(135deg, #0d1f3c 0%, #1a3a6b 100%)" }}
             >
               <div className="min-w-0">
-                <p className="text-white font-bold text-sm sm:text-base" style={{ fontFamily: "'DM Serif Display', serif" }}>
+                <p
+                  className="text-white font-semibold text-sm sm:text-base leading-snug"
+                  style={{ fontFamily: "'DM Serif Display', serif" }}
+                >
                   {selectedSession.tailored_cv?.name}
                 </p>
-                <p className="text-blue-200 text-xs mt-0.5 truncate">
+                <p className="text-xs mt-0.5 truncate" style={{ color: "rgba(255,255,255,0.5)" }}>
                   {getJobTitle(selectedSession)}
                 </p>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-3 shrink-0 mt-0.5">
                 <span
-                  className="text-xs sm:text-sm font-bold px-3 py-1 rounded-full"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.15)",
-                    color: "white",
-                  }}
+                  className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                  style={{ backgroundColor: "rgba(255,255,255,0.12)", color: "white" }}
                 >
                   {selectedSession.match_score}% ATS
                 </span>
                 <button
                   onClick={() => setSelectedSession(null)}
-                  className="text-white opacity-60 hover:opacity-100 transition-opacity"
+                  className="text-white transition-opacity cursor-pointer"
+                  style={{ opacity: 0.5 }}
+                  onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                  onMouseLeave={e => (e.currentTarget.style.opacity = "0.5")}
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4.5 h-4.5 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -585,7 +544,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Modal tabs */}
-            <div className="flex border-b border-slate-200 overflow-x-auto">
+            <div className="flex border-b border-slate-100 shrink-0">
               {[
                 { id: "tailored", label: "Tailored CV" },
                 { id: "original", label: "Original CV" },
@@ -594,7 +553,7 @@ export default function DashboardPage() {
                 <button
                   key={tab.id}
                   onClick={() => setSessionTab(tab.id as any)}
-                  className="flex-1 min-w-max sm:flex-1 py-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold transition-all whitespace-nowrap"
+                  className="flex-1 py-3 px-3 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
                   style={{
                     color: sessionTab === tab.id ? "#0d1f3c" : "#94a3b8",
                     borderBottom: sessionTab === tab.id ? "2px solid #0d1f3c" : "2px solid transparent",
@@ -606,11 +565,11 @@ export default function DashboardPage() {
             </div>
 
             {/* Modal content */}
-            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-14rem)] sm:max-h-[55vh]">
+            <div className="p-5 sm:p-6 overflow-y-auto flex-1">
               {sessionTab === "tailored" && selectedSession.tailored_cv && (
-                <div className="space-y-4 sm:space-y-5 text-sm text-slate-700">
+                <div className="space-y-5 text-sm text-slate-700">
                   <div className="text-center pb-4 border-b border-slate-100">
-                    <p className="font-bold text-slate-900 text-base uppercase tracking-widest">
+                    <p className="font-bold text-slate-900 text-sm uppercase tracking-widest">
                       {selectedSession.tailored_cv.name}
                     </p>
                     <p className="text-slate-400 text-xs mt-1">
@@ -620,8 +579,8 @@ export default function DashboardPage() {
 
                   {selectedSession.tailored_cv.summary && (
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Summary</p>
-                      <p className="text-sm leading-relaxed">{selectedSession.tailored_cv.summary}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">Summary</p>
+                      <p className="text-sm leading-relaxed text-slate-600">{selectedSession.tailored_cv.summary}</p>
                     </div>
                   )}
 
@@ -629,9 +588,9 @@ export default function DashboardPage() {
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Skills</p>
                       {selectedSession.tailored_cv.skills.map((g: any, i: number) => (
-                        <div key={i} className="flex flex-col sm:flex-row sm:gap-2 text-sm mb-1">
-                          <span className="font-bold text-slate-800 shrink-0">{g.category}:</span>
-                          <span className="text-slate-600">{g.skills.join(", ")}</span>
+                        <div key={i} className="flex flex-col sm:flex-row sm:gap-2 text-sm mb-1.5">
+                          <span className="font-semibold text-slate-800 shrink-0">{g.category}:</span>
+                          <span className="text-slate-500">{g.skills.join(", ")}</span>
                         </div>
                       ))}
                     </div>
@@ -642,14 +601,14 @@ export default function DashboardPage() {
                       <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Experience</p>
                       {selectedSession.tailored_cv.experience.map((job: any, i: number) => (
                         <div key={i} className="mb-4">
-                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                            <p className="font-bold text-slate-900">{job.title}</p>
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1">
+                            <p className="font-semibold text-slate-900">{job.title}</p>
                             <p className="text-xs text-slate-400">{job.dates}</p>
                           </div>
-                          <p className="text-xs italic text-slate-500 mb-1">{job.company}</p>
+                          <p className="text-xs text-slate-500 italic mb-1.5">{job.company}</p>
                           {job.bullets?.map((b: string, j: number) => (
-                            <p key={j} className="text-xs text-slate-600 flex gap-1.5">
-                              <span>•</span><span>{b}</span>
+                            <p key={j} className="text-xs text-slate-600 flex gap-1.5 mb-0.5">
+                              <span className="text-slate-300 shrink-0">—</span><span>{b}</span>
                             </p>
                           ))}
                         </div>
@@ -660,13 +619,13 @@ export default function DashboardPage() {
               )}
 
               {sessionTab === "original" && (
-                <pre className="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed font-sans break-words">
+                <pre className="text-xs text-slate-500 whitespace-pre-wrap leading-relaxed font-sans break-words">
                   {selectedSession.cv_text}
                 </pre>
               )}
 
               {sessionTab === "job" && (
-                <pre className="text-xs text-slate-600 whitespace-pre-wrap leading-relaxed font-sans break-words">
+                <pre className="text-xs text-slate-500 whitespace-pre-wrap leading-relaxed font-sans break-words">
                   {selectedSession.job_description}
                 </pre>
               )}
