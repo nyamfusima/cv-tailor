@@ -641,9 +641,13 @@ export default function LandingPage() {
                 features: [
                   { text: "3 CV tailors total (one time)", included: true },
                   { text: "3 PDF downloads", included: true },
-                  { text: "ATS score", included: true },
                   { text: "Job match (limited - 3 searches)", included: true },
-                  { text: "No cover letter", included: false },
+                  { text: "ATS score", included: true },
+                  { text: "Full ATS breakdown", included: false },
+                  { text: "Cover letter generator", included: false },
+                  { text: "Master CV storage", included: false },
+                  { text: "Dashboard + history", included: false },
+                  { text: "Priority processing", included: false },
                 ],
               },
               {
@@ -660,8 +664,9 @@ export default function LandingPage() {
                   { text: "Unlimited CV tailors", included: true },
                   { text: "Unlimited PDF downloads", included: true },
                   { text: "Unlimited job matches", included: true },
+                  { text: "ATS score", included: true },
+                  { text: "Full ATS breakdown", included: true },
                   { text: "Cover letter generator", included: true },
-                  { text: "ATS score + full breakdown", included: true },
                   { text: "Master CV storage", included: true },
                   { text: "Dashboard + history", included: true },
                   { text: "Priority processing", included: true },
@@ -670,7 +675,7 @@ export default function LandingPage() {
             ].map((plan) => (
               <div
                 key={plan.name}
-                className="relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-50"
+                className="relative rounded-2xl overflow-hidden h-full transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-50"
                 style={{
                   background: plan.popular ? "linear-gradient(135deg, #0d1f3c 0%, #1a3a6b 100%)" : "white",
                   border: plan.popular ? "none" : "1px solid #e2e8f0",
@@ -688,7 +693,7 @@ export default function LandingPage() {
                   </div>
                 )}
 
-                <div className="p-7">
+                <div className="p-7 h-full flex flex-col">
                   <p
                     className="text-xs font-semibold uppercase tracking-widest mb-3"
                     style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}
@@ -724,7 +729,7 @@ export default function LandingPage() {
                     {plan.desc}
                   </p>
 
-                  <ul className="space-y-2.5 mb-8">
+                  <ul className="space-y-2.5 mb-8 flex-1">
                     {plan.features.map((f) => (
                       <li key={f.text} className="flex items-center gap-3 text-sm">
                         {f.included ? (
@@ -740,7 +745,7 @@ export default function LandingPage() {
                         ) : (
                           <svg
                             className="w-4 h-4 shrink-0"
-                            style={{ color: plan.popular ? "rgba(255,255,255,0.2)" : "#cbd5e1" }}
+                            style={{ color: plan.popular ? "rgba(255,255,255,0.35)" : "#94a3b8" }}
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -755,8 +760,8 @@ export default function LandingPage() {
                                 ? "rgba(255,255,255,0.85)"
                                 : "#374151"
                               : plan.popular
-                                ? "rgba(255,255,255,0.3)"
-                                : "#cbd5e1",
+                                ? "rgba(255,255,255,0.45)"
+                                : "#94a3b8",
                           }}
                         >
                           {f.text}
