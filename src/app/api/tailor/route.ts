@@ -21,10 +21,32 @@ function derivePrimaryRole(tailored: any, original: any) {
 async function callAI(prompt: string): Promise<string> {
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 4096,
+    max_tokens: 16384,
     messages: [{ role: "user", content: prompt }],
   });
   return message.content[0].type === "text" ? message.content[0].text : "";
+}
+
+/** Strip markdown fences and extract the first complete JSON object from a string. */
+function extractJSON(raw: string): string {
+  const cleaned = raw.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
+  // Walk forward looking for the matching closing brace
+  const start = cleaned.indexOf("{");
+  if (start === -1) return cleaned;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === "\\") { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{") depth++;
+    else if (ch === "}") { depth--; if (depth === 0) return cleaned.slice(start, i + 1); }
+  }
+  // Truncated — return what we have and let JSON.parse throw a clear error
+  return cleaned;
 }
 
 export async function POST(req: NextRequest) {
@@ -199,13 +221,13 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
     let original, tailored;
 
     try {
-      original = JSON.parse(rawOriginal.replace(/```json|```/g, "").trim());
+      original = JSON.parse(extractJSON(rawOriginal));
     } catch {
       throw new Error("Failed to parse the original CV structure. Please try again.");
     }
 
     try {
-      tailored = JSON.parse(rawTailored.replace(/```json|```/g, "").trim());
+      tailored = JSON.parse(extractJSON(rawTailored));
     } catch {
       throw new Error("Failed to parse the tailored CV. Please try again.");
     }

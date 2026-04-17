@@ -14,13 +14,22 @@ export async function getPaddle(): Promise<Paddle | undefined> {
 }
 
 export const PRICE_IDS = {
-  starter: process.env.NEXT_PUBLIC_PADDLE_STARTER_PRICE_ID!,
-  growth: process.env.NEXT_PUBLIC_PADDLE_GROWTH_PRICE_ID!,
-  unlimited: process.env.NEXT_PUBLIC_PADDLE_UNLIMITED_PRICE_ID!,
+  pro_monthly:
+    process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID ||
+    process.env.NEXT_PUBLIC_PADDLE_UNLIMITED_PRICE_ID!,
+  pro_yearly:
+    process.env.NEXT_PUBLIC_PADDLE_PRO_YEARLY_PRICE_ID ||
+    process.env.NEXT_PUBLIC_PADDLE_UNLIMITED_PRICE_ID!,
 };
 
 export const CREDIT_MAP: Record<string, { tailor_credits: number; pdf_credits: number }> = {
-  [process.env.NEXT_PUBLIC_PADDLE_STARTER_PRICE_ID!]: { tailor_credits: 5, pdf_credits: 5 },
-  [process.env.NEXT_PUBLIC_PADDLE_GROWTH_PRICE_ID!]: { tailor_credits: 20, pdf_credits: 20 },
+  [process.env.NEXT_PUBLIC_PADDLE_PRO_MONTHLY_PRICE_ID || process.env.NEXT_PUBLIC_PADDLE_UNLIMITED_PRICE_ID!]: {
+    tailor_credits: 999,
+    pdf_credits: 999,
+  },
+  [process.env.NEXT_PUBLIC_PADDLE_PRO_YEARLY_PRICE_ID || process.env.NEXT_PUBLIC_PADDLE_UNLIMITED_PRICE_ID!]: {
+    tailor_credits: 999,
+    pdf_credits: 999,
+  },
   [process.env.NEXT_PUBLIC_PADDLE_UNLIMITED_PRICE_ID!]: { tailor_credits: 999, pdf_credits: 999 },
 };

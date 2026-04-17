@@ -255,7 +255,7 @@ export default function UploadForm() {
             <div className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-slate-800 mb-0.5">Sign in to get started</p>
-                <p className="text-xs text-slate-400">Free account includes 3 tailors — no credit card needed</p>
+                <p className="text-xs text-slate-400">Free account includes 3 total tailors (one time) - no credit card needed</p>
               </div>
               <button
                 onClick={signInWithGoogle}

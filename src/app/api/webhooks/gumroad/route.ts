@@ -7,16 +7,14 @@ const supabaseAdmin = createClient(
 );
 
 const PLAN_CREDITS = {
-  starter: { tailorCredits: 5, pdfCredits: 5 },
-  growth: { tailorCredits: 20, pdfCredits: 20 },
-  unlimited: { tailorCredits: 999999, pdfCredits: 999999 },
+  pro_monthly: { tailorCredits: 999999, pdfCredits: 999999 },
+  pro_yearly: { tailorCredits: 999999, pdfCredits: 999999 },
 };
 
 // Map Gumroad product URLs to plan types
 const PRODUCT_MAP: Record<string, string> = {
-  starter: "starter",
-  growth: "growth",
-  unlimited: "unlimited",
+  pro_monthly: "pro_monthly",
+  pro_yearly: "pro_yearly",
 };
 
 export async function POST(req: NextRequest) {
@@ -94,11 +92,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Add credits
-    const newTailorCredits = planType === "unlimited"
+    const newTailorCredits = planType.startsWith("pro_")
       ? 999999
       : userData.tailor_credits + plan.tailorCredits;
 
-    const newPdfCredits = planType === "unlimited"
+    const newPdfCredits = planType.startsWith("pro_")
       ? 999999
       : userData.pdf_credits + plan.pdfCredits;
 

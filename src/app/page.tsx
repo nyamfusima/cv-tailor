@@ -229,7 +229,7 @@ export default function LandingPage() {
             <div className={`inline-flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-full mb-7 border ${mounted ? "anim-up d0" : "opacity-0"}`}
               style={{ backgroundColor:"rgba(255,255,255,0.1)", borderColor:"rgba(255,255,255,0.22)", color:"rgba(255,255,255,0.92)" }}>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 badge-dot" />
-              Your first 3 tailors are free — no card needed
+              Your first 3 tailors are free (one time) - no card needed
             </div>
 
             {/* Headline */}
@@ -468,6 +468,7 @@ export default function LandingPage() {
 
       {/* ──────────── FEATURES ──────────── */}
       <section
+        id="features"
         className="py-20"
         style={{ background: "linear-gradient(180deg, #ffffff 0%, #f0f4ff 100%)" }}
       >
@@ -549,6 +550,39 @@ export default function LandingPage() {
                 </div>
               </div>
             ))}
+
+            {/* Job match — full-width featured card */}
+            <div
+              className="feature-card sm:col-span-2 rounded-2xl border overflow-hidden"
+              style={{ background: "linear-gradient(135deg, #0d1f3c 0%, #1a3a6b 100%)", borderColor: "#0d1f3c" }}
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 p-6 sm:p-7">
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3"
+                    style={{ backgroundColor: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.75)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    New
+                  </div>
+                  <p className="font-bold text-white text-lg mb-2">Live job match engine</p>
+                  <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.68)" }}>
+                    After tailoring your CV, we instantly search live job listings and rank them by how well your skills match — so you can apply to real roles right away, not later.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0 w-full sm:w-auto">
+                  {[
+                    { label: "Live listings", sub: "pulled daily" },
+                    { label: "Ranked by match", sub: "skill-by-skill" },
+                    { label: "One click apply", sub: "direct links" },
+                  ].map((stat) => (
+                    <div key={stat.label} className="flex-1 sm:flex-none text-center px-4 py-3 rounded-xl"
+                      style={{ backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                      <p className="text-sm font-semibold text-white">{stat.label}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>{stat.sub}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -589,43 +623,49 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 text-center mb-3">Pricing</p>
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 text-center mb-4">
-            Simple, transparent pricing
+            Free or Pro. Nothing in between.
           </h2>
           <p className="text-slate-500 text-center text-base mb-14">
-            Pay once. Credits never expire. New users get 3 free tailors.
+            Two clear choices, no decision fatigue.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {[
               {
-                name: "Starter Pack",
-                price: "$5",
-                desc: "Perfect for a single job search sprint.",
-                credits: "5 tailor credits",
-                pdfs: "5 PDF downloads",
+                name: "Free",
+                price: "$0",
+                cadence: "one time",
+                desc: "Enough to prove value without giving away the full stack forever.",
                 popular: false,
-                param: "starter",
-                coverLetter: false,
+                variant: "free",
+                features: [
+                  { text: "3 CV tailors total (one time)", included: true },
+                  { text: "3 PDF downloads", included: true },
+                  { text: "ATS score", included: true },
+                  { text: "Job match (limited - 3 searches)", included: true },
+                  { text: "No cover letter", included: false },
+                ],
               },
               {
-                name: "Growth Mode",
-                price: "$20",
-                desc: "For active job seekers applying to multiple roles.",
-                credits: "20 tailor credits",
-                pdfs: "20 PDF downloads",
+                name: "Pro",
+                price: "$12",
+                cadence: "/month or $99/year",
+                desc: "Built for serious job seekers who want speed, volume, and better conversion.",
                 popular: true,
-                param: "growth",
-                coverLetter: true,
-              },
-              {
-                name: "Unlimited",
-                price: "$100",
-                desc: "Apply to as many roles as you want. No limits.",
-                credits: "Unlimited tailors",
-                pdfs: "Unlimited PDFs",
-                popular: false,
-                param: "unlimited",
-                coverLetter: true,
+                variant: "pro",
+                monthlyPlanType: "pro_monthly",
+                yearlyPlanType: "pro_yearly",
+                savings: "Save 31% with annual billing ($8.25/month)",
+                features: [
+                  { text: "Unlimited CV tailors", included: true },
+                  { text: "Unlimited PDF downloads", included: true },
+                  { text: "Unlimited job matches", included: true },
+                  { text: "Cover letter generator", included: true },
+                  { text: "ATS score + full breakdown", included: true },
+                  { text: "Master CV storage", included: true },
+                  { text: "Dashboard + history", included: true },
+                  { text: "Priority processing", included: true },
+                ],
               },
             ].map((plan) => (
               <div
@@ -667,9 +707,15 @@ export default function LandingPage() {
                       className="text-sm mb-1.5"
                       style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}
                     >
-                      once-off
+                      {plan.cadence}
                     </span>
                   </div>
+
+                  {plan.savings && (
+                    <p className="text-xs font-semibold mb-3" style={{ color: "rgba(255,255,255,0.85)" }}>
+                      {plan.savings}
+                    </p>
+                  )}
 
                   <p
                     className="text-xs mb-6 leading-relaxed"
@@ -679,14 +725,7 @@ export default function LandingPage() {
                   </p>
 
                   <ul className="space-y-2.5 mb-8">
-                    {[
-                      { text: plan.credits, included: true },
-                      { text: plan.pdfs, included: true },
-                      { text: "ATS match score", included: true },
-                      { text: "Job search & match", included: true },
-                      { text: "Unlimited edits", included: true },
-                      { text: "Cover letter generator", included: plan.coverLetter },
-                    ].map((f) => (
+                    {plan.features.map((f) => (
                       <li key={f.text} className="flex items-center gap-3 text-sm">
                         {f.included ? (
                           <svg
@@ -726,33 +765,75 @@ export default function LandingPage() {
                     ))}
                   </ul>
 
-                  <button
-                    onClick={() => {
-                      if (!user) {
-                        signInWithGoogle();
-                      } else {
-                        window.location.href = `/api/checkout?type=${plan.param}`;
-                      }
-                    }}
-                    className="w-full font-semibold py-3 rounded-xl text-sm transition-all cta-btn"
-                    style={plan.popular ? {
-                      backgroundColor: "white",
-                      color: "#0d1f3c",
-                    } : {
-                      background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
-                      color: "white",
-                    }}
-                  >
-                    Get {plan.name} →
-                  </button>
+                  {plan.variant === "free" ? (
+                    <button
+                      onClick={() => {
+                        if (!user) {
+                          signInWithGoogle();
+                        } else {
+                          router.push("/upload");
+                        }
+                      }}
+                      className="w-full font-semibold py-3 rounded-xl text-sm transition-all cta-btn"
+                      style={{
+                        background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
+                        color: "white",
+                      }}
+                    >
+                      Get started free -&gt;
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            signInWithGoogle();
+                          } else {
+                            window.location.href = `/api/checkout?type=${plan.monthlyPlanType}`;
+                          }
+                        }}
+                        className="w-full font-semibold py-3 rounded-xl text-sm transition-all cta-btn"
+                        style={{
+                          backgroundColor: "white",
+                          color: "#0d1f3c",
+                        }}
+                      >
+                        Go Pro monthly ($12/mo) -&gt;
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            signInWithGoogle();
+                          } else {
+                            window.location.href = `/api/checkout?type=${plan.yearlyPlanType}`;
+                          }
+                        }}
+                        className="w-full font-semibold py-3 rounded-xl text-sm transition-all cta-btn"
+                        style={{
+                          background: "rgba(255,255,255,0.12)",
+                          color: "white",
+                          border: "1px solid rgba(255,255,255,0.24)",
+                        }}
+                      >
+                        Go Pro yearly ($99/yr) -&gt;
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
 
-          <p className="text-center text-xs text-slate-400 mt-8">
-            Every new account gets 3 free tailors to try first · Credits never expire
-          </p>
+          <div className="mt-10 rounded-2xl border border-slate-200 p-6 sm:p-7 bg-slate-50">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-4">Why this structure works</p>
+            <ul className="space-y-2 text-sm text-slate-600">
+              <li>Free gives enough to see value, but not enough to stay free forever.</li>
+              <li>$12/month is impulse-buy territory for active job seekers.</li>
+              <li>$99/year works out to $8.25/month and rewards commitment.</li>
+              <li>Annual billing improves cash flow and reduces churn.</li>
+              <li>Two plans keeps decision-making simple: free or pro.</li>
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -907,7 +988,7 @@ function AuthModal({
           <h3 className="text-2xl font-bold tracking-tight text-slate-900 mt-1">
             {mode === "signin" ? "Sign in" : "Create account"}
           </h3>
-          <p className="text-sm text-slate-500 mt-1">3 free tailors for new users.</p>
+          <p className="text-sm text-slate-500 mt-1">3 free tailors total for new users (one time).</p>
         </div>
 
         <div className="space-y-4">

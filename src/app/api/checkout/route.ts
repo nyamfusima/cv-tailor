@@ -2,18 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 const PLANS = {
-  starter: {
-    url: process.env.GUMROAD_STARTER_URL!,
-    tailorCredits: 5,
-    pdfCredits: 5,
+  pro_monthly: {
+    url: process.env.GUMROAD_PRO_MONTHLY_URL || process.env.GUMROAD_UNLIMITED_URL!,
+    tailorCredits: 999999,
+    pdfCredits: 999999,
   },
-  growth: {
-    url: process.env.GUMROAD_GROWTH_URL!,
-    tailorCredits: 20,
-    pdfCredits: 20,
-  },
-  unlimited: {
-    url: process.env.GUMROAD_UNLIMITED_URL!,
+  pro_yearly: {
+    url: process.env.GUMROAD_PRO_YEARLY_URL || process.env.GUMROAD_UNLIMITED_URL!,
     tailorCredits: 999999,
     pdfCredits: 999999,
   },
@@ -22,7 +17,7 @@ const PLANS = {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get("type") || "starter";
+    const type = searchParams.get("type") || "pro_monthly";
 
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
