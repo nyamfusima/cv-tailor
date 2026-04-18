@@ -82,7 +82,7 @@ export default function PricingPage() {
       <Pricing2
         id="pricing"
         heading="Free or Pro. Nothing in between."
-        description="Two clear choices, no decision fatigue."
+        description="2 clear choices, no decision fatigue."
         onPlanSelect={handlePlanSelect}
         className="pt-16"
       />
