@@ -22,10 +22,38 @@ type SearchAttempt = {
   params: URLSearchParams;
 };
 
+type SearchAttemptResult = {
+  ok: boolean;
+  jobs: any[];
+  error?: string;
+  rateLimited?: boolean;
+  retryAfterSeconds?: number;
+};
+
 type ParsedJobQuery = {
   primaryTitle: string;
   skills: string[];
 };
+
+type JobsCacheEntry = {
+  jobs: any[];
+  query: ParsedJobQuery;
+  createdAt: number;
+  expiresAt: number;
+};
+
+const JOBS_CACHE_TTL_MS = 5 * 60 * 1000;
+const jobsCache = new Map<string, JobsCacheEntry>();
+
+class RateLimitError extends Error {
+  retryAfterSeconds?: number;
+
+  constructor(message: string, retryAfterSeconds?: number) {
+    super(message);
+    this.name = "RateLimitError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
 
 function sanitizeHost(rawHost: string): string {
   return rawHost.replace(/^https?:\/\//i, "").replace(/\/+$/g, "").trim();
@@ -106,6 +134,47 @@ function overlapRatio(source: string[], target: string[]): number {
 
 function clampScore(score: number): number {
   return Math.max(35, Math.min(98, score));
+}
+
+function asRetryAfterSeconds(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return undefined;
+  return Math.round(parsed);
+}
+
+function buildJobsCacheKey(query: ParsedJobQuery, countryCode?: string | null): string {
+  const normalizedSkills = query.skills
+    .map((skill) => normalize(skill))
+    .filter(Boolean)
+    .sort()
+    .slice(0, 8);
+
+  return JSON.stringify({
+    title: normalize(query.primaryTitle),
+    skills: normalizedSkills,
+    country: (countryCode || "global").toLowerCase(),
+  });
+}
+
+function readJobsCache(cacheKey: string): JobsCacheEntry | null {
+  const cached = jobsCache.get(cacheKey);
+  if (!cached) return null;
+  if (cached.expiresAt <= Date.now()) {
+    jobsCache.delete(cacheKey);
+    return null;
+  }
+  return cached;
+}
+
+function writeJobsCache(cacheKey: string, jobs: any[], query: ParsedJobQuery) {
+  const now = Date.now();
+  jobsCache.set(cacheKey, {
+    jobs,
+    query,
+    createdAt: now,
+    expiresAt: now + JOBS_CACHE_TTL_MS,
+  });
 }
 
 function parseJsonFromText(value: string): unknown {
@@ -312,7 +381,7 @@ async function fetchSearchAttempt(
   host: string,
   apiKey: string,
   attempt: SearchAttempt,
-): Promise<{ ok: boolean; jobs: any[]; error?: string }> {
+): Promise<SearchAttemptResult> {
   const url = `https://${host}${attempt.endpoint}?${attempt.params.toString()}`;
   const res = await fetch(url, {
     method: "GET",
@@ -331,9 +400,23 @@ async function fetchSearchAttempt(
   }
 
   if (!res.ok) {
+    const retryAfterSeconds = asRetryAfterSeconds(res.headers.get("retry-after"));
+    if (res.status === 429) {
+      return {
+        ok: false,
+        jobs: [],
+        rateLimited: true,
+        retryAfterSeconds,
+        error:
+          extractErrorMessage(payload) ||
+          "Rate limit reached while fetching job matches.",
+      };
+    }
+
     return {
       ok: false,
       jobs: [],
+      retryAfterSeconds,
       error:
         extractErrorMessage(payload) ||
         `RapidAPI search request failed (${res.status})`,
@@ -371,6 +454,12 @@ async function searchJobs(query: string, options: SearchOptions = {}): Promise<a
 
       const result = await fetchSearchAttempt(host, RAPIDAPI_KEY, attempt);
       if (!result.ok) {
+        if (result.rateLimited) {
+          throw new RateLimitError(
+            result.error || "Rate limit reached while fetching job matches.",
+            result.retryAfterSeconds
+          );
+        }
         lastError = result.error || lastError;
         continue;
       }
@@ -429,9 +518,19 @@ Return ONLY a JSON object, no markdown:
       console.warn("Jobs API query extraction fallback:", queryError);
     }
 
+    const cacheKey = buildJobsCacheKey(jobQuery, userCountry);
+    const cachedJobs = readJobsCache(cacheKey);
+    if (cachedJobs) {
+      return NextResponse.json({
+        jobs: cachedJobs.jobs,
+        query: cachedJobs.query,
+        cached: true,
+      });
+    }
+
     // Step 2 - Fetch jobs, prioritising user's country, with fallbacks.
     let rawJobs = await searchJobs(jobQuery.primaryTitle, {
-      pages: 2,
+      pages: 1,
       countryCode: userCountry,
     });
 
@@ -442,7 +541,7 @@ Return ONLY a JSON object, no markdown:
         .trim();
 
       rawJobs = await searchJobs(broaderTitle || jobQuery.primaryTitle, {
-        pages: 2,
+        pages: 1,
         countryCode: userCountry,
       });
     }
@@ -450,7 +549,7 @@ Return ONLY a JSON object, no markdown:
     // Final fallback: remote roles so users always see something relevant.
     if (rawJobs.length === 0) {
       rawJobs = await searchJobs(jobQuery.primaryTitle, {
-        pages: 2,
+        pages: 1,
         remoteOnly: true,
       });
     }
@@ -588,9 +687,26 @@ Return ONLY a JSON object, no markdown:
       .sort((a: any, b: any) => b.matchScore - a.matchScore)
       .slice(0, 20);
 
+    writeJobsCache(cacheKey, sorted, jobQuery);
+
     return NextResponse.json({ jobs: sorted, query: jobQuery });
   } catch (err: any) {
     console.error("Jobs API error:", err);
+
+    if (err instanceof RateLimitError) {
+      const retryMessage =
+        err.retryAfterSeconds && err.retryAfterSeconds > 0
+          ? ` Please wait about ${err.retryAfterSeconds} seconds and try again.`
+          : " Please wait a minute and try again.";
+
+      return NextResponse.json(
+        {
+          error: `Job search is temporarily rate-limited.${retryMessage}`,
+        },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json(
       { error: err.message || "Failed to fetch jobs." },
       { status: 500 }
