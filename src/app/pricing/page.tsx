@@ -63,20 +63,6 @@ export default function PricingPage() {
           </div>
         </nav>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 pt-14 pb-20 sm:pt-16 sm:pb-24 text-center">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white/60 mb-3">
-            Pricing
-          </p>
-          <h1
-            style={{ fontFamily: "'DM Serif Display', serif" }}
-            className="text-3xl sm:text-5xl text-white tracking-tight"
-          >
-            Pick your pace. Upgrade when you are ready.
-          </h1>
-          <p className="mt-4 text-sm sm:text-base text-white/75 max-w-2xl mx-auto">
-            Start with the free plan, then unlock unlimited tailoring whenever your job hunt needs more speed.
-          </p>
-        </div>
       </div>
 
       <Pricing2
