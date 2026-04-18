@@ -49,6 +49,48 @@ function countryFromLocation(location?: string): string | null {
   return codeMatch ? codeMatch[0] : null;
 }
 
+const STOPWORDS = new Set([
+  "and",
+  "or",
+  "the",
+  "a",
+  "an",
+  "of",
+  "for",
+  "to",
+  "in",
+  "on",
+  "with",
+  "at",
+  "by",
+]);
+
+function normalize(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9+\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenize(text: string): string[] {
+  return normalize(text)
+    .split(" ")
+    .map((t) => t.trim())
+    .filter((t) => t.length > 1 && !STOPWORDS.has(t));
+}
+
+function overlapRatio(source: string[], target: string[]): number {
+  if (!source.length || !target.length) return 0;
+  const targetSet = new Set(target);
+  const overlap = source.filter((token) => targetSet.has(token)).length;
+  return overlap / source.length;
+}
+
+function clampScore(score: number): number {
+  return Math.max(35, Math.min(98, score));
+}
+
 async function searchJobs(query: string, options: SearchOptions = {}): Promise<any[]> {
   const { pages = 1, countryCode, remoteOnly } = options;
 
@@ -134,23 +176,65 @@ Return ONLY a JSON object, no markdown:
     }
 
     // Step 3 — Score each job against CV skills (lenient — show any related role)
-    const userSkills = (jobQuery.skills as string[]).map((s) => s.toLowerCase());
+    const focusSkills = (Array.isArray(jobQuery.skills) ? jobQuery.skills : [])
+      .map((s: string) => normalize(s))
+      .filter(Boolean)
+      .slice(0, 10);
+
+    const cvSkills = (Array.isArray(cv?.skills) ? cv.skills : [])
+      .flatMap((g: { skills?: string[] }) => (Array.isArray(g?.skills) ? g.skills : []))
+      .map((s: string) => normalize(s))
+      .filter(Boolean);
+
+    const candidateSkills = Array.from(new Set([...focusSkills, ...cvSkills])).slice(0, 20);
+    const primaryTitle = typeof jobQuery.primaryTitle === "string" ? jobQuery.primaryTitle : "";
+    const primaryTitleTokens = tokenize(primaryTitle);
+    const experienceTitles = (Array.isArray(cv?.experience) ? cv.experience : [])
+      .map((e: { title?: string }) => e?.title || "")
+      .filter(Boolean);
 
     const scoredJobs = rawJobs.slice(0, 20).map((job: any) => {
-      const jobText = `${job.job_title} ${job.job_description || ""} ${
-        job.job_highlights?.Qualifications?.join(" ") || ""
-      }`.toLowerCase();
+      const jobTitle = String(job.job_title || "");
+      const jobDescriptionText = String(job.job_description || "");
+      const qualifications = Array.isArray(job.job_highlights?.Qualifications)
+        ? job.job_highlights.Qualifications.join(" ")
+        : "";
 
-      const matchedSkills = userSkills.filter((s) => jobText.includes(s));
-      const missingSkills = userSkills.filter((s) => !jobText.includes(s));
+      const jobText = normalize(`${jobTitle} ${jobDescriptionText} ${qualifications}`);
+      const jobTitleTokens = tokenize(jobTitle);
 
-      // Score based on skill overlap, but floor at 40 so all results are visible
-      const rawScore = Math.round((matchedSkills.length / Math.max(userSkills.length, 1)) * 100);
-      const matchScore = Math.max(rawScore, 40);
+      const matchedSkills = candidateSkills.filter((s) => jobText.includes(s));
+      const missingSkills = focusSkills.filter((s) => !jobText.includes(s));
+
+      const skillCoverage = matchedSkills.length / Math.max(candidateSkills.length, 1);
+      const titleOverlap = overlapRatio(primaryTitleTokens, jobTitleTokens);
+      const experienceOverlap = experienceTitles.length
+        ? Math.max(
+            ...experienceTitles.map((title: string) =>
+              overlapRatio(tokenize(title), jobTitleTokens)
+            )
+          )
+        : 0;
+
+      const weightedScore = skillCoverage * 60 + titleOverlap * 30 + experienceOverlap * 10;
+      const titleBoost =
+        titleOverlap >= 0.8 ? 12 : titleOverlap >= 0.55 ? 7 : titleOverlap >= 0.35 ? 3 : 0;
+      const skillBoost =
+        matchedSkills.length >= 8
+          ? 8
+          : matchedSkills.length >= 5
+          ? 5
+          : matchedSkills.length >= 3
+          ? 2
+          : 0;
+      const dynamicFloor = titleOverlap >= 0.6 ? 68 : titleOverlap >= 0.35 ? 58 : 48;
+      const matchScore = clampScore(
+        Math.max(Math.round(weightedScore + titleBoost + skillBoost), dynamicFloor)
+      );
 
       return {
         id: job.job_id,
-        title: job.job_title,
+        title: jobTitle,
         company: job.employer_name,
         location: job.job_city
           ? `${job.job_city}, ${job.job_country}`
@@ -161,9 +245,11 @@ Return ONLY a JSON object, no markdown:
         applyUrl: job.job_apply_link,
         postedAt: job.job_posted_at_datetime_utc,
         matchScore,
-        matchedSkills: matchedSkills.slice(0, 5),
-        missingSkills: missingSkills.slice(0, 3),
-        description: job.job_description?.slice(0, 300) + "...",
+        matchedSkills: matchedSkills.slice(0, 6),
+        missingSkills: missingSkills.slice(0, 4),
+        description: jobDescriptionText
+          ? `${jobDescriptionText.slice(0, 300)}...`
+          : "No description provided.",
       };
     });
 

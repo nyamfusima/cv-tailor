@@ -1,12 +1,13 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 export default function UploadForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, signInWithGoogle, signOut } = useAuth();
   const cvRef = useRef<HTMLInputElement>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -20,8 +21,27 @@ export default function UploadForm() {
   const [cvDragging, setCvDragging] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
   const [upgradeSuccess, setUpgradeSuccess] = useState(false);
+  const [masterCVLoaded, setMasterCVLoaded] = useState(false);
   const [tailorCredits, setTailorCredits] = useState<number | null>(null);
   const [jobCredits, setJobCredits] = useState<number | null>(null);
+
+  const mimeFromName = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.endsWith(".pdf")) return "application/pdf";
+    if (lower.endsWith(".docx")) {
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    }
+    return "application/octet-stream";
+  };
+
+  const base64ToFile = (base64: string, fileName: string, fileType: string) => {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new File([bytes], fileName, { type: fileType });
+  };
 
   useEffect(() => {
     if (!user) { setTailorCredits(null); setJobCredits(null); return; }
@@ -54,6 +74,41 @@ export default function UploadForm() {
     const upgraded = new URLSearchParams(window.location.search).get("upgraded");
     if (upgraded === "true") setUpgradeSuccess(true);
   }, []);
+
+  useEffect(() => {
+    const useMaster = searchParams.get("useMaster");
+    if (useMaster !== "true") return;
+
+    const stored = sessionStorage.getItem("masterCV");
+    if (!stored) {
+      setError("Could not load your master CV. Please try again from dashboard.");
+      router.replace("/upload");
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as {
+        cvBase64?: string;
+        cvName?: string;
+        cvType?: string;
+      };
+
+      if (!parsed.cvBase64 || !parsed.cvName) {
+        throw new Error("Missing master CV payload");
+      }
+
+      const fileType = parsed.cvType || mimeFromName(parsed.cvName);
+      const restored = base64ToFile(parsed.cvBase64, parsed.cvName, fileType);
+      setCvFile(restored);
+      setMasterCVLoaded(true);
+      setError("");
+    } catch {
+      setError("Could not decode your master CV. Please upload it manually.");
+    } finally {
+      sessionStorage.removeItem("masterCV");
+      router.replace("/upload");
+    }
+  }, [searchParams, router]);
 
   const handleCvDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -224,6 +279,18 @@ export default function UploadForm() {
             <div>
               <p className="text-sm font-semibold text-emerald-800">Credits added! 🎉</p>
               <p className="text-xs text-emerald-600 mt-0.5">Your tailor credits have been topped up.</p>
+            </div>
+          </div>
+        )}
+
+        {masterCVLoaded && (
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-center gap-3 mb-6">
+            <svg className="w-5 h-5 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <div>
+              <p className="text-sm font-semibold text-blue-800">Master CV loaded</p>
+              <p className="text-xs text-blue-600 mt-0.5">Your saved CV is ready. Add a job description and tailor.</p>
             </div>
           </div>
         )}

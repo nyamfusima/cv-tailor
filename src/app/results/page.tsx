@@ -68,6 +68,22 @@ function EditBtn({ active, onClick }: { active: boolean; onClick: () => void }) 
   );
 }
 
+function DangerBtn({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all shrink-0"
+      style={{
+        backgroundColor: "#fef2f2",
+        color: "#b91c1c",
+        borderColor: "#fecaca",
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
 function ScoreBar({ label, before, after, weight }: { label: string; before: number; after: number; weight: number }) {
   const [animated, setAnimated] = useState(false);
   const lift = after - before;
