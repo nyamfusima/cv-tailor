@@ -38,7 +38,7 @@ export default function JobsMatchPage() {
         </button>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
         <div className="mb-8">
           <h1
             className="text-3xl sm:text-4xl text-slate-900 leading-tight mb-3"

@@ -8,7 +8,10 @@ const PLANS = {
     pdfCredits: 999999,
   },
   pro_yearly: {
-    url: process.env.GUMROAD_PRO_YEARLY_URL || process.env.GUMROAD_UNLIMITED_URL!,
+    url:
+      process.env.GUMROAD_GROWTH_URL ||
+      process.env.GUMROAD_PRO_YEARLY_URL ||
+      process.env.GUMROAD_UNLIMITED_URL!,
     tailorCredits: 999999,
     pdfCredits: 999999,
   },

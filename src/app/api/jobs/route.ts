@@ -3,8 +3,10 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic();
 
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || process.env.RAPID_API_KEY;
+
 const RAPIDAPI_HEADERS = {
-  "X-RapidAPI-Key": process.env.RAPID_API_KEY!,
+  "X-RapidAPI-Key": RAPIDAPI_KEY || "",
   "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
 };
 
@@ -92,6 +94,10 @@ function clampScore(score: number): number {
 }
 
 async function searchJobs(query: string, options: SearchOptions = {}): Promise<any[]> {
+  if (!RAPIDAPI_KEY) {
+    throw new Error("RapidAPI key is missing. Set RAPIDAPI_KEY in your environment.");
+  }
+
   const { pages = 1, countryCode, remoteOnly } = options;
 
   const params = new URLSearchParams({
