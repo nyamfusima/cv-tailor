@@ -176,22 +176,22 @@ Return ONLY a JSON object, no markdown:
     }
 
     // Step 3 — Score each job against CV skills (lenient — show any related role)
-    const focusSkills = (Array.isArray(jobQuery.skills) ? jobQuery.skills : [])
-      .map((s: string) => normalize(s))
-      .filter(Boolean)
+    const focusSkills: string[] = (Array.isArray(jobQuery.skills) ? jobQuery.skills : [])
+      .map((s: unknown) => normalize(String(s)))
+      .filter((s: string) => Boolean(s))
       .slice(0, 10);
 
-    const cvSkills = (Array.isArray(cv?.skills) ? cv.skills : [])
+    const cvSkills: string[] = (Array.isArray(cv?.skills) ? cv.skills : [])
       .flatMap((g: { skills?: string[] }) => (Array.isArray(g?.skills) ? g.skills : []))
-      .map((s: string) => normalize(s))
-      .filter(Boolean);
+      .map((s: unknown) => normalize(String(s)))
+      .filter((s: string) => Boolean(s));
 
-    const candidateSkills = Array.from(new Set([...focusSkills, ...cvSkills])).slice(0, 20);
+    const candidateSkills: string[] = Array.from(new Set<string>([...focusSkills, ...cvSkills])).slice(0, 20);
     const primaryTitle = typeof jobQuery.primaryTitle === "string" ? jobQuery.primaryTitle : "";
     const primaryTitleTokens = tokenize(primaryTitle);
-    const experienceTitles = (Array.isArray(cv?.experience) ? cv.experience : [])
+    const experienceTitles: string[] = (Array.isArray(cv?.experience) ? cv.experience : [])
       .map((e: { title?: string }) => e?.title || "")
-      .filter(Boolean);
+      .filter((title: string) => Boolean(title));
 
     const scoredJobs = rawJobs.slice(0, 20).map((job: any) => {
       const jobTitle = String(job.job_title || "");
@@ -203,8 +203,8 @@ Return ONLY a JSON object, no markdown:
       const jobText = normalize(`${jobTitle} ${jobDescriptionText} ${qualifications}`);
       const jobTitleTokens = tokenize(jobTitle);
 
-      const matchedSkills = candidateSkills.filter((s) => jobText.includes(s));
-      const missingSkills = focusSkills.filter((s) => !jobText.includes(s));
+      const matchedSkills = candidateSkills.filter((s: string) => jobText.includes(s));
+      const missingSkills = focusSkills.filter((s: string) => !jobText.includes(s));
 
       const skillCoverage = matchedSkills.length / Math.max(candidateSkills.length, 1);
       const titleOverlap = overlapRatio(primaryTitleTokens, jobTitleTokens);
