@@ -1,13 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 export default function UploadForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, signInWithGoogle, signOut } = useAuth();
   const cvRef = useRef<HTMLInputElement>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -76,7 +75,7 @@ export default function UploadForm() {
   }, []);
 
   useEffect(() => {
-    const useMaster = searchParams.get("useMaster");
+    const useMaster = new URLSearchParams(window.location.search).get("useMaster");
     if (useMaster !== "true") return;
 
     const stored = sessionStorage.getItem("masterCV");
@@ -108,7 +107,7 @@ export default function UploadForm() {
       sessionStorage.removeItem("masterCV");
       router.replace("/upload");
     }
-  }, [searchParams, router]);
+  }, [router]);
 
   const handleCvDrop = (e: React.DragEvent) => {
     e.preventDefault();
