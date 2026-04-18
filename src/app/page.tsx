@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { TestimonialsColumn, testimonials } from "@/components/ui/testimonials-columns-1";
+import { Pricing2, type BillingCycle, type PlanId } from "@/components/ui/pricing2";
 import { motion } from "motion/react";
 
 /* ─── Count-up number hook ─── */
@@ -68,6 +69,20 @@ export default function LandingPage() {
 
   const openSignup = () => { setAuthMode("signup"); setAuthOpen(true); };
   const openSignin = () => { setAuthMode("signin"); setAuthOpen(true); };
+  const handlePlanSelect = async (planId: PlanId, billingCycle: BillingCycle) => {
+    if (!user) {
+      await signInWithGoogle();
+      return;
+    }
+
+    if (planId === "free") {
+      router.push("/upload");
+      return;
+    }
+
+    const planType = billingCycle === "yearly" ? "pro_yearly" : "pro_monthly";
+    window.location.href = `/api/checkout?type=${planType}`;
+  };
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -618,229 +633,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ──────────── PRICING ──────────── */}
-      <section className="py-24 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 text-center mb-3">Pricing</p>
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 text-center mb-4">
-            Free or Pro. Nothing in between.
-          </h2>
-          <p className="text-slate-500 text-center text-base mb-14">
-            Two clear choices, no decision fatigue.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {[
-              {
-                name: "Free",
-                price: "$0",
-                cadence: "one time",
-                desc: "Enough to prove value without giving away the full stack forever.",
-                popular: false,
-                variant: "free",
-                features: [
-                  { text: "3 CV tailors total (one time)", included: true },
-                  { text: "3 PDF downloads", included: true },
-                  { text: "Job match (limited - 3 searches)", included: true },
-                  { text: "ATS score", included: true },
-                  { text: "Full ATS breakdown", included: false },
-                  { text: "Cover letter generator", included: false },
-                  { text: "Master CV storage", included: false },
-                  { text: "Dashboard + history", included: false },
-                  { text: "Priority processing", included: false },
-                ],
-              },
-              {
-                name: "Pro",
-                price: "$12",
-                cadence: "/month or $99/year",
-                desc: "Built for serious job seekers who want speed, volume, and better conversion.",
-                popular: true,
-                variant: "pro",
-                monthlyPlanType: "pro_monthly",
-                yearlyPlanType: "pro_yearly",
-                savings: "Save 31% with annual billing ($8.25/month)",
-                features: [
-                  { text: "Unlimited CV tailors", included: true },
-                  { text: "Unlimited PDF downloads", included: true },
-                  { text: "Unlimited job matches", included: true },
-                  { text: "ATS score", included: true },
-                  { text: "Full ATS breakdown", included: true },
-                  { text: "Cover letter generator", included: true },
-                  { text: "Master CV storage", included: true },
-                  { text: "Dashboard + history", included: true },
-                  { text: "Priority processing", included: true },
-                ],
-              },
-            ].map((plan) => (
-              <div
-                key={plan.name}
-                className="relative rounded-2xl overflow-hidden h-full transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-50"
-                style={{
-                  background: plan.popular ? "linear-gradient(135deg, #0d1f3c 0%, #1a3a6b 100%)" : "white",
-                  border: plan.popular ? "none" : "1px solid #e2e8f0",
-                  boxShadow: plan.popular ? "0 20px 60px rgba(13,31,60,0.2)" : "0 2px 8px rgba(0,0,0,0.04)",
-                }}
-              >
-                {plan.popular && (
-                  <div className="absolute top-4 right-4">
-                    <span
-                      className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
-                      style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }}
-                    >
-                      Most popular
-                    </span>
-                  </div>
-                )}
-
-                <div className="p-7 h-full flex flex-col">
-                  <p
-                    className="text-xs font-semibold uppercase tracking-widest mb-3"
-                    style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}
-                  >
-                    {plan.name}
-                  </p>
-
-                  <div className="flex items-end gap-1 mb-2">
-                    <span
-                      className="text-4xl font-bold tracking-tight"
-                      style={{ color: plan.popular ? "white" : "#0d1f3c" }}
-                    >
-                      {plan.price}
-                    </span>
-                    <span
-                      className="text-sm mb-1.5"
-                      style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}
-                    >
-                      {plan.cadence}
-                    </span>
-                  </div>
-
-                  {plan.savings && (
-                    <p className="text-xs font-semibold mb-3" style={{ color: "rgba(255,255,255,0.85)" }}>
-                      {plan.savings}
-                    </p>
-                  )}
-
-                  <p
-                    className="text-xs mb-6 leading-relaxed"
-                    style={{ color: plan.popular ? "rgba(255,255,255,0.5)" : "#94a3b8" }}
-                  >
-                    {plan.desc}
-                  </p>
-
-                  <ul className="space-y-2.5 mb-8 flex-1">
-                    {plan.features.map((f) => (
-                      <li key={f.text} className="flex items-center gap-3 text-sm">
-                        {f.included ? (
-                          <svg
-                            className="w-4 h-4 shrink-0"
-                            style={{ color: plan.popular ? "rgba(255,255,255,0.6)" : "#10b981" }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <svg
-                            className="w-4 h-4 shrink-0"
-                            style={{ color: plan.popular ? "rgba(255,255,255,0.35)" : "#94a3b8" }}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        )}
-                        <span
-                          style={{
-                            color: f.included
-                              ? plan.popular
-                                ? "rgba(255,255,255,0.85)"
-                                : "#374151"
-                              : plan.popular
-                                ? "rgba(255,255,255,0.45)"
-                                : "#94a3b8",
-                          }}
-                        >
-                          {f.text}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {plan.variant === "free" ? (
-                    <button
-                      onClick={() => {
-                        if (!user) {
-                          signInWithGoogle();
-                        } else {
-                          router.push("/upload");
-                        }
-                      }}
-                      className="w-full font-semibold py-3 rounded-xl text-sm transition-all cta-btn"
-                      style={{
-                        background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
-                        color: "white",
-                      }}
-                    >
-                      Get started free -&gt;
-                    </button>
-                  ) : (
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => {
-                          if (!user) {
-                            signInWithGoogle();
-                          } else {
-                            window.location.href = `/api/checkout?type=${plan.monthlyPlanType}`;
-                          }
-                        }}
-                        className="w-full font-semibold py-3 rounded-xl text-sm transition-all cta-btn"
-                        style={{
-                          backgroundColor: "white",
-                          color: "#0d1f3c",
-                        }}
-                      >
-                        Go Pro monthly ($12/mo) -&gt;
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (!user) {
-                            signInWithGoogle();
-                          } else {
-                            window.location.href = `/api/checkout?type=${plan.yearlyPlanType}`;
-                          }
-                        }}
-                        className="w-full font-semibold py-3 rounded-xl text-sm transition-all cta-btn"
-                        style={{
-                          background: "rgba(255,255,255,0.12)",
-                          color: "white",
-                          border: "1px solid rgba(255,255,255,0.24)",
-                        }}
-                      >
-                        Go Pro yearly ($99/yr) -&gt;
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-10 rounded-2xl border border-slate-200 p-6 sm:p-7 bg-slate-50">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500 mb-4">Why this structure works</p>
-            <ul className="space-y-2 text-sm text-slate-600">
-              <li>Free gives enough to see value, but not enough to stay free forever.</li>
-              <li>$12/month is impulse-buy territory for active job seekers.</li>
-              <li>$99/year works out to $8.25/month and rewards commitment.</li>
-              <li>Annual billing improves cash flow and reduces churn.</li>
-              <li>Two plans keeps decision-making simple: free or pro.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
+      {/* PRICING */}
+      <Pricing2
+        id="pricing"
+        heading="Free or Pro. Nothing in between."
+        description="Two clear choices, no decision fatigue."
+        onPlanSelect={handlePlanSelect}
+      />
 
       {/* ──────────── FAQ ──────────── */}
       <section className="py-24 bg-white">
