@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s --max-time 15 'https://advanced-jsearch-job-search-salary-intelligence-api.p.rapidapi.com/search?query=Software+Engineer&num_pages=1' -H 'X-RapidAPI-Key: b45c37caa5mshd40ee1b1c8b5c00p113954jsnf63d1a8ab463' -H 'X-RapidAPI-Host: advanced-jsearch-job-search-salary-intelligence-api.p.rapidapi.com')",
+      "Bash(curl -s --max-time 15 'https://advanced-jsearch-job-search-salary-intelligence-api.p.rapidapi.com/search-jobs?query=Software+Engineer&num_pages=1' -H 'X-RapidAPI-Key: b45c37caa5mshd40ee1b1c8b5c00p113954jsnf63d1a8ab463' -H 'X-RapidAPI-Host: advanced-jsearch-job-search-salary-intelligence-api.p.rapidapi.com')",
+      "Bash(curl -s --max-time 15 'https://advanced-jsearch-job-search-salary-intelligence-api.p.rapidapi.com/job-search?keyword=Software+Engineer&num_pages=1&page=1' -H 'X-RapidAPI-Key: b45c37caa5mshd40ee1b1c8b5c00p113954jsnf63d1a8ab463' -H 'X-RapidAPI-Host: advanced-jsearch-job-search-salary-intelligence-api.p.rapidapi.com')",
+      "Bash(curl -s --max-time 10 'https://advanced-jsearch-job-search-salary-intelligence-api.p.rapidapi.com/estimated-salary?job_title=Software+Engineer&location=Remote' -H 'X-RapidAPI-Key: b45c37caa5mshd40ee1b1c8b5c00p113954jsnf63d1a8ab463' -H 'X-RapidAPI-Host: advanced-jsearch-job-search-salary-intelligence-api.p.rapidapi.com')",
+      "Bash(curl -s --max-time 15 'https://advanced-jsearch-job-search-salary-intelligence-api.p.rapidapi.com/job-search?keyword=Marketing+Manager&num_pages=1&page=1' -H 'X-RapidAPI-Key: b45c37caa5mshd40ee1b1c8b5c00p113954jsnf63d1a8ab463' -H 'X-RapidAPI-Host: advanced-jsearch-job-search-salary-intelligence-api.p.rapidapi.com')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('status:', d.get\\('status'\\)\\); print\\('total_results:', d.get\\('total_results'\\)\\); print\\('jobs count:', len\\(d.get\\('jobs', []\\)\\)\\); print\\('first job keys:', list\\(d['jobs'][0].keys\\(\\)\\) if d.get\\('jobs'\\) else 'none'\\)\")"
+    ]
+  }
+}

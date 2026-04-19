@@ -345,34 +345,25 @@ function buildSearchAttempts(query: string, options: SearchOptions): SearchAttem
 
   const attempts: SearchAttempt[] = [];
 
-  const queryParams = new URLSearchParams({
+  // Primary: advanced-jsearch API uses /job-search with `keyword` param
+  const primaryParams = new URLSearchParams({
+    keyword: query,
+    num_pages: pages.toString(),
+    page: "1",
+  });
+  if (countryCode) primaryParams.set("country", countryCode.toLowerCase());
+  if (remoteOnly) primaryParams.set("remote_jobs_only", "true");
+  attempts.push({ endpoint: "/job-search", params: primaryParams });
+
+  // Fallback: standard jsearch API format uses /search with `query` param
+  const fallbackParams = new URLSearchParams({
     query,
     num_pages: pages.toString(),
-  });
-  if (countryCode) queryParams.set("country", countryCode.toLowerCase());
-  if (remoteOnly) queryParams.set("remote_jobs_only", "true");
-  attempts.push({ endpoint: "/search", params: queryParams });
-
-  const qParams = new URLSearchParams({
-    q: query,
     page: "1",
-    pages: pages.toString(),
   });
-  if (countryCode) qParams.set("country", countryCode.toLowerCase());
-  if (remoteOnly) qParams.set("remote_only", "true");
-  attempts.push({ endpoint: "/search", params: qParams });
-
-  const titleParams = new URLSearchParams({
-    job_title: query,
-    page: "1",
-    pages: pages.toString(),
-  });
-  if (countryCode) titleParams.set("location", countryCode.toUpperCase());
-  if (remoteOnly) titleParams.set("remote_only", "true");
-  attempts.push({ endpoint: "/search", params: titleParams });
-
-  attempts.push({ endpoint: "/search-jobs", params: queryParams });
-  attempts.push({ endpoint: "/jobs/search", params: queryParams });
+  if (countryCode) fallbackParams.set("country", countryCode.toLowerCase());
+  if (remoteOnly) fallbackParams.set("remote_jobs_only", "true");
+  attempts.push({ endpoint: "/search", params: fallbackParams });
 
   return attempts;
 }
@@ -530,26 +521,35 @@ Return ONLY a JSON object, no markdown:
 
     // Step 2 - Fetch jobs, prioritising user's country, with fallbacks.
     let rawJobs = await searchJobs(jobQuery.primaryTitle, {
-      pages: 1,
+      pages: 2,
       countryCode: userCountry,
     });
 
+    // Fallback: drop country filter if we have fewer than 10 results.
+    if (rawJobs.length < 10) {
+      const globalJobs = await searchJobs(jobQuery.primaryTitle, {
+        pages: 2,
+      });
+      // Merge: prefer local jobs first, then fill with global
+      const localIds = new Set(rawJobs.map((j: any) => j.job_id || j.id));
+      rawJobs = [...rawJobs, ...globalJobs.filter((j: any) => !localIds.has(j.job_id || j.id))];
+    }
+
     // Fallback: strip seniority words and retry with just the core role.
-    if (rawJobs.length === 0) {
+    if (rawJobs.length < 5) {
       const broaderTitle = jobQuery.primaryTitle
         .replace(/\b(senior|junior|lead|principal|staff|associate|entry\.level)\b/gi, "")
         .trim();
 
       rawJobs = await searchJobs(broaderTitle || jobQuery.primaryTitle, {
-        pages: 1,
-        countryCode: userCountry,
+        pages: 2,
       });
     }
 
     // Final fallback: remote roles so users always see something relevant.
-    if (rawJobs.length === 0) {
+    if (rawJobs.length < 5) {
       rawJobs = await searchJobs(jobQuery.primaryTitle, {
-        pages: 1,
+        pages: 2,
         remoteOnly: true,
       });
     }
@@ -660,6 +660,7 @@ Return ONLY a JSON object, no markdown:
           isRemote,
           applyUrl:
             pickString(job, [
+              "job_url",
               "job_apply_link",
               "apply_url",
               "apply_link",
@@ -668,6 +669,7 @@ Return ONLY a JSON object, no markdown:
               "job_google_link",
             ]) || "#",
           postedAt: pickString(job, [
+            "posted_date",
             "job_posted_at_datetime_utc",
             "posted_at",
             "date_posted",
