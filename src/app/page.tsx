@@ -49,9 +49,7 @@ function useInView(threshold = 0.12) {
 }
 
 export default function LandingPage() {
-  const { user, signInWithGoogle, signInWithEmailLink, signInWithPassword, signUp, resetPassword, signOut } = useAuth();
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const { user, signOut } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -67,11 +65,11 @@ export default function LandingPage() {
 
   const hero = useInView(0.05);
 
-  const openSignup = () => { setAuthMode("signup"); setAuthOpen(true); };
-  const openSignin = () => { setAuthMode("signin"); setAuthOpen(true); };
+  const openSignup = () => router.push("/signin");
+  const openSignin = () => router.push("/signin");
   const handlePlanSelect = async (planId: PlanId, billingCycle: BillingCycle) => {
     if (!user) {
-      await signInWithGoogle();
+      router.push("/signin");
       return;
     }
 
@@ -715,186 +713,7 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {authOpen && (
-        <AuthModal
-          onClose={() => setAuthOpen(false)}
-          mode={authMode}
-          setMode={setAuthMode}
-          signInWithGoogle={signInWithGoogle}
-          signInWithEmailLink={signInWithEmailLink}
-          signInWithPassword={signInWithPassword}
-          signUp={signUp}
-          resetPassword={resetPassword}
-        />
-      )}
 
     </div>
-  );
-}
-
-function AuthModal({
-  onClose,
-  mode,
-  setMode,
-  signInWithGoogle,
-  signInWithEmailLink,
-  signInWithPassword,
-  signUp,
-  resetPassword,
-}: {
-  onClose: () => void;
-  mode: "signin" | "signup";
-  setMode: (m: "signin" | "signup") => void;
-  signInWithGoogle: () => Promise<void>;
-  signInWithEmailLink: (email: string) => Promise<void>;
-  signInWithPassword: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name?: string) => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-}) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-
-  const run = async (fn: () => Promise<void>) => {
-    setLoading(true);
-    setError("");
-    setMessage("");
-    try {
-      await fn();
-    } catch (err: any) {
-      setError(err?.message || "Something went wrong. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignIn = () => run(() => signInWithPassword(email, password));
-  const handleSignUp = () => run(() => signUp(email, password, name || undefined));
-  const handleMagicLink = () => run(async () => {
-    await signInWithEmailLink(email);
-    setMessage("Magic link sent. Check your inbox.");
-  });
-  const handleReset = () => run(async () => {
-    await resetPassword(email);
-    setMessage("Password reset link sent. Check your email.");
-  });
-
-  return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-slate-900/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 p-8">
-        <button onClick={onClose} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600">×</button>
-        <div className="text-center mb-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">myCVtailor</p>
-          <h3 className="text-2xl font-bold tracking-tight text-slate-900 mt-1">
-            {mode === "signin" ? "Sign in" : "Create account"}
-          </h3>
-          <p className="text-sm text-slate-500 mt-1">3 free tailors total for new users (one time).</p>
-        </div>
-
-        <div className="space-y-4">
-          <button
-            onClick={() => run(signInWithGoogle)}
-            className="w-full inline-flex items-center justify-center gap-3 border border-slate-200 text-slate-700 font-semibold px-4 py-3 rounded-xl text-sm bg-white hover:border-slate-300 transition-colors"
-            disabled={loading}
-          >
-            <GoogleIcon />
-            Continue with Google
-          </button>
-
-          <div className="flex items-center gap-3 text-slate-400 text-xs uppercase tracking-[0.2em] justify-center">
-            <span className="flex-1 h-px bg-slate-200" />
-            or
-            <span className="flex-1 h-px bg-slate-200" />
-          </div>
-
-          {mode === "signup" && (
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Full name"
-              className="w-full text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400 transition-colors"
-            />
-          )}
-
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email address"
-            className="w-full text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400 transition-colors"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full text-sm text-slate-700 placeholder-slate-300 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400 transition-colors"
-          />
-
-          {error && <p className="text-xs text-red-500">{error}</p>}
-          {message && <p className="text-xs text-emerald-600">{message}</p>}
-
-          {mode === "signin" ? (
-            <button
-              onClick={handleSignIn}
-              disabled={loading}
-              className="w-full text-white font-semibold px-4 py-3 rounded-xl text-sm transition-all disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </button>
-          ) : (
-            <button
-              onClick={handleSignUp}
-              disabled={loading}
-              className="w-full text-white font-semibold px-4 py-3 rounded-xl text-sm transition-all disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
-            >
-              {loading ? "Creating..." : "Create account"}
-            </button>
-          )}
-
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <button onClick={handleReset} className="hover:text-slate-700">Forgot password?</button>
-            <button onClick={handleMagicLink} className="hover:text-slate-700">Send magic link</button>
-          </div>
-
-          <div className="text-center text-sm text-slate-500">
-            {mode === "signin" ? (
-              <>
-                New to myCVtailor?{" "}
-                <button className="text-slate-900 font-semibold" onClick={() => { setMode("signup"); setError(""); setMessage(""); }}>
-                  Create an account
-                </button>
-              </>
-            ) : (
-              <>
-                Already have an account?{" "}
-                <button className="text-slate-900 font-semibold" onClick={() => { setMode("signin"); setError(""); setMessage(""); }}>
-                  Sign in
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function GoogleIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.68 30.47 0 24 0 14.62 0 6.51 5.45 2.56 13.36l7.98 6.19C12.61 13.04 17.8 9.5 24 9.5z"/>
-      <path fill="#4285F4" d="M46.5 24.5c0-1.57-.15-3.08-.43-4.55H24v9.02h12.65c-.55 2.97-2.23 5.48-4.74 7.18l7.35 5.7C43.9 38.07 46.5 31.83 46.5 24.5z"/>
-      <path fill="#FBBC05" d="M10.54 28.45c-.48-1.41-.76-2.91-.76-4.45s.27-3.04.76-4.45l-7.98-6.19C.92 16.49 0 20.13 0 24c0 3.87.92 7.51 2.56 10.64l7.98-6.19z"/>
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.81l-7.35-5.7c-2.04 1.38-4.65 2.2-8.56 2.2-6.2 0-11.39-3.54-13.46-8.55l-7.98 6.19C6.51 42.55 14.62 48 24 48z"/>
-      <path fill="none" d="M0 0h48v48H0z"/>
-    </svg>
   );
 }

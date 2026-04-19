@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 
+import { useRouter } from "next/navigation";
 import { Pricing2, type BillingCycle, type PlanId } from "@/components/ui/pricing2";
 import { useAuth } from "@/lib/auth";
 
 export default function PricingPage() {
-  const { user, signInWithGoogle } = useAuth();
+  const { user } = useAuth();
+  const router = useRouter();
 
   const handlePlanSelect = async (planId: PlanId, billingCycle: BillingCycle) => {
     if (!user) {
-      await signInWithGoogle();
+      router.push("/signin");
       return;
     }
 
@@ -47,13 +49,13 @@ export default function PricingPage() {
             ) : (
               <>
                 <button
-                  onClick={signInWithGoogle}
+                  onClick={() => router.push("/signin")}
                   className="text-sm font-semibold px-4 py-2 rounded-xl transition-all border border-white/25 text-white/90 hover:text-white"
                 >
                   Sign in
                 </button>
                 <button
-                  onClick={signInWithGoogle}
+                  onClick={() => router.push("/signin")}
                   className="text-slate-900 text-sm font-semibold px-4 py-2 rounded-xl bg-white transition-all hover:-translate-y-0.5"
                 >
                   Sign up

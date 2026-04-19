@@ -7,10 +7,8 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithEmailLink: (email: string) => Promise<void>;
-  signInWithPassword: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name?: string) => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -18,10 +16,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   signInWithGoogle: async () => {},
-  signInWithEmailLink: async () => {},
-  signInWithPassword: async () => {},
-  signUp: async () => {},
-  resetPassword: async () => {},
+  signInWithEmail: async () => ({ error: null }),
+  signUpWithEmail: async () => ({ error: null }),
   signOut: async () => {},
 });
 
@@ -51,37 +47,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const signInWithEmailLink = async (email: string) => {
-    await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+  const signInWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { error: error.message };
+    return { error: null };
   };
 
-  const signInWithPassword = async (email: string, password: string) => {
-    await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-  };
-
-  const signUp = async (email: string, password: string, name?: string) => {
-    await supabase.auth.signUp({
+  const signUpWithEmail = async (email: string, password: string): Promise<{ error: string | null }> => {
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: name ? { full_name: name } : undefined,
       },
     });
-  };
-
-  const resetPassword = async (email: string) => {
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback`,
-    });
+    if (error) return { error: error.message };
+    return { error: null };
   };
 
   const signOut = async () => {
@@ -89,16 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      signInWithGoogle,
-      signInWithEmailLink,
-      signInWithPassword,
-      signUp,
-      resetPassword,
-      signOut
-    }}>
+    <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut }}>
       {children}
     </AuthContext.Provider>
   );
