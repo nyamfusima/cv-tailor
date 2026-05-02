@@ -272,7 +272,7 @@ export default function LandingPage() {
             {/* Stats */}
             <div className={`flex flex-wrap items-center gap-x-4 gap-y-3 justify-center lg:justify-start ${mounted ? "anim-up d4" : "opacity-0"}`}>
               {[
-                { value: null, to: 500, suffix: "+", label: "CVs tailored" },
+                { value: null, to: 2000, suffix: "+", label: "CVs tailored" },
                 { value: "~30s", to: null, suffix: "", label: "Average time" },
                 { value: "3",    to: null, suffix: "", label: "Free tailors" },
               ].map((s) => (
