@@ -9,6 +9,7 @@ export default function SignInPage() {
   const router = useRouter();
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,6 +22,10 @@ export default function SignInPage() {
   }, [user, router]);
 
   const handleEmailAuth = async () => {
+    if (mode === "signup" && name.trim().length < 2) {
+      setError("Please enter your full name.");
+      return;
+    }
     if (!email || !password) {
       setError("Please enter your email and password.");
       return;
@@ -34,7 +39,7 @@ export default function SignInPage() {
     setLoading(true);
 
     if (mode === "signup") {
-      const { error } = await signUpWithEmail(email, password);
+      const { error } = await signUpWithEmail(email, password, name.trim());
       if (error) {
         setError(error);
       } else {
@@ -189,6 +194,21 @@ export default function SignInPage() {
           ) : (
             /* Sign in / sign up form */
             <div className="space-y-3">
+              {mode === "signup" && (
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleEmailAuth()}
+                    placeholder="Full name"
+                    className="w-full px-4 py-3 text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 transition-colors"
+                  />
+                </div>
+              )}
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1.5">
                   Email
@@ -250,7 +270,7 @@ export default function SignInPage() {
             <p className="text-center text-xs text-slate-400 mt-5">
               {mode === "signin" ? "Don't have an account? " : "Already have an account? "}
               <button
-                onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); setSuccess(""); }}
+                onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setName(""); setError(""); setSuccess(""); }}
                 className="font-semibold underline"
                 style={{ color: "#0d1f3c" }}
               >
