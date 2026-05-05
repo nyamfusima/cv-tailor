@@ -233,36 +233,122 @@ function OriginalCVCard({ cv }: { cv: OriginalCV }) {
 
 function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: TailoredCV) => void }) {
   const [editingSection, setEditingSection] = useState<string | null>(null);
-  const toggle = (section: string) => setEditingSection(prev => prev === section ? null : section);
-  const isEditing = (section: string) => editingSection === section;
+  const toggle = (key: string) => setEditingSection(prev => prev === key ? null : key);
+  const isEditing = (key: string) => editingSection === key;
+  const closeEdit = () => setEditingSection(null);
 
+  // ── Contact
+  const updateContact = (field: "name" | "email" | "phone" | "location" | "linkedin", v: string) =>
+    onChange({ ...cv, [field]: v });
+
+  // ── Summary
   const updateSummary = (v: string) => onChange({ ...cv, summary: v });
-  const updateBullet = (jobIdx: number, bulletIdx: number, v: string) => {
-    const exp = cv.experience.map((job, i) =>
-      i === jobIdx ? { ...job, bullets: job.bullets.map((b, j) => j === bulletIdx ? v : b) } : job
-    );
-    onChange({ ...cv, experience: exp });
-  };
-  const updateJobTitle = (jobIdx: number, v: string) => {
-    onChange({ ...cv, experience: cv.experience.map((job, i) => i === jobIdx ? { ...job, title: v } : job) });
-  };
-  const updateJobCompany = (jobIdx: number, v: string) => {
-    onChange({ ...cv, experience: cv.experience.map((job, i) => i === jobIdx ? { ...job, company: v } : job) });
-  };
-  const updateSkill = (groupIdx: number, skillIdx: number, v: string) => {
-    onChange({ ...cv, skills: cv.skills.map((g, i) => i === groupIdx ? { ...g, skills: g.skills.map((s, j) => j === skillIdx ? v : s) } : g) });
-  };
-  const updateCoursework = (eduIdx: number, cwIdx: number, v: string) => {
-    onChange({ ...cv, education: cv.education.map((edu, i) => i === eduIdx ? { ...edu, coursework: (edu.coursework || []).map((c, j) => j === cwIdx ? v : c) } : edu) });
-  };
+
+  // ── Skills
+  const updateSkillCategory = (gi: number, v: string) =>
+    onChange({ ...cv, skills: cv.skills.map((g, i) => i === gi ? { ...g, category: v } : g) });
+  const updateSkill = (gi: number, si: number, v: string) =>
+    onChange({ ...cv, skills: cv.skills.map((g, i) => i === gi ? { ...g, skills: g.skills.map((s, j) => j === si ? v : s) } : g) });
+  const deleteSkill = (gi: number, si: number) =>
+    onChange({ ...cv, skills: cv.skills.map((g, i) => i === gi ? { ...g, skills: g.skills.filter((_, j) => j !== si) } : g) });
+  const addSkill = (gi: number) =>
+    onChange({ ...cv, skills: cv.skills.map((g, i) => i === gi ? { ...g, skills: [...g.skills, "New skill"] } : g) });
+  const deleteSkillGroup = (gi: number) =>
+    onChange({ ...cv, skills: cv.skills.filter((_, i) => i !== gi) });
+  const addSkillGroup = () =>
+    onChange({ ...cv, skills: [...(cv.skills || []), { category: "New Category", skills: ["New skill"] }] });
+
+  // ── Experience
+  const updateJobField = (ji: number, field: "title" | "company" | "dates", v: string) =>
+    onChange({ ...cv, experience: cv.experience.map((job, i) => i === ji ? { ...job, [field]: v } : job) });
+  const updateBullet = (ji: number, bi: number, v: string) =>
+    onChange({ ...cv, experience: cv.experience.map((job, i) => i === ji ? { ...job, bullets: job.bullets.map((b, j) => j === bi ? v : b) } : job) });
+  const deleteBullet = (ji: number, bi: number) =>
+    onChange({ ...cv, experience: cv.experience.map((job, i) => i === ji ? { ...job, bullets: job.bullets.filter((_, j) => j !== bi) } : job) });
+  const addBullet = (ji: number) =>
+    onChange({ ...cv, experience: cv.experience.map((job, i) => i === ji ? { ...job, bullets: [...job.bullets, "Describe an achievement or responsibility"] } : job) });
+  const deleteExperience = (ji: number) =>
+    onChange({ ...cv, experience: cv.experience.filter((_, i) => i !== ji) });
+  const addExperience = () =>
+    onChange({ ...cv, experience: [...(cv.experience || []), { title: "Job Title", company: "Company Name", dates: "2023 – Present", bullets: ["Key achievement"] }] });
+
+  // ── Education
+  const updateEduField = (ei: number, field: "degree" | "institution" | "dates", v: string) =>
+    onChange({ ...cv, education: cv.education.map((edu, i) => i === ei ? { ...edu, [field]: v } : edu) });
+  const updateCoursework = (ei: number, ci: number, v: string) =>
+    onChange({ ...cv, education: cv.education.map((edu, i) => i === ei ? { ...edu, coursework: (edu.coursework || []).map((c, j) => j === ci ? v : c) } : edu) });
+  const deleteCoursework = (ei: number, ci: number) =>
+    onChange({ ...cv, education: cv.education.map((edu, i) => i === ei ? { ...edu, coursework: (edu.coursework || []).filter((_, j) => j !== ci) } : edu) });
+  const addCoursework = (ei: number) =>
+    onChange({ ...cv, education: cv.education.map((edu, i) => i === ei ? { ...edu, coursework: [...(edu.coursework || []), "Course name"] } : edu) });
+  const deleteEducation = (ei: number) =>
+    onChange({ ...cv, education: cv.education.filter((_, i) => i !== ei) });
+  const addEducation = () =>
+    onChange({ ...cv, education: [...(cv.education || []), { degree: "Degree / Qualification", institution: "Institution", dates: "2020 – 2024", coursework: [] }] });
+
+  // ── Certifications
+  const certs = cv.certifications || [];
+  const updateCertField = (ci: number, field: "name" | "issuer" | "date", v: string) =>
+    onChange({ ...cv, certifications: certs.map((c, i) => i === ci ? { ...c, [field]: v } : c) });
+  const deleteCertification = (ci: number) =>
+    onChange({ ...cv, certifications: certs.filter((_, i) => i !== ci) });
+  const addCertification = () =>
+    onChange({ ...cv, certifications: [...certs, { name: "Certification Name", issuer: "Issuer", date: String(new Date().getFullYear()) }] });
+
+  const addBtn = (label: string, onClick: () => void) => (
+    <button
+      onClick={onClick}
+      className="mt-3 text-xs font-semibold text-slate-400 border border-dashed border-slate-300 rounded-lg px-3 py-1.5 hover:bg-slate-50 hover:text-slate-600 transition-colors"
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-      <div className="px-6 sm:px-10 py-8 text-center" style={{ backgroundColor: "#0d1f3c" }}>
-        <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-2xl sm:text-3xl text-white mb-2 tracking-tight">{cv.name}</h1>
-        <p className="text-xs sm:text-sm text-blue-200 break-words">{[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ")}</p>
+
+      {/* ── Header with inline contact editing ── */}
+      <div className="relative px-6 sm:px-10 py-8 text-center" style={{ backgroundColor: "#0d1f3c" }}>
+        {isEditing("contact") ? (
+          <div className="space-y-3 max-w-sm mx-auto text-left">
+            <input
+              value={cv.name}
+              onChange={e => updateContact("name", e.target.value)}
+              placeholder="Full name"
+              className="text-lg font-bold text-center w-full bg-white/10 text-white border border-white/30 rounded-xl px-3 py-2 outline-none focus:bg-white/20 placeholder-white/30"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              {(["email", "phone", "location", "linkedin"] as const).map(f => (
+                <input
+                  key={f}
+                  value={cv[f] || ""}
+                  onChange={e => updateContact(f, e.target.value)}
+                  placeholder={f.charAt(0).toUpperCase() + f.slice(1)}
+                  className="text-xs bg-white/10 text-white border border-white/30 rounded-lg px-2 py-1.5 outline-none focus:bg-white/20 placeholder-white/30 w-full"
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-2xl sm:text-3xl text-white mb-2 tracking-tight">{cv.name}</h1>
+            <p className="text-xs sm:text-sm text-blue-200 break-words">{[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ")}</p>
+          </>
+        )}
+        <button
+          onClick={() => toggle("contact")}
+          className="absolute top-3 right-3 text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all"
+          style={{
+            backgroundColor: isEditing("contact") ? "white" : "rgba(255,255,255,0.12)",
+            color: isEditing("contact") ? "#0d1f3c" : "rgba(255,255,255,0.75)",
+            borderColor: isEditing("contact") ? "white" : "rgba(255,255,255,0.25)",
+          }}
+        >
+          {isEditing("contact") ? "Done" : "Edit"}
+        </button>
       </div>
 
+      {/* ── Hint banner ── */}
       <div className="bg-blue-50 border-b border-blue-100 px-6 sm:px-10 py-2 flex items-center gap-2">
         <svg className="w-3.5 h-3.5 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -272,142 +358,263 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
 
       <div className="px-6 sm:px-10 py-8 font-serif">
 
-        {cv.summary && (
-          <div className="mb-7">
-            <div className="flex items-center mb-2">
-              <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Summary</h2>
-              <EditBtn active={isEditing("summary")} onClick={() => toggle("summary")} />
-            </div>
-            <div className="h-px bg-slate-200 mb-3" />
-            <EditableTextarea value={cv.summary} onChange={updateSummary} editing={isEditing("summary")} className="text-sm text-slate-700 leading-relaxed" />
+        {/* ── Summary ── */}
+        <div className="mb-7">
+          <div className="flex items-center mb-2">
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Summary</h2>
+            <EditBtn active={isEditing("summary")} onClick={() => toggle("summary")} />
           </div>
-        )}
+          <div className="h-px bg-slate-200 mb-3" />
+          <EditableTextarea value={cv.summary || ""} onChange={updateSummary} editing={isEditing("summary")} className="text-sm text-slate-700 leading-relaxed" />
+        </div>
 
-        {cv.skills?.length > 0 && (
-          <div className="mb-7">
-            <div className="flex items-center mb-2">
-              <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Key Skills</h2>
-              <EditBtn active={isEditing("skills")} onClick={() => toggle("skills")} />
-            </div>
-            <div className="h-px bg-slate-200 mb-3" />
-            <div className="space-y-3">
-              {cv.skills.map((group, i) => (
-                <div key={i} className="text-sm">
-                  <span className="font-bold text-slate-800 block mb-1.5">{group.category}:</span>
-                  {isEditing("skills") ? (
+        {/* ── Skills ── */}
+        <div className="mb-7">
+          <div className="flex items-center mb-2">
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Key Skills</h2>
+            <EditBtn active={isEditing("skills")} onClick={() => toggle("skills")} />
+          </div>
+          <div className="h-px bg-slate-200 mb-3" />
+          <div className="space-y-3">
+            {(cv.skills || []).map((group, gi) => (
+              <div key={gi} className="text-sm">
+                {isEditing("skills") ? (
+                  <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/60">
+                    <div className="flex items-center gap-2 mb-2">
+                      <input
+                        value={group.category}
+                        onChange={e => updateSkillCategory(gi, e.target.value)}
+                        className="text-sm font-bold text-slate-800 border border-indigo-300 rounded-lg px-2 py-0.5 outline-none focus:ring-2 focus:ring-indigo-200 bg-white flex-1 min-w-0"
+                      />
+                      <span className="text-slate-400 shrink-0">:</span>
+                      <button
+                        onClick={() => deleteSkillGroup(gi)}
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0"
+                        style={{ backgroundColor: "#fef2f2", color: "#b91c1c", borderColor: "#fecaca" }}
+                      >
+                        Remove
+                      </button>
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                      {group.skills.map((skill, j) => (
-                        <input
-                          key={j}
-                          value={skill}
-                          onChange={(e) => updateSkill(i, j, e.target.value)}
-                          className="text-sm border border-indigo-400 outline-none bg-white rounded-lg px-3 py-1.5 text-slate-800 shadow-sm focus:ring-2 focus:ring-indigo-300"
-                          style={{ width: `${Math.max(skill.length + 2, 10)}ch` }}
-                        />
+                      {group.skills.map((skill, si) => (
+                        <div key={si} className="flex items-center bg-white border border-indigo-200 rounded-lg overflow-hidden">
+                          <input
+                            value={skill}
+                            onChange={e => updateSkill(gi, si, e.target.value)}
+                            className="text-sm px-2 py-1 outline-none focus:bg-indigo-50/60 text-slate-700"
+                            style={{ width: `${Math.max(skill.length + 1, 6)}ch` }}
+                          />
+                          <button
+                            onClick={() => deleteSkill(gi, si)}
+                            className="px-1.5 text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors text-base leading-none self-stretch flex items-center"
+                          >
+                            ×
+                          </button>
+                        </div>
                       ))}
+                      <button
+                        onClick={() => addSkill(gi)}
+                        className="text-xs font-semibold text-indigo-500 border border-dashed border-indigo-300 rounded-lg px-2.5 py-1 hover:bg-indigo-50 transition-colors"
+                      >
+                        + skill
+                      </button>
                     </div>
-                  ) : (
-                    <span className="text-slate-600">{group.skills.join(", ")}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {cv.experience?.length > 0 && (
-          <div className="mb-7">
-            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Experience</h2>
-            <div className="h-px bg-slate-200 mb-3" />
-            <div className="space-y-6">
-              {cv.experience.map((job, i) => {
-                const sectionKey = `job-${i}`;
-                const editing = isEditing(sectionKey);
-                return (
-                  <div key={i}>
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-0.5 gap-0.5">
-                      <div className="flex items-center gap-1 flex-1">
-                        <EditableText value={job.title} onChange={(v) => updateJobTitle(i, v)} editing={editing} className="text-sm font-bold text-slate-900" />
-                        <EditBtn active={editing} onClick={() => toggle(sectionKey)} />
-                      </div>
-                      <p className="text-xs italic text-slate-400 sm:whitespace-nowrap sm:ml-4">{job.dates}</p>
-                    </div>
-                    <EditableText value={job.company} onChange={(v) => updateJobCompany(i, v)} editing={editing} className="text-sm italic text-slate-500 mb-2 block" />
-                    <ul className="space-y-2 mt-2">
-                      {job.bullets.map((b, j) => (
-                        <li key={j} className="text-sm text-slate-600 flex gap-2">
-                          <span className="shrink-0 text-slate-300 mt-0.5">•</span>
-                          <EditableTextarea value={b} onChange={(v) => updateBullet(i, j, v)} editing={editing} className="text-sm text-slate-600 leading-relaxed" />
-                        </li>
-                      ))}
-                    </ul>
                   </div>
-                );
-              })}
-            </div>
+                ) : (
+                  <div className="flex gap-2 flex-wrap">
+                    <span className="font-bold text-slate-800 shrink-0 min-w-[100px]">{group.category}:</span>
+                    <span className="text-slate-600">{group.skills.join(", ")}</span>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        )}
+          {isEditing("skills") && (
+            <button
+              onClick={addSkillGroup}
+              className="mt-3 text-xs font-semibold text-indigo-500 border border-dashed border-indigo-300 rounded-lg px-3 py-1.5 hover:bg-indigo-50 transition-colors"
+            >
+              + Add category
+            </button>
+          )}
+        </div>
 
-        {cv.education?.length > 0 && (
-          <div className="mb-7">
-            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Education</h2>
-            <div className="h-px bg-slate-200 mb-3" />
-            <div className="space-y-4">
-              {cv.education.map((edu, i) => {
-                const sectionKey = `edu-${i}`;
-                const editing = isEditing(sectionKey);
-                return (
-                  <div key={i}>
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5">
-                      <div className="flex items-center gap-1">
-                        <p className="text-sm font-bold text-slate-900">{edu.degree}</p>
-                        <EditBtn active={editing} onClick={() => toggle(sectionKey)} />
-                      </div>
-                      <p className="text-xs italic text-slate-400">{edu.dates}</p>
+        {/* ── Experience ── */}
+        <div className="mb-7">
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Experience</h2>
+          <div className="h-px bg-slate-200 mb-3" />
+          <div className="space-y-6">
+            {(cv.experience || []).map((job, ji) => {
+              const key = `job-${ji}`;
+              const editing = isEditing(key);
+              return (
+                <div key={ji} className={editing ? "border border-indigo-200 rounded-xl p-4 -mx-1 bg-slate-50/50" : ""}>
+                  <div className="flex items-start justify-between gap-2 mb-0.5">
+                    <div className="flex items-center gap-1 flex-1 min-w-0">
+                      <EditableText value={job.title} onChange={v => updateJobField(ji, "title", v)} editing={editing} className="text-sm font-bold text-slate-900" />
+                      <EditBtn active={editing} onClick={() => toggle(key)} />
+                      {editing && <DangerBtn onClick={() => { closeEdit(); deleteExperience(ji); }} label="Delete" />}
                     </div>
-                    <p className="text-sm italic text-slate-500 mb-1">{edu.institution}</p>
-                    {edu.coursework && edu.coursework.length > 0 && (
-                      <div className="text-xs text-slate-500">
-                        <span className="font-semibold not-italic text-slate-600">Relevant coursework: </span>
-                        {editing ? (
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {edu.coursework.map((c, j) => (
-                              <input
-                                key={j}
-                                value={c}
-                                onChange={(e) => updateCoursework(i, j, e.target.value)}
-                                className="text-xs border border-indigo-400 outline-none bg-white rounded-lg px-3 py-1.5 text-slate-800 shadow-sm focus:ring-2 focus:ring-indigo-300"
-                                style={{ width: `${Math.max(c.length + 2, 10)}ch` }}
-                              />
-                            ))}
-                          </div>
-                        ) : edu.coursework.join(", ")}
-                      </div>
+                    {editing ? (
+                      <input
+                        value={job.dates}
+                        onChange={e => updateJobField(ji, "dates", e.target.value)}
+                        placeholder="e.g. Jan 2022 – Mar 2024"
+                        className="text-xs italic text-slate-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white shrink-0"
+                        style={{ width: "11rem" }}
+                      />
+                    ) : (
+                      <span className="text-xs italic text-slate-400 whitespace-nowrap shrink-0">{job.dates}</span>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {cv.certifications && cv.certifications.length > 0 && (
-          <div className="mb-2">
-            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Professional Development</h2>
-            <div className="h-px bg-slate-200 mb-3" />
-            <div className="space-y-3">
-              {cv.certifications.map((cert, i) => (
-                <div key={i} className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5">
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">{cert.name}</p>
-                    <p className="text-xs italic text-slate-500">{cert.issuer}</p>
-                  </div>
-                  <p className="text-xs italic text-slate-400 sm:whitespace-nowrap sm:ml-4">{cert.date}</p>
+                  <EditableText value={job.company} onChange={v => updateJobField(ji, "company", v)} editing={editing} className="text-sm italic text-slate-500 mb-2 block" />
+                  <ul className="space-y-2 mt-1">
+                    {job.bullets.map((b, bi) => (
+                      <li key={bi} className="text-sm text-slate-600 flex gap-2 items-start">
+                        <span className="shrink-0 text-slate-300 mt-1 leading-none">•</span>
+                        <EditableTextarea value={b} onChange={v => updateBullet(ji, bi, v)} editing={editing} className="text-sm text-slate-600 leading-relaxed flex-1" />
+                        {editing && (
+                          <button onClick={() => deleteBullet(ji, bi)} className="shrink-0 text-slate-300 hover:text-red-400 transition-colors text-xl leading-none mt-0.5">×</button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {editing && (
+                    <button
+                      onClick={() => addBullet(ji)}
+                      className="mt-3 text-xs font-semibold text-indigo-500 border border-dashed border-indigo-300 rounded-lg px-3 py-1.5 hover:bg-indigo-50 transition-colors"
+                    >
+                      + Add bullet
+                    </button>
+                  )}
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
+          {addBtn("+ Add experience", addExperience)}
+        </div>
+
+        {/* ── Education ── */}
+        <div className="mb-7">
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Education</h2>
+          <div className="h-px bg-slate-200 mb-3" />
+          <div className="space-y-4">
+            {(cv.education || []).map((edu, ei) => {
+              const key = `edu-${ei}`;
+              const editing = isEditing(key);
+              return (
+                <div key={ei} className={editing ? "border border-indigo-200 rounded-xl p-4 -mx-1 bg-slate-50/50" : ""}>
+                  <div className="flex items-start justify-between gap-2 mb-0.5">
+                    <div className="flex items-center gap-1 flex-1 min-w-0">
+                      <EditableText value={edu.degree} onChange={v => updateEduField(ei, "degree", v)} editing={editing} className="text-sm font-bold text-slate-900" />
+                      <EditBtn active={editing} onClick={() => toggle(key)} />
+                      {editing && <DangerBtn onClick={() => { closeEdit(); deleteEducation(ei); }} label="Delete" />}
+                    </div>
+                    {editing ? (
+                      <input
+                        value={edu.dates}
+                        onChange={e => updateEduField(ei, "dates", e.target.value)}
+                        placeholder="e.g. 2019 – 2023"
+                        className="text-xs italic text-slate-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white shrink-0"
+                        style={{ width: "9rem" }}
+                      />
+                    ) : (
+                      <span className="text-xs italic text-slate-400 whitespace-nowrap shrink-0">{edu.dates}</span>
+                    )}
+                  </div>
+                  <EditableText value={edu.institution} onChange={v => updateEduField(ei, "institution", v)} editing={editing} className="text-sm italic text-slate-500 mb-1 block" />
+                  {(edu.coursework && edu.coursework.length > 0 || editing) && (
+                    <div className="text-xs text-slate-500 mt-1.5">
+                      <span className="font-semibold not-italic text-slate-600">Relevant coursework: </span>
+                      {editing ? (
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {(edu.coursework || []).map((c, ci) => (
+                            <div key={ci} className="flex items-center bg-white border border-indigo-200 rounded-lg overflow-hidden">
+                              <input
+                                value={c}
+                                onChange={e => updateCoursework(ei, ci, e.target.value)}
+                                className="text-xs px-2 py-1 outline-none text-slate-700"
+                                style={{ width: `${Math.max(c.length + 1, 8)}ch` }}
+                              />
+                              <button onClick={() => deleteCoursework(ei, ci)} className="px-1.5 text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors self-stretch flex items-center">×</button>
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => addCoursework(ei)}
+                            className="text-xs font-semibold text-indigo-500 border border-dashed border-indigo-300 rounded-lg px-2 py-1 hover:bg-indigo-50 transition-colors"
+                          >
+                            + course
+                          </button>
+                        </div>
+                      ) : edu.coursework?.join(", ")}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {addBtn("+ Add education", addEducation)}
+        </div>
+
+        {/* ── Certifications ── */}
+        <div className="mb-2">
+          {certs.length > 0 && (
+            <>
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Professional Development</h2>
+              <div className="h-px bg-slate-200 mb-3" />
+              <div className="space-y-3">
+                {certs.map((cert, ci) => {
+                  const key = `cert-${ci}`;
+                  const editing = isEditing(key);
+                  return (
+                    <div key={ci}>
+                      {editing ? (
+                        <div className="border border-indigo-200 rounded-xl p-4 -mx-1 bg-slate-50/50 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              value={cert.name}
+                              onChange={e => updateCertField(ci, "name", e.target.value)}
+                              placeholder="Certification name"
+                              className="flex-1 text-sm font-bold text-slate-900 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white min-w-0"
+                            />
+                            <input
+                              value={cert.date}
+                              onChange={e => updateCertField(ci, "date", e.target.value)}
+                              placeholder="Year"
+                              className="w-20 text-xs text-slate-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white shrink-0"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              value={cert.issuer}
+                              onChange={e => updateCertField(ci, "issuer", e.target.value)}
+                              placeholder="Issuer / Organisation"
+                              className="flex-1 text-xs italic text-slate-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white min-w-0"
+                            />
+                            <EditBtn active={true} onClick={() => closeEdit()} />
+                            <DangerBtn onClick={() => { closeEdit(); deleteCertification(ci); }} label="Delete" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5">
+                          <div>
+                            <div className="flex items-center gap-1">
+                              <p className="text-sm font-bold text-slate-900">{cert.name}</p>
+                              <EditBtn active={false} onClick={() => toggle(key)} />
+                            </div>
+                            <p className="text-xs italic text-slate-500">{cert.issuer}</p>
+                          </div>
+                          <p className="text-xs italic text-slate-400 sm:whitespace-nowrap sm:ml-4">{cert.date}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {addBtn("+ Add certification", addCertification)}
+        </div>
 
       </div>
     </div>

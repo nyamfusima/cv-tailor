@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [fetching, setFetching] = useState(true);
   const [uploadingCV, setUploadingCV] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [sessionTab, setSessionTab] = useState<"tailored" | "original" | "job">("tailored");
   const [avgScore, setAvgScore] = useState(0);
@@ -60,17 +61,25 @@ export default function DashboardPage() {
     setFetching(false);
   };
 
+  const mimeFromName = (name: string): string => {
+    const ext = name.split(".").pop()?.toLowerCase();
+    if (ext === "pdf") return "application/pdf";
+    if (ext === "docx") return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    return "application/octet-stream";
+  };
+
   const handleMasterCVUpload = async (file: File) => {
     if (!user) return;
     setUploadingCV(true);
+    setUploadError(null);
     try {
       const path = `${user.id}/master-cv.${file.name.split(".").pop()}`;
-      const { error: uploadError } = await supabase.storage.from("master-cvs").upload(path, file, { upsert: true });
-      if (uploadError) throw uploadError;
+      const { error: storageError } = await supabase.storage.from("master-cvs").upload(path, file, { upsert: true });
+      if (storageError) throw storageError;
       await supabase.from("users").update({ master_cv_path: path, master_cv_name: file.name }).eq("id", user.id);
       await fetchAll();
-    } catch (err) {
-      console.error("Upload error:", err);
+    } catch (err: any) {
+      setUploadError(err.message || "Upload failed. Please try again.");
     } finally {
       setUploadingCV(false);
     }
@@ -98,12 +107,17 @@ export default function DashboardPage() {
         sessionStorage.setItem("masterCV", JSON.stringify({
           cvBase64: base64,
           cvName: userData.master_cv_name || "master-cv.pdf",
-          cvType: data.type,
+          cvType: mimeFromName(userData.master_cv_name || "master-cv.pdf"),
         }));
         router.push("/upload?useMaster=true");
       };
       reader.readAsDataURL(data);
     }
+  };
+
+  const handleRestoreSession = (session: Session) => {
+    sessionStorage.setItem("tailoredCV", JSON.stringify(session.tailored_cv));
+    router.push("/results");
   };
 
   const getJobTitle = (session: Session) => {
@@ -265,6 +279,11 @@ export default function DashboardPage() {
                   />
                 </div>
               </div>
+              {uploadError && (
+                <div className="px-5 pb-4">
+                  <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{uploadError}</p>
+                </div>
+              )}
             </div>
 
             {/* Tailored CVs */}
@@ -310,11 +329,11 @@ export default function DashboardPage() {
                 <div>
                   {/* Desktop table header */}
                   <div className="hidden sm:grid grid-cols-12 gap-4 px-5 py-2.5 bg-slate-50 border-b border-slate-100">
-                    <p className="col-span-5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Job Position</p>
+                    <p className="col-span-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Job Position</p>
                     <p className="col-span-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">ATS Score</p>
                     <p className="col-span-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Improvement</p>
                     <p className="col-span-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Date</p>
-                    <p className="col-span-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">View</p>
+                    <p className="col-span-2 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Actions</p>
                   </div>
 
                   {/* Desktop rows */}
@@ -328,7 +347,7 @@ export default function DashboardPage() {
                           key={session.id}
                           className="hidden sm:grid sm:grid-cols-12 gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors items-center"
                         >
-                          <div className="col-span-5">
+                          <div className="col-span-4">
                             <p className="text-sm font-medium text-slate-800 truncate">{getJobTitle(session)}</p>
                             <p className="text-xs text-slate-400 mt-0.5 truncate">{session.tailored_cv?.name}</p>
                           </div>
@@ -350,12 +369,19 @@ export default function DashboardPage() {
                               {new Date(session.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                             </p>
                           </div>
-                          <div className="col-span-1">
+                          <div className="col-span-2 flex items-center gap-1.5">
                             <button
                               onClick={() => { setSelectedSession(session); setSessionTab("tailored"); }}
-                              className="text-xs font-medium text-slate-500 px-2.5 py-1 rounded-lg border border-slate-200 hover:border-slate-300 hover:text-slate-700 transition-all cursor-pointer"
+                              className="text-xs font-medium text-slate-500 px-2 py-1 rounded-lg border border-slate-200 hover:border-slate-300 hover:text-slate-700 transition-all cursor-pointer"
                             >
                               View
+                            </button>
+                            <button
+                              onClick={() => handleRestoreSession(session)}
+                              className="text-xs font-semibold text-white px-2 py-1 rounded-lg cursor-pointer transition-all hover:opacity-90"
+                              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+                            >
+                              Open
                             </button>
                           </div>
                         </div>
@@ -370,8 +396,7 @@ export default function DashboardPage() {
                       return (
                         <div
                           key={`m-${session.id}`}
-                          className="sm:hidden p-4 hover:bg-slate-50 transition-colors cursor-pointer"
-                          onClick={() => { setSelectedSession(session); setSessionTab("tailored"); }}
+                          className="sm:hidden p-4 hover:bg-slate-50 transition-colors"
                         >
                           <div className="flex items-start justify-between gap-3 mb-3">
                             <div className="flex-1 min-w-0">
@@ -385,11 +410,26 @@ export default function DashboardPage() {
                               {session.match_score}%
                             </span>
                           </div>
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mb-3">
                             <p className="text-xs text-emerald-600 font-semibold">+{improvement}% improvement</p>
                             <p className="text-xs text-slate-400">
                               {new Date(session.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                             </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => { setSelectedSession(session); setSessionTab("tailored"); }}
+                              className="text-xs font-medium text-slate-500 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 transition-all cursor-pointer"
+                            >
+                              Preview
+                            </button>
+                            <button
+                              onClick={() => handleRestoreSession(session)}
+                              className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg cursor-pointer transition-all hover:opacity-90"
+                              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+                            >
+                              Open →
+                            </button>
                           </div>
                         </div>
                       );

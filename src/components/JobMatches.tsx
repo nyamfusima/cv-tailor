@@ -62,8 +62,15 @@ export default function JobMatches({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cv, jobDescription }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to fetch jobs");
+
+      let data: any;
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Job search returned an unexpected response. Please try again.");
+      }
+
+      if (!res.ok) throw new Error(data?.error || "Failed to fetch jobs");
 
       const fetchedJobs: Job[] = Array.isArray(data.jobs) ? data.jobs : [];
       setJobs(fetchedJobs);

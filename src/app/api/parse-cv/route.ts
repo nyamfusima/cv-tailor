@@ -78,7 +78,18 @@ Return ONLY a JSON object, no markdown:
     });
 
     const raw = message.content[0].type === "text" ? message.content[0].text : "";
-    const parsed = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    const cleaned = raw.replace(/```json|```/g, "").trim();
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch {
+      const firstObject = cleaned.match(/\{[\s\S]*\}/);
+      if (!firstObject) {
+        throw new Error("CV parsing returned an unexpected response. Please try again.");
+      }
+      parsed = JSON.parse(firstObject[0]);
+    }
 
     return NextResponse.json({ cv: parsed });
   } catch (err: any) {
