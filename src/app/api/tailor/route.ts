@@ -139,61 +139,78 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
   ]
 }`;
 
-    const tailorPrompt = `You are an aggressive, expert CV rewriter and ATS specialist. Your job is to COMPLETELY TRANSFORM the candidate's CV to match the job description as closely as possible. You are not a passive editor — you are a ruthless rewriter.
+    const tailorPrompt = `You are an expert CV rewriter and ATS specialist. Rewrite the candidate's CV to match the job description using the exact keywords and language from the job description.
 
-Here is the candidate's current CV:
 <cv>
 ${cvText}
 </cv>
 
-Here is the job description they are applying for:
 <job_description>
 ${jobDescription}
 </job_description>
 
-YOUR RULES — follow these without exception:
+RULES — every single one is mandatory:
 
-1. **Rewrite every bullet point** to use the exact language, keywords, and phrases from the job description.
-2. **Rewrite the summary completely** — it must read as if this person was born to do this specific job.
-3. **Reorder experience bullets** — most relevant to the job description goes first.
-4. **Inject keywords aggressively** — every technical skill, tool, methodology, and buzzword from the job description.
-5. **Reframe job titles and responsibilities** to match the job description's language.
-6. **Skills section** — reorder so most job-relevant appear first.
-7. **Never invent qualifications, companies, or degrees.**
-8. **matchScore should be 75+ after your rewrite.**
-9. **Certifications** — extract from CV only, do not invent.
-10. **Education coursework** — list relevant coursework based on job description.
-11. **Score breakdown** — honest before/after scores.
+DATES (critical — no exceptions):
+- Copy every date, year, and date range EXACTLY as written in the original CV — do not change a single character
+- If a date is missing in the original CV, leave that field as an empty string — never invent or guess a date
+- Never add start years, end years, or durations that are not explicitly in the original CV
+- Preserve the exact order of all experience and education entries — do not reorder them
 
-Return ONLY a JSON object in this exact format, no extra text, no markdown fences:
+BULLET POINTS:
+- Each bullet must start directly with a strong action verb — no dash, no hyphen, no bullet character, no leading symbol of any kind
+- Maximum 20 words per bullet — cut ruthlessly, every word must carry weight
+- No filler phrases: do not use "responsible for", "tasked with", "helped to", "assisted in", "worked on", "demonstrated ability to", "proven track record of", "instrumental in", "played a key role in", "contributed to"
+- Start with impact: lead with what was achieved or delivered, not what the person did day-to-day
+- Each bullet must contain at least one keyword or phrase from the job description where it naturally fits
+
+SUMMARY:
+- Maximum 3 sentences
+- No clichés or vague claims — every sentence must be specific and tied to the job description
+- Do not start with "I" or the candidate's name
+
+CONTENT INTEGRITY:
+- Never invent qualifications, companies, degrees, metrics, or responsibilities
+- Only reword what exists — do not add new experiences or achievements
+- Preserve exact company names, job titles, and institution names
+- Certifications: copy from original CV only, do not add any
+
+SKILLS:
+- Reorder so the most job-relevant skills appear first
+- Do not add skills that are not in the original CV
+
+OUTPUT:
+- Return ONLY the JSON object below — no preamble, no explanation, no markdown, no fences
+- All string values must be plain text — no asterisks, no hyphens, no markdown of any kind inside values
+
 {
   "name": "Full name",
   "email": "email",
   "phone": "phone",
   "location": "location",
   "linkedin": "linkedin url or empty string",
-  "summary": "aggressively tailored professional summary",
+  "summary": "tailored professional summary, max 3 sentences, no clichés",
   "experience": [
     {
-      "title": "Job title",
-      "company": "Company name",
-      "dates": "Start – End",
-      "bullets": ["rewritten bullet 1", "rewritten bullet 2"]
+      "title": "Job title exactly as in original CV",
+      "company": "Company name exactly as in original CV",
+      "dates": "copied exactly from original CV — do not change",
+      "bullets": ["Action verb + achievement + keyword, max 20 words", "Action verb + achievement + keyword, max 20 words"]
     }
   ],
   "education": [
     {
-      "degree": "Degree or qualification name",
-      "institution": "Institution name",
-      "dates": "Year or Start – Present if still studying",
+      "degree": "Degree name exactly as in original CV",
+      "institution": "Institution name exactly as in original CV",
+      "dates": "copied exactly from original CV — do not change",
       "coursework": ["Relevant Course 1", "Relevant Course 2"]
     }
   ],
   "certifications": [
     {
-      "name": "Certification name",
+      "name": "Certification name from original CV only",
       "issuer": "Issuing body",
-      "date": "Year or Month Year"
+      "date": "copied exactly from original CV"
     }
   ],
   "skills": [
