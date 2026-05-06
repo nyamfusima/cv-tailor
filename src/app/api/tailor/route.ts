@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
     const ADMIN_EMAILS = [
       "nyamfusima@gmail.com",
       "hamza26mohamud@gmail.com",
+      "the.real.chad.naude@gmail.com",
       "ngqongwaayandisa@gmail.com",
       "zengetwasisipho@gmail.com",
     ];
