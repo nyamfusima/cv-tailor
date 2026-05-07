@@ -4,12 +4,8 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 const client = new Anthropic();
 
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || process.env.RAPID_API_KEY;
-const RAPIDAPI_HOST = (
-  process.env.RAPIDAPI_JOBS_HOST ||
-  process.env.RAPIDAPI_HOST ||
-  "jsearch.p.rapidapi.com"
-).replace(/^https?:\/\//, "").replace(/\/+$/, "");
+const RAPIDAPI_KEY = process.env.RAPIDAPI_JOB_MATCH_KEY || process.env.RAPIDAPI_KEY || process.env.RAPID_API_KEY;
+const RAPIDAPI_HOST = "jsearch.p.rapidapi.com";
 
 function normalize(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9+\s]/g, " ").replace(/\s+/g, " ").trim();
