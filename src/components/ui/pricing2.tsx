@@ -79,12 +79,12 @@ const defaultPlans: PricingPlan[] = [
     id: "pro",
     name: "Pro",
     description: "Built for serious job seekers who want speed, volume, and better conversion.",
-    monthlyPrice: "R199",
-    yearlyPrice: "R1,599",
+    monthlyPrice: "R99",
+    yearlyPrice: "R799",
     monthlyLabel: "/month",
     yearlyLabel: "/year",
     popular: true,
-    savings: "Save 31% with annual billing (R133/month equivalent).",
+    savings: "Save 33% with annual billing (R67/month equivalent).",
     features: [
       { text: "Unlimited CV tailors", included: true },
       { text: "Unlimited PDF downloads", included: true },
@@ -97,8 +97,8 @@ const defaultPlans: PricingPlan[] = [
       { text: "Priority processing", included: true },
     ],
     button: {
-      monthlyText: "Go Pro monthly (R199/mo)",
-      yearlyText: "Go Pro yearly (R1,599/yr)",
+      monthlyText: "Go Pro monthly (R99/mo)",
+      yearlyText: "Go Pro yearly (R799/yr)",
     },
   },
 ];
@@ -229,7 +229,7 @@ const Pricing2 = ({
                         isPopular ? "text-white/90" : "text-emerald-700",
                       )}
                     >
-                      {isYearly ? plan.savings : "Prefer annual? Save 31% with yearly billing."}
+                      {isYearly ? plan.savings : "Prefer annual? Save 33% with yearly billing."}
                     </p>
                   )}
 
@@ -300,8 +300,8 @@ const Pricing2 = ({
             </p>
             <ul className="space-y-2 text-sm text-slate-600">
               <li>Free gives enough to see value, but not enough to stay free forever.</li>
-              <li>R199/month is impulse-buy territory for active job seekers.</li>
-              <li>R1,599/year works out to R133/month and rewards commitment.</li>
+              <li>R99/month is impulse-buy territory for active job seekers.</li>
+              <li>R799/year works out to R67/month and rewards commitment.</li>
               <li>Annual billing improves cash flow and reduces churn.</li>
               <li>Two plans keeps decision-making simple: free or pro.</li>
             </ul>
