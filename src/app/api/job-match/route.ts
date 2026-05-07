@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { getUserCredits, hasJobCredits } from "@/lib/user";
+
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,ngqongwaayandisa@gmail.com,zengetwasisipho@gmail.com")
+  .split(",").map(e => e.trim());
 
 const client = new Anthropic();
 
@@ -56,7 +60,10 @@ function guessCountry(location: string): string | null {
 }
 
 async function searchRapidAPI(query: string, countryCode: string | null): Promise<any[]> {
-  if (!RAPIDAPI_KEY) return [];
+  if (!RAPIDAPI_KEY) {
+    console.error("[job-match] RAPIDAPI_KEY is not set — check RAPIDAPI_JOB_MATCH_KEY or RAPIDAPI_KEY env vars");
+    return [];
+  }
 
   const headers = { "X-RapidAPI-Key": RAPIDAPI_KEY, "X-RapidAPI-Host": RAPIDAPI_HOST };
   let jobs: any[] = [];
@@ -64,18 +71,34 @@ async function searchRapidAPI(query: string, countryCode: string | null): Promis
   // Attempt 1: /search endpoint
   const p1 = new URLSearchParams({ query, num_pages: "2", page: "1" });
   if (countryCode) p1.set("country", countryCode.toLowerCase());
-  const r1 = await fetch(`https://${RAPIDAPI_HOST}/search?${p1}`, { headers, cache: "no-store" });
-  if (r1.ok) jobs = extractJobs(await r1.json());
+  const url1 = `https://${RAPIDAPI_HOST}/search?${p1}`;
+  console.log(`[job-match] RapidAPI attempt 1: GET ${url1}`);
+  const r1 = await fetch(url1, { headers, cache: "no-store" });
+  console.log(`[job-match] RapidAPI attempt 1 status: ${r1.status}`);
+  if (r1.ok) {
+    jobs = extractJobs(await r1.json());
+    console.log(`[job-match] Attempt 1 returned ${jobs.length} jobs`);
+  } else {
+    const body = await r1.text().catch(() => "");
+    console.warn(`[job-match] Attempt 1 failed: ${r1.status} — ${body.slice(0, 200)}`);
+  }
 
   // Attempt 2: /job-search endpoint if first gave few results
   if (jobs.length < 5) {
     const p2 = new URLSearchParams({ keyword: query, num_pages: "2", page: "1" });
     if (countryCode) p2.set("country", countryCode.toLowerCase());
-    const r2 = await fetch(`https://${RAPIDAPI_HOST}/job-search?${p2}`, { headers, cache: "no-store" });
+    const url2 = `https://${RAPIDAPI_HOST}/job-search?${p2}`;
+    console.log(`[job-match] RapidAPI attempt 2: GET ${url2}`);
+    const r2 = await fetch(url2, { headers, cache: "no-store" });
+    console.log(`[job-match] RapidAPI attempt 2 status: ${r2.status}`);
     if (r2.ok) {
       const extra = extractJobs(await r2.json());
+      console.log(`[job-match] Attempt 2 returned ${extra.length} jobs`);
       const seen = new Set(jobs.map((j: any) => j.job_id || j.id));
       jobs = [...jobs, ...extra.filter((j: any) => !seen.has(j.job_id || j.id))];
+    } else {
+      const body = await r2.text().catch(() => "");
+      console.warn(`[job-match] Attempt 2 failed: ${r2.status} — ${body.slice(0, 200)}`);
     }
   }
 
@@ -86,14 +109,30 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) {
+      console.log("[job-match] Unauthorized — no session");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
+    if (!isAdmin) {
+      const userData = await getUserCredits(user.id);
+      if (!userData || !hasJobCredits(userData)) {
+        console.log(`[job-match] Access denied for ${user.email} — no job credits`);
+        return NextResponse.json({ error: "PRO_REQUIRED" }, { status: 403 });
+      }
+    }
 
     const { cvText } = await req.json();
     if (!cvText || typeof cvText !== "string") {
+      console.log("[job-match] Missing or invalid cvText in request body");
       return NextResponse.json({ error: "cvText is required" }, { status: 400 });
     }
 
+    console.log(`[job-match] Request from user ${user.id} (admin=${isAdmin}), cvText length: ${cvText.length}`);
+
     if (!RAPIDAPI_KEY) {
+      console.error("[job-match] No RapidAPI key configured");
       return NextResponse.json({ error: "Job search is not configured." }, { status: 500 });
     }
 
@@ -102,6 +141,7 @@ export async function POST(req: NextRequest) {
     let skills: string[] = [];
     let location: string | null = null;
 
+    console.log("[job-match] Step 1: Extracting job query from CV with Claude...");
     try {
       const msg = await client.messages.create({
         model: "claude-sonnet-4-6",
@@ -123,15 +163,18 @@ ${cvText.slice(0, 3000)}`,
         if (Array.isArray(parsed.skills)) skills = parsed.skills.map(String).slice(0, 10);
         if (typeof parsed.location === "string" && parsed.location !== "null") location = parsed.location;
       }
-    } catch {
-      // Continue with defaults
+      console.log(`[job-match] Claude extracted: title="${primaryTitle}", skills=[${skills.join(", ")}], location="${location}"`);
+    } catch (e: any) {
+      console.warn("[job-match] Claude extraction failed, using defaults:", e?.message);
     }
 
     // Step 2: Detect country from request header or CV location
     const headerCountry = req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry");
     const countryCode = headerCountry || (location ? guessCountry(location) : null);
+    console.log(`[job-match] Step 2: Searching RapidAPI for "${primaryTitle}", country="${countryCode ?? "any"}"`);
 
     const rawJobs = await searchRapidAPI(primaryTitle, countryCode);
+    console.log(`[job-match] Total raw jobs from RapidAPI: ${rawJobs.length}`);
 
     // Step 3: Score each job against extracted skills and title
     const titleTokens = tokenize(primaryTitle);
@@ -191,9 +234,10 @@ ${cvText.slice(0, 3000)}`,
       .sort((a: any, b: any) => b.matchScore - a.matchScore)
       .slice(0, 20);
 
+    console.log(`[job-match] Step 3: Returning ${jobs.length} scored jobs`);
     return NextResponse.json({ jobs, query: { primaryTitle, skills } });
   } catch (err: any) {
-    console.error("job-match error:", err);
+    console.error("[job-match] Unhandled error:", err?.message ?? err);
     return NextResponse.json({ error: err.message || "Failed to fetch jobs." }, { status: 500 });
   }
 }

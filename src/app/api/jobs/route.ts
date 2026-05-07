@@ -3,10 +3,9 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic();
 
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY || process.env.RAPID_API_KEY;
+const RAPIDAPI_KEY = process.env.RAPIDAPI_JOB_MATCH_KEY || process.env.RAPIDAPI_KEY || process.env.RAPID_API_KEY;
 const PRIMARY_RAPIDAPI_HOST =
   process.env.RAPIDAPI_JOBS_HOST ||
-  process.env.RAPIDAPI_SALARY_HOST ||
   process.env.RAPIDAPI_HOST ||
   "jsearch.p.rapidapi.com";
 const FALLBACK_RAPIDAPI_HOST = "jsearch.p.rapidapi.com";
