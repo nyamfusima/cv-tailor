@@ -57,6 +57,64 @@ export default function AdminPage() {
     setFetching(false);
   };
 
+  const downloadCV = (session: Session) => {
+    const name = (session.tailored_cv?.name || "user").replace(/\s+/g, "-");
+    const date = new Date(session.created_at).toISOString().slice(0, 10);
+    const blob = new Blob([session.cv_text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name}-${date}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadTailoredCV = (session: Session) => {
+    const cv = session.tailored_cv;
+    if (!cv) return;
+    const lines: string[] = [];
+    if (cv.name) lines.push(cv.name.toUpperCase(), "");
+    const contact = [cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join(" | ");
+    if (contact) lines.push(contact, "");
+    if (cv.summary) lines.push("PROFESSIONAL SUMMARY", cv.summary, "");
+    if (cv.skills?.length) {
+      lines.push("SKILLS");
+      cv.skills.forEach((g: any) => lines.push(`${g.category}: ${g.skills.join(", ")}`));
+      lines.push("");
+    }
+    if (cv.experience?.length) {
+      lines.push("EXPERIENCE");
+      cv.experience.forEach((job: any) => {
+        lines.push(`${job.title} | ${job.company} | ${job.dates}`);
+        job.bullets?.forEach((b: string) => lines.push(`  • ${b}`));
+        lines.push("");
+      });
+    }
+    if (cv.education?.length) {
+      lines.push("EDUCATION");
+      cv.education.forEach((ed: any) => lines.push(`${ed.degree} | ${ed.institution} | ${ed.dates}`));
+      lines.push("");
+    }
+    const name = (cv.name || "user").replace(/\s+/g, "-");
+    const date = new Date(session.created_at).toISOString().slice(0, 10);
+    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${name}-tailored-${date}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleJobMatch = (session: Session) => {
+    sessionStorage.setItem("adminCV", JSON.stringify({
+      cvText: session.cv_text,
+      userName: session.tailored_cv?.name || "User",
+      userEmail: session.user_email,
+    }));
+    router.push("/job-match");
+  };
+
   const primaryRole = (session: Session) =>
     (session.tailored_cv?.meta?.primaryRole ||
       session.tailored_cv?.experience?.[0]?.title ||
@@ -161,10 +219,10 @@ export default function AdminPage() {
                 <p className="text-sm text-slate-400 py-8 text-center">No sessions yet.</p>
               )}
               {sessions.map((session) => (
-                <button
+                <div
                   key={session.id}
                   onClick={() => { setSelected(session); setActiveTab("tailored"); }}
-                  className="w-full text-left p-4 rounded-2xl border transition-all"
+                  className="w-full text-left p-4 rounded-2xl border transition-all cursor-pointer"
                   style={{
                     backgroundColor: selected?.id === session.id ? "#f0f4ff" : "white",
                     borderColor: selected?.id === session.id ? "#0d1f3c" : "#e2e8f0",
@@ -192,7 +250,34 @@ export default function AdminPage() {
                       hour: "2-digit", minute: "2-digit"
                     })}
                   </p>
-                </button>
+                  <div
+                    className="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => downloadCV(session)}
+                      className="text-[10px] font-semibold px-2 py-1 rounded-lg border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 transition-all"
+                      title="Download original CV as .txt"
+                    >
+                      CV ↓
+                    </button>
+                    <button
+                      onClick={() => downloadTailoredCV(session)}
+                      className="text-[10px] font-semibold px-2 py-1 rounded-lg border border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 transition-all"
+                      title="Download tailored CV as .txt"
+                    >
+                      Tailored ↓
+                    </button>
+                    <button
+                      onClick={() => handleJobMatch(session)}
+                      className="text-[10px] font-semibold px-2 py-1 rounded-lg text-white hover:opacity-90 transition-all"
+                      style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+                      title="Run job match for this user's CV"
+                    >
+                      Job match →
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
