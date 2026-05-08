@@ -18,13 +18,26 @@ function derivePrimaryRole(tailored: any, original: any) {
   return summary ? summary.split(/[.|\n]/)[0].slice(0, 80) : "Unknown";
 }
 
-async function callAI(prompt: string): Promise<string> {
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 16384,
-    messages: [{ role: "user", content: prompt }],
-  });
-  return message.content[0].type === "text" ? message.content[0].text : "";
+async function callAI(prompt: string, retries = 3): Promise<string> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const message = await client.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 16384,
+        messages: [{ role: "user", content: prompt }],
+      });
+      return message.content[0].type === "text" ? message.content[0].text : "";
+    } catch (err: any) {
+      const isOverloaded = err?.status === 529 || err?.error?.type === "overloaded_error";
+      if (isOverloaded && attempt < retries) {
+        const delay = 2000 * Math.pow(2, attempt); // 2s, 4s, 8s
+        await new Promise((res) => setTimeout(res, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("AI service unavailable after retries. Please try again in a moment.");
 }
 
 /** Strip markdown fences and extract the first complete JSON object from a string. */
