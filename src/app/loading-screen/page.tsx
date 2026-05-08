@@ -73,7 +73,7 @@ if (data.error === "LIMIT_REACHED") {
 if (!res.ok) throw new Error(data.error || "Something went wrong");
 
       // Validate the response has the expected shape
-      if (!data.name || !data.experience || !data.skills) {
+      if (!Array.isArray(data.experience) || !Array.isArray(data.skills)) {
         throw new Error("The AI returned an unexpected response. Please try again.");
       }
 
