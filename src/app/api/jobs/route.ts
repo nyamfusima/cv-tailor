@@ -637,12 +637,26 @@ Return ONLY a JSON object, no markdown:
         const jobDescriptionText =
           pickString(job, ["job_description", "description", "snippet", "summary"]) ||
           qualifications;
+        const extraText = [
+          pickString(job, ["job_required_skills", "required_skills", "skills_required", "requirements"]),
+          pickString(job, ["job_required_experience", "experience_requirements", "experience"]),
+          pickString(job, ["job_required_education", "education_requirements"]),
+          pickString(job, ["employer_name", "company_name", "company"]),
+        ].filter(Boolean).join(" ");
 
-        const jobText = normalize(`${jobTitle} ${jobDescriptionText} ${qualifications}`);
+        const jobText = normalize(`${jobTitle} ${jobDescriptionText} ${qualifications} ${extraText}`);
         const jobTitleTokens = tokenize(jobTitle);
 
-        const matchedSkills = candidateSkills.filter((s: string) => jobText.includes(s));
-        const missingSkills = focusSkills.filter((s: string) => !jobText.includes(s));
+        const skillInText = (skill: string): boolean => {
+          const idx = jobText.indexOf(skill);
+          if (idx === -1) return false;
+          const before = idx === 0 || !/[a-z0-9]/.test(jobText[idx - 1]);
+          const after = idx + skill.length >= jobText.length || !/[a-z0-9]/.test(jobText[idx + skill.length]);
+          return before && after;
+        };
+
+        const matchedSkills = candidateSkills.filter(skillInText);
+        const missingSkills = focusSkills.filter((s) => !skillInText(s));
 
         const skillCoverage = matchedSkills.length / Math.max(candidateSkills.length, 1);
         const titleOverlap = overlapRatio(primaryTitleTokens, jobTitleTokens);
@@ -665,10 +679,7 @@ Return ONLY a JSON object, no markdown:
             : matchedSkills.length >= 3
             ? 2
             : 0;
-        const dynamicFloor = titleOverlap >= 0.6 ? 68 : titleOverlap >= 0.35 ? 58 : 48;
-        const matchScore = clampScore(
-          Math.max(Math.round(weightedScore + titleBoost + skillBoost), dynamicFloor)
-        );
+        const matchScore = clampScore(Math.round(weightedScore + titleBoost + skillBoost));
 
         const isRemote =
           pickBoolean(job, [
