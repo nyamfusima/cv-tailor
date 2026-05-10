@@ -607,7 +607,7 @@ Return ONLY a JSON object, no markdown:
       }
     }
 
-    // Step 3 - Score each job against CV skills (lenient, includes related roles).
+    // Step 3 - Build job cards with local skill matching (for matched/missing skill tags).
     const focusSkills: string[] = (Array.isArray(jobQuery.skills) ? jobQuery.skills : [])
       .map((s: unknown) => normalize(String(s)))
       .filter((s: string) => Boolean(s))
@@ -626,7 +626,7 @@ Return ONLY a JSON object, no markdown:
       .filter((title: string) => Boolean(title));
 
     const dedupeIds = new Set<string>();
-    const scoredJobs = rawJobs
+    const jobCards = rawJobs
       .slice(0, 40)
       .map((rawJob: any, index: number) => {
         const job = (rawJob || {}) as Record<string, unknown>;
@@ -641,7 +641,6 @@ Return ONLY a JSON object, no markdown:
           pickString(job, ["job_required_skills", "required_skills", "skills_required", "requirements"]),
           pickString(job, ["job_required_experience", "experience_requirements", "experience"]),
           pickString(job, ["job_required_education", "education_requirements"]),
-          pickString(job, ["employer_name", "company_name", "company"]),
         ].filter(Boolean).join(" ");
 
         const jobText = normalize(`${jobTitle} ${jobDescriptionText} ${qualifications} ${extraText}`);
@@ -658,57 +657,28 @@ Return ONLY a JSON object, no markdown:
         const matchedSkills = candidateSkills.filter(skillInText);
         const missingSkills = focusSkills.filter((s) => !skillInText(s));
 
-        const skillCoverage = matchedSkills.length / Math.max(candidateSkills.length, 1);
         const titleOverlap = overlapRatio(primaryTitleTokens, jobTitleTokens);
+        const skillCoverage = matchedSkills.length / Math.max(candidateSkills.length, 1);
         const experienceOverlap = experienceTitles.length
-          ? Math.max(
-              ...experienceTitles.map((title: string) =>
-                overlapRatio(tokenize(title), jobTitleTokens)
-              )
-            )
+          ? Math.max(...experienceTitles.map((t) => overlapRatio(tokenize(t), jobTitleTokens)))
           : 0;
+        const localScore = clampScore(Math.round(
+          skillCoverage * 60 + titleOverlap * 30 + experienceOverlap * 10 +
+          (titleOverlap >= 0.8 ? 12 : titleOverlap >= 0.55 ? 7 : titleOverlap >= 0.35 ? 3 : 0) +
+          (matchedSkills.length >= 8 ? 8 : matchedSkills.length >= 5 ? 5 : matchedSkills.length >= 3 ? 2 : 0)
+        ));
 
-        const weightedScore = skillCoverage * 60 + titleOverlap * 30 + experienceOverlap * 10;
-        const titleBoost =
-          titleOverlap >= 0.8 ? 12 : titleOverlap >= 0.55 ? 7 : titleOverlap >= 0.35 ? 3 : 0;
-        const skillBoost =
-          matchedSkills.length >= 8
-            ? 8
-            : matchedSkills.length >= 5
-            ? 5
-            : matchedSkills.length >= 3
-            ? 2
-            : 0;
-        const matchScore = clampScore(Math.round(weightedScore + titleBoost + skillBoost));
-
-        const isRemote =
-          pickBoolean(job, [
-            "job_is_remote",
-            "is_remote",
-            "remote",
-            "remote_only",
-          ]) ?? false;
-
+        const isRemote = pickBoolean(job, ["job_is_remote", "is_remote", "remote", "remote_only"]) ?? false;
         const city = pickString(job, ["job_city", "city"]);
         const stateOrRegion = pickString(job, ["job_state", "state", "region"]);
         const country = pickString(job, ["job_country", "country", "country_code"]);
-        const explicitLocation = pickString(job, [
-          "job_location",
-          "location",
-          "candidate_required_location",
-        ]);
+        const explicitLocation = pickString(job, ["job_location", "location", "candidate_required_location"]);
         const location =
           explicitLocation ||
           [city, stateOrRegion, country].filter(Boolean).join(", ") ||
           (isRemote ? "Remote" : "Location not specified");
 
-        const company = pickString(job, [
-          "employer_name",
-          "company",
-          "company_name",
-          "organization",
-        ]) || "Company not listed";
-
+        const company = pickString(job, ["employer_name", "company", "company_name", "organization"]) || "Company not listed";
         const derivedId =
           pickString(job, ["job_id", "id", "uuid", "listing_id"]) ||
           `job-${normalize(`${jobTitle}-${company}-${location}` || `${index}`)}-${index}`;
@@ -722,34 +692,67 @@ Return ONLY a JSON object, no markdown:
           company,
           location,
           isRemote,
-          applyUrl:
-            pickString(job, [
-              "job_url",
-              "job_apply_link",
-              "apply_url",
-              "apply_link",
-              "url",
-              "link",
-              "job_google_link",
-            ]) || "#",
-          postedAt: pickString(job, [
-            "posted_date",
-            "job_posted_at_datetime_utc",
-            "posted_at",
-            "date_posted",
-            "created_at",
-          ]),
-          matchScore,
+          applyUrl: pickString(job, ["job_url", "job_apply_link", "apply_url", "apply_link", "url", "link", "job_google_link"]) || "#",
+          postedAt: pickString(job, ["posted_date", "job_posted_at_datetime_utc", "posted_at", "date_posted", "created_at"]),
+          matchScore: localScore,
           matchedSkills: matchedSkills.slice(0, 6),
           missingSkills: missingSkills.slice(0, 4),
           description: jobDescriptionText
             ? `${jobDescriptionText.slice(0, 300)}...`
             : "No description provided.",
+          _desc: `${jobDescriptionText} ${qualifications} ${extraText}`.slice(0, 600),
         };
       })
-      .filter(Boolean);
+      .filter(Boolean) as any[];
 
-    const sorted = scoredJobs
+    // Step 4 - Use Claude to score each job against the full CV (replaces keyword scores).
+    try {
+      const cvProfile = [
+        `Target role: ${jobQuery.primaryTitle}`,
+        `Skills: ${candidateSkills.slice(0, 15).join(", ")}`,
+        `Experience: ${(cv.experience || []).slice(0, 4).map((e: any) => `${e.title || ""}${e.company ? ` at ${e.company}` : ""}${e.duration ? ` (${e.duration})` : ""}`).join("; ")}`,
+        `Education: ${(cv.education || []).slice(0, 2).map((e: any) => `${e.degree || ""} ${e.field || ""} ${e.institution || ""}`).join("; ")}`,
+        `Summary: ${(cv.summary || "").slice(0, 500)}`,
+      ].filter((line) => !line.endsWith(": ")).join("\n");
+
+      const top20 = jobCards.slice(0, 20);
+      const jobsList = top20.map((job: any, i: number) =>
+        `${i + 1}. ${job.title} at ${job.company} — ${(job._desc || job.description || "").replace(/\.\.\.$/, "")}`
+      ).join("\n\n");
+
+      const scoringResponse = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 200,
+        messages: [{
+          role: "user",
+          content: `You are a senior recruiter. Score how well this candidate fits each job (0–100). Be precise and differentiated: excellent fit = 80–95, good fit = 65–79, partial fit = 45–64, poor fit = 20–44. Consider skill overlap, seniority match, and role alignment.
+
+CANDIDATE:
+${cvProfile}
+
+JOBS:
+${jobsList}
+
+Return ONLY a JSON array of integers in order, one per job. Example: [87, 63, 91]`,
+        }],
+      });
+
+      const rawText = scoringResponse.content[0].type === "text" ? scoringResponse.content[0].text : "";
+      const arrayMatch = rawText.match(/\[[\d,\s]+\]/);
+      if (arrayMatch) {
+        const aiScores: number[] = JSON.parse(arrayMatch[0]);
+        top20.forEach((job: any, i: number) => {
+          if (typeof aiScores[i] === "number") {
+            job.matchScore = clampScore(Math.round(aiScores[i]));
+          }
+        });
+      }
+    } catch {
+      // keep local keyword scores if Claude scoring fails
+    }
+
+    const sorted = jobCards
+      .map((job: any) => { const { _desc, ...rest } = job; return rest; })
       .sort((a: any, b: any) => b.matchScore - a.matchScore)
       .slice(0, 20);
 
