@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 const client = new Anthropic();
 
 const RAPIDAPI_KEY = process.env.RAPIDAPI_JOB_MATCH_KEY || process.env.RAPIDAPI_KEY || process.env.RAPID_API_KEY;
+const RAPIDAPI_MEGA_HOST = process.env.RAPIDAPI_JOBS_MEGA_HOST || "jsearch-mega.p.rapidapi.com";
 const PRIMARY_RAPIDAPI_HOST =
   process.env.RAPIDAPI_JOBS_HOST ||
   process.env.RAPIDAPI_HOST ||
@@ -419,6 +420,39 @@ async function fetchSearchAttempt(
   };
 }
 
+async function fetchJobDetails(jobIds: string[], countryCode?: string | null): Promise<any[]> {
+  if (!RAPIDAPI_KEY || jobIds.length === 0) return [];
+
+  const host = sanitizeHost(RAPIDAPI_MEGA_HOST);
+  const results: any[] = [];
+
+  for (let i = 0; i < jobIds.length; i += 20) {
+    const batch = jobIds.slice(i, i + 20);
+    const params = new URLSearchParams({ job_id: batch.join(",") });
+    if (countryCode) params.set("country", countryCode.toLowerCase());
+
+    try {
+      const res = await fetch(`https://${host}/job-details?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          "X-RapidAPI-Key": RAPIDAPI_KEY,
+          "X-RapidAPI-Host": host,
+        },
+        cache: "no-store",
+      });
+
+      if (!res.ok) continue;
+
+      const payload = await res.json();
+      results.push(...extractJobsFromPayload(payload));
+    } catch {
+      // skip failed batches silently
+    }
+  }
+
+  return results;
+}
+
 async function searchJobs(query: string, options: SearchOptions = {}): Promise<any[]> {
   if (!RAPIDAPI_KEY) {
     throw new Error("RapidAPI key is missing. Set RAPIDAPI_KEY in your environment.");
@@ -426,6 +460,7 @@ async function searchJobs(query: string, options: SearchOptions = {}): Promise<a
 
   const hostCandidates = Array.from(
     new Set([
+      sanitizeHost(RAPIDAPI_MEGA_HOST),
       sanitizeHost(PRIMARY_RAPIDAPI_HOST),
       sanitizeHost(FALLBACK_RAPIDAPI_HOST),
     ])
@@ -551,6 +586,25 @@ Return ONLY a JSON object, no markdown:
         pages: 2,
         remoteOnly: true,
       });
+    }
+
+    // Step 2b - Enrich top results with full descriptions from job-details endpoint.
+    const rawJobIds = rawJobs
+      .map((j: any) => j.job_id || j.id)
+      .filter(Boolean)
+      .slice(0, 20) as string[];
+
+    if (rawJobIds.length > 0) {
+      try {
+        const detailedJobs = await fetchJobDetails(rawJobIds, userCountry?.toLowerCase());
+        if (detailedJobs.length > 0) {
+          const detailedIds = new Set(detailedJobs.map((j: any) => j.job_id || j.id));
+          const unmatchedRaw = rawJobs.filter((j: any) => !detailedIds.has(j.job_id || j.id));
+          rawJobs = [...detailedJobs, ...unmatchedRaw];
+        }
+      } catch {
+        // keep raw search results if details fetch fails
+      }
     }
 
     // Step 3 - Score each job against CV skills (lenient, includes related roles).
