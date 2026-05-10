@@ -42,7 +42,7 @@ type JobsCacheEntry = {
   expiresAt: number;
 };
 
-const JOBS_CACHE_TTL_MS = 5 * 60 * 1000;
+const JOBS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 const jobsCache = new Map<string, JobsCacheEntry>();
 
 class RateLimitError extends Error {
@@ -165,6 +165,10 @@ function readJobsCache(cacheKey: string): JobsCacheEntry | null {
     return null;
   }
   return cached;
+}
+
+function readStaleCacheEntry(cacheKey: string): JobsCacheEntry | null {
+  return jobsCache.get(cacheKey) ?? null;
 }
 
 function writeJobsCache(cacheKey: string, jobs: any[], query: ParsedJobQuery) {
@@ -505,6 +509,7 @@ export async function POST(req: NextRequest) {
     // Resolve country + remote intent from explicit preference, then headers, then CV.
     let userCountry: string | null = null;
     let remoteOnly = false;
+    let cacheKey = "";
 
     if (locationPreference === "remote") {
       remoteOnly = true;
@@ -553,7 +558,7 @@ Return ONLY a JSON object, no markdown:
       console.warn("Jobs API query extraction fallback:", queryError);
     }
 
-    const cacheKey = buildJobsCacheKey(jobQuery, remoteOnly ? "remote" : userCountry);
+    cacheKey = buildJobsCacheKey(jobQuery, remoteOnly ? "remote" : userCountry);
     const cachedJobs = readJobsCache(cacheKey);
     if (cachedJobs) {
       return NextResponse.json({
@@ -768,15 +773,18 @@ Return ONLY a JSON array of integers in order, one per job. Example: [87, 63, 91
     console.error("Jobs API error:", err);
 
     if (err instanceof RateLimitError) {
+      const stale = readStaleCacheEntry(cacheKey);
+      if (stale && stale.jobs.length > 0) {
+        return NextResponse.json({ jobs: stale.jobs, query: stale.query, cached: true, stale: true });
+      }
+
       const retryMessage =
         err.retryAfterSeconds && err.retryAfterSeconds > 0
           ? ` Please wait about ${err.retryAfterSeconds} seconds and try again.`
           : " Please wait a minute and try again.";
 
       return NextResponse.json(
-        {
-          error: `Job search is temporarily rate-limited.${retryMessage}`,
-        },
+        { error: `Job search is temporarily rate-limited.${retryMessage}` },
         { status: 429 }
       );
     }
