@@ -45,6 +45,9 @@ export default function JobMatches({
   const [error, setError] = useState("");
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [salaryByJobId, setSalaryByJobId] = useState<Record<string, SalaryCacheEntry>>({});
+  const [locationPref, setLocationPref] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [showLocationInput, setShowLocationInput] = useState(false);
 
   const selectedJob = useMemo(
     () => jobs.find((job) => job.id === selectedJobId) || jobs[0] || null,
@@ -60,7 +63,7 @@ export default function JobMatches({
       const res = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cv, jobDescription }),
+        body: JSON.stringify({ cv, jobDescription, locationPreference: locationPref }),
       });
 
       let data: any;
@@ -82,7 +85,7 @@ export default function JobMatches({
     } finally {
       setLoading(false);
     }
-  }, [cv, jobDescription]);
+  }, [cv, jobDescription, locationPref]);
 
   const fetchSalaryInsights = useCallback(async (job: Job) => {
     const existing = salaryByJobId[job.id];
@@ -190,27 +193,114 @@ export default function JobMatches({
     return { label: "Unknown", icon: "-", color: "text-slate-500 bg-slate-100" };
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 mt-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center"
+  const locationBar = (
+    <div className="flex items-center gap-2 flex-wrap px-5 py-3 border-b border-slate-100 bg-white">
+      <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">Location:</span>
+
+      <button
+        onClick={() => { setLocationPref(""); setShowLocationInput(false); }}
+        className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+          locationPref === "" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+        }`}
+      >
+        Auto-detect
+      </button>
+
+      <button
+        onClick={() => { setLocationPref("remote"); setShowLocationInput(false); }}
+        className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+          locationPref === "remote" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+        }`}
+      >
+        Remote only
+      </button>
+
+      {locationPref !== "" && locationPref !== "remote" ? (
+        <span className="flex items-center gap-1.5 text-xs px-3 py-1 rounded-full font-medium bg-slate-800 text-white">
+          {locationPref}
+          <button
+            onClick={() => setLocationPref("")}
+            className="opacity-60 hover:opacity-100 leading-none"
+            aria-label="Clear location"
+          >
+            ×
+          </button>
+        </span>
+      ) : (
+        <button
+          onClick={() => setShowLocationInput(true)}
+          className="text-xs px-3 py-1 rounded-full font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+        >
+          Specify country...
+        </button>
+      )}
+
+      {showLocationInput && (
+        <div className="flex gap-1.5 items-center">
+          <input
+            type="text"
+            value={locationInput}
+            onChange={(e) => setLocationInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && locationInput.trim()) {
+                setLocationPref(locationInput.trim());
+                setLocationInput("");
+                setShowLocationInput(false);
+              }
+              if (e.key === "Escape") setShowLocationInput(false);
+            }}
+            placeholder="e.g. South Africa, UK, Canada"
+            autoFocus
+            className="text-xs px-2.5 py-1 border border-slate-200 rounded-lg outline-none focus:border-slate-400 w-44"
+          />
+          <button
+            onClick={() => {
+              if (locationInput.trim()) {
+                setLocationPref(locationInput.trim());
+                setLocationInput("");
+                setShowLocationInput(false);
+              }
+            }}
+            className="text-xs px-2.5 py-1 rounded-lg text-white font-medium"
             style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
           >
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <div>
-            <p className="font-semibold text-slate-800 text-sm">Finding jobs you can apply to...</p>
-            <p className="text-xs text-slate-400">Searching real listings based on your tailored CV</p>
-          </div>
+            Search
+          </button>
         </div>
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-slate-100 rounded-xl animate-pulse" />
-          ))}
+      )}
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+        {locationBar}
+        <div className="p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+            >
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-slate-800 text-sm">Finding jobs you can apply to...</p>
+              <p className="text-xs text-slate-400">
+                {locationPref === "remote"
+                  ? "Searching remote listings worldwide"
+                  : locationPref
+                  ? `Searching listings in ${locationPref}`
+                  : "Searching real listings based on your tailored CV"}
+              </p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-20 bg-slate-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -218,32 +308,40 @@ export default function JobMatches({
 
   if (error) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-6 text-center">
-        <p className="text-sm text-slate-700 font-medium mb-1">Could not load job matches</p>
-        <p className="text-xs text-slate-400 mb-4">{error}</p>
-        <button
-          onClick={() => void fetchJobs()}
-          className="text-xs font-semibold px-4 py-2 rounded-lg text-white"
-          style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
-        >
-          Try again
-        </button>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+        {locationBar}
+        <div className="p-6 text-center">
+          <p className="text-sm text-slate-700 font-medium mb-1">Could not load job matches</p>
+          <p className="text-xs text-slate-400 mb-4">{error}</p>
+          <button
+            onClick={() => void fetchJobs()}
+            className="text-xs font-semibold px-4 py-2 rounded-lg text-white"
+            style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
 
   if (jobs.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-6 text-center">
-        <p className="text-sm text-slate-700 font-medium mb-1">No matching jobs found</p>
-        <p className="text-xs text-slate-400 mb-4">Try refreshing - listings update frequently.</p>
-        <button
-          onClick={() => void fetchJobs()}
-          className="text-xs font-semibold px-4 py-2 rounded-lg text-white"
-          style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
-        >
-          Try again
-        </button>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mt-6">
+        {locationBar}
+        <div className="p-6 text-center">
+          <p className="text-sm text-slate-700 font-medium mb-1">No matching jobs found</p>
+          <p className="text-xs text-slate-400 mb-4">
+            {locationPref ? "Try a different location or switch to Auto-detect." : "Try refreshing — listings update frequently."}
+          </p>
+          <button
+            onClick={() => void fetchJobs()}
+            className="text-xs font-semibold px-4 py-2 rounded-lg text-white"
+            style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }
@@ -272,6 +370,7 @@ export default function JobMatches({
           Refresh
         </button>
       </div>
+      {locationBar}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="divide-y divide-slate-100 lg:border-r lg:border-slate-200">

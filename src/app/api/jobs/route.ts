@@ -500,16 +500,26 @@ async function searchJobs(query: string, options: SearchOptions = {}): Promise<a
 
 export async function POST(req: NextRequest) {
   try {
-    const { cv, jobDescription } = await req.json();
+    const { cv, jobDescription, locationPreference } = await req.json();
 
-    // Best-effort country detection (edge header first, then CV location)
-    const headerCountry =
-      req.headers.get("x-vercel-ip-country") ||
-      req.headers.get("cf-ipcountry") ||
-      req.headers.get("x-country-code");
-    const userCountry = (headerCountry || countryFromLocation(cv?.location))
-      ?.toString()
-      .toUpperCase() || null;
+    // Resolve country + remote intent from explicit preference, then headers, then CV.
+    let userCountry: string | null = null;
+    let remoteOnly = false;
+
+    if (locationPreference === "remote") {
+      remoteOnly = true;
+    } else if (typeof locationPreference === "string" && locationPreference.trim()) {
+      const resolved = countryFromLocation(locationPreference);
+      userCountry = resolved
+        ? resolved.toUpperCase()
+        : locationPreference.trim().slice(0, 2).toUpperCase();
+    } else {
+      const headerCountry =
+        req.headers.get("x-vercel-ip-country") ||
+        req.headers.get("cf-ipcountry") ||
+        req.headers.get("x-country-code");
+      userCountry = (headerCountry || countryFromLocation(cv?.location))?.toString().toUpperCase() || null;
+    }
 
     // Step 1 - Extract search info from CV using Claude. Fall back if parsing fails.
     let jobQuery = extractFallbackQuery(cv);
@@ -543,7 +553,7 @@ Return ONLY a JSON object, no markdown:
       console.warn("Jobs API query extraction fallback:", queryError);
     }
 
-    const cacheKey = buildJobsCacheKey(jobQuery, userCountry);
+    const cacheKey = buildJobsCacheKey(jobQuery, remoteOnly ? "remote" : userCountry);
     const cachedJobs = readJobsCache(cacheKey);
     if (cachedJobs) {
       return NextResponse.json({
@@ -553,18 +563,16 @@ Return ONLY a JSON object, no markdown:
       });
     }
 
-    // Step 2 - Fetch jobs, prioritising user's country, with fallbacks.
+    // Step 2 - Fetch jobs using explicit preference, with sensible fallbacks.
     let rawJobs = await searchJobs(jobQuery.primaryTitle, {
       pages: 2,
-      countryCode: userCountry,
+      countryCode: remoteOnly ? null : userCountry,
+      remoteOnly,
     });
 
-    // Fallback: drop country filter if we have fewer than 10 results.
-    if (rawJobs.length < 10) {
-      const globalJobs = await searchJobs(jobQuery.primaryTitle, {
-        pages: 2,
-      });
-      // Merge: prefer local jobs first, then fill with global
+    // If user didn't pin a location and results are thin, widen to global.
+    if (!remoteOnly && !locationPreference && rawJobs.length < 10) {
+      const globalJobs = await searchJobs(jobQuery.primaryTitle, { pages: 2 });
       const localIds = new Set(rawJobs.map((j: any) => j.job_id || j.id));
       rawJobs = [...rawJobs, ...globalJobs.filter((j: any) => !localIds.has(j.job_id || j.id))];
     }
@@ -574,18 +582,15 @@ Return ONLY a JSON object, no markdown:
       const broaderTitle = jobQuery.primaryTitle
         .replace(/\b(senior|junior|lead|principal|staff|associate|entry\.level)\b/gi, "")
         .trim();
-
       rawJobs = await searchJobs(broaderTitle || jobQuery.primaryTitle, {
         pages: 2,
+        remoteOnly,
       });
     }
 
     // Final fallback: remote roles so users always see something relevant.
-    if (rawJobs.length < 5) {
-      rawJobs = await searchJobs(jobQuery.primaryTitle, {
-        pages: 2,
-        remoteOnly: true,
-      });
+    if (rawJobs.length < 5 && !remoteOnly) {
+      rawJobs = await searchJobs(jobQuery.primaryTitle, { pages: 2, remoteOnly: true });
     }
 
     // Step 2b - Enrich top results with full descriptions from job-details endpoint.
