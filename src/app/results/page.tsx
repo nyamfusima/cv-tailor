@@ -3,7 +3,6 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { TailoredCV, OriginalCV } from "@/lib/types";
 import { downloadPDF } from "@/lib/generatePDF";
-import JobMatches from "@/components/JobMatches";
 
 function EditableText({
   value, onChange, className, editing,
@@ -820,11 +819,6 @@ export default function ResultsPage() {
                   ? <OriginalCVCard cv={cv.originalCV} />
                   : <p className="text-sm text-slate-400 p-6">Original not available.</p>
               )}
-              {/* Jobs You Can Apply To */}
-              {view === "tailored" && (
-                <JobMatches cv={cv} jobDescription={cv.meta?.jobDescriptionPreview ?? ""} />
-              )}
-
               <div className="flex justify-start">
                 <button
                   onClick={() => router.push("/")}
