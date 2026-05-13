@@ -82,6 +82,7 @@ export async function POST(req: NextRequest) {
       "the.real.chad.naude@gmail.com",
       "ngqongwaayandisa@gmail.com",
       "somilamangqu@gmail.com",
+      "moabithapelo1@gmail.com",
       "zengetwasisipho@gmail.com",
     ];
     const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
