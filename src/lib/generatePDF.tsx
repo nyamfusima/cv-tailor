@@ -127,6 +127,15 @@ const styles = StyleSheet.create({
     fontFamily: "Times-Italic",
     marginBottom: 4,
   },
+  refName: {
+    fontFamily: "Times-Bold",
+    fontSize: 10,
+  },
+  refDetail: {
+    fontSize: 10,
+    fontFamily: "Times-Italic",
+    marginBottom: 4,
+  },
 });
 
 function HarvardDoc({ cv }: { cv: TailoredCV }) {
@@ -221,6 +230,23 @@ function HarvardDoc({ cv }: { cv: TailoredCV }) {
                   <Text style={styles.certDate}>{cert.date}</Text>
                 </View>
                 <Text style={styles.certIssuer}>{cert.issuer}</Text>
+              </View>
+            ))}
+          </>
+        )}
+
+        {/* References */}
+        {cv.references && cv.references.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>References</Text>
+            <View style={styles.sectionDivider} />
+            {cv.references.map((ref, i) => (
+              <View key={i} style={{ marginBottom: 6 }}>
+                <Text style={styles.refName}>{ref.name}</Text>
+                <Text style={styles.refDetail}>{ref.title} · {ref.company}</Text>
+                {(ref.email || ref.phone) && (
+                  <Text style={styles.refDetail}>{[ref.email, ref.phone].filter(Boolean).join("  ·  ")}</Text>
+                )}
               </View>
             ))}
           </>

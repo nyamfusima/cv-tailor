@@ -294,6 +294,19 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
   const addCertification = () =>
     onChange({ ...cv, certifications: [...certs, { name: "Certification Name", issuer: "Issuer", date: String(new Date().getFullYear()) }] });
 
+  // ── References
+  const refs = cv.references || [];
+  const updateRefField = (ri: number, field: "name" | "title" | "company" | "email" | "phone", v: string) =>
+    onChange({ ...cv, references: refs.map((r, i) => i === ri ? { ...r, [field]: v } : r) });
+  const deleteReference = (ri: number) =>
+    onChange({ ...cv, references: refs.filter((_, i) => i !== ri) });
+  const addReference = () =>
+    onChange({ ...cv, references: [...refs, { name: "Referee Name", title: "Job Title", company: "Company", email: "", phone: "" }] });
+  const removeReferencesSection = () =>
+    onChange({ ...cv, references: undefined });
+
+  const [showAddSection, setShowAddSection] = useState(false);
+
   const addBtn = (label: string, onClick: () => void) => (
     <button
       onClick={onClick}
@@ -556,7 +569,7 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
         </div>
 
         {/* ── Certifications ── */}
-        <div className="mb-2">
+        <div className="mb-7">
           {certs.length > 0 && (
             <>
               <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Professional Development</h2>
@@ -613,6 +626,111 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
             </>
           )}
           {addBtn("+ Add certification", addCertification)}
+        </div>
+
+        {/* ── References ── */}
+        {refs.length > 0 && (
+          <div className="mb-7">
+            <div className="flex items-center mb-2">
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">References</h2>
+              <button
+                onClick={removeReferencesSection}
+                className="ml-2 text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0"
+                style={{ backgroundColor: "#fef2f2", color: "#b91c1c", borderColor: "#fecaca" }}
+              >
+                Remove section
+              </button>
+            </div>
+            <div className="h-px bg-slate-200 mb-3" />
+            <div className="space-y-4">
+              {refs.map((ref, ri) => {
+                const key = `ref-${ri}`;
+                const editing = isEditing(key);
+                return (
+                  <div key={ri}>
+                    {editing ? (
+                      <div className="border border-indigo-200 rounded-xl p-4 -mx-1 bg-slate-50/50 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            value={ref.name}
+                            onChange={e => updateRefField(ri, "name", e.target.value)}
+                            placeholder="Referee name"
+                            className="text-sm font-bold text-slate-900 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white col-span-2"
+                          />
+                          <input
+                            value={ref.title}
+                            onChange={e => updateRefField(ri, "title", e.target.value)}
+                            placeholder="Job title"
+                            className="text-xs text-slate-700 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white"
+                          />
+                          <input
+                            value={ref.company}
+                            onChange={e => updateRefField(ri, "company", e.target.value)}
+                            placeholder="Company"
+                            className="text-xs text-slate-700 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white"
+                          />
+                          <input
+                            value={ref.email || ""}
+                            onChange={e => updateRefField(ri, "email", e.target.value)}
+                            placeholder="Email (optional)"
+                            className="text-xs text-slate-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white"
+                          />
+                          <input
+                            value={ref.phone || ""}
+                            onChange={e => updateRefField(ri, "phone", e.target.value)}
+                            placeholder="Phone (optional)"
+                            className="text-xs text-slate-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <EditBtn active={true} onClick={() => closeEdit()} />
+                          <DangerBtn onClick={() => { closeEdit(); deleteReference(ri); }} label="Delete" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-1">
+                            <p className="text-sm font-bold text-slate-900">{ref.name}</p>
+                            <EditBtn active={false} onClick={() => toggle(key)} />
+                          </div>
+                          <p className="text-xs text-slate-600">{ref.title} · {ref.company}</p>
+                          {(ref.email || ref.phone) && (
+                            <p className="text-xs text-slate-400 mt-0.5">{[ref.email, ref.phone].filter(Boolean).join("  ·  ")}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {addBtn("+ Add referee", addReference)}
+          </div>
+        )}
+
+        {/* ── Add section ── */}
+        <div className="relative mt-2">
+          <button
+            onClick={() => setShowAddSection(v => !v)}
+            className="text-xs font-semibold text-slate-400 border border-dashed border-slate-300 rounded-lg px-4 py-2 hover:bg-slate-50 hover:text-slate-600 transition-colors flex items-center gap-1.5"
+          >
+            <span className="text-base leading-none">+</span> Add section
+          </button>
+          {showAddSection && (
+            <div className="absolute left-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden min-w-[160px]">
+              <button
+                onClick={() => {
+                  if (refs.length === 0) addReference();
+                  setShowAddSection(false);
+                }}
+                disabled={refs.length > 0}
+                className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                References
+              </button>
+            </div>
+          )}
         </div>
 
       </div>

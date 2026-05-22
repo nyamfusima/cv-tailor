@@ -18,6 +18,14 @@ export interface Certification {
   date: string;
 }
 
+export interface Reference {
+  name: string;
+  title: string;
+  company: string;
+  email?: string;
+  phone?: string;
+}
+
 export interface SkillCategory {
   category: string;
   skills: string[];
@@ -62,6 +70,7 @@ export interface TailoredCV {
   education: Education[];
   certifications?: Certification[];
   skills: SkillCategory[];
+  references?: Reference[];
   matchScore: number;
   scoreBreakdown: ScoreBreakdown;
   originalCV?: OriginalCV;
