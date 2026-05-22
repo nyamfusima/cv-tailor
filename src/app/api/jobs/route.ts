@@ -503,13 +503,13 @@ async function searchJobs(query: string, options: SearchOptions = {}): Promise<a
 }
 
 export async function POST(req: NextRequest) {
+  let cacheKey = "";
   try {
     const { cv, jobDescription, locationPreference } = await req.json();
 
     // Resolve country + remote intent from explicit preference, then headers, then CV.
     let userCountry: string | null = null;
     let remoteOnly = false;
-    let cacheKey = "";
 
     if (locationPreference === "remote") {
       remoteOnly = true;
