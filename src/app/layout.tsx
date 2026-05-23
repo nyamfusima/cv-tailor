@@ -19,9 +19,9 @@ export const metadata: Metadata = {
     siteName: "myCVtailor.ai",
     images: [
       {
-        url: "https://mycvtailor.co.za/og-banner.png",
-        width: 1200,
-        height: 630,
+        url: "https://mycvtailor.co.za/og-image.png?v=2",
+        width: 1692,
+        height: 866,
         alt: "myCVtailor.ai — Tailor your CV to every job in 30 seconds",
         type: "image/png",
       },
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "myCVtailor.ai — Tailor your CV to every job in 30 seconds",
     description: "AI rewrites your CV to match any job description and pass ATS filters. Free, no sign up required.",
-    images: ["https://mycvtailor.co.za/og-banner.png"],
+    images: ["https://mycvtailor.co.za/og-image.png?v=2"],
   },
 };
 
