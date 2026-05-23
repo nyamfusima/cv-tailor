@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AuthProvider } from "@/lib/auth";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://mycvtailor.co.za"),
   title: "myCVtailor.ai — AI-powered CV tailoring for ATS",
   description: "Upload your CV and paste a job description. Our AI rewrites your CV to match the role's exact keywords and pass ATS filters in under 30 seconds. Free to use.",
   keywords: "CV tailor, ATS optimiser, resume builder, AI CV, job application, cover letter generator",
@@ -12,27 +13,28 @@ export const metadata: Metadata = {
     google: "1OOuvcZW_UfG52JzriZ-n6aaWwJ1VD4aW0Uvhoeo2yc",
   },
   openGraph: {
-    title: "myCVtailor.co.za — Tailor your CV to every job",
+    title: "myCVtailor.ai — Tailor your CV to every job in 30 seconds",
     description: "AI rewrites your CV to match any job description and pass ATS filters. Free, no sign up required.",
     url: "https://mycvtailor.co.za",
     siteName: "myCVtailor.ai",
     images: [
       {
-        url: "/og-image.png",
+        url: "https://mycvtailor.co.za/og-banner.png",
         width: 1200,
         height: 630,
-        alt: "myCVtailor.ai — AI-powered CV tailoring",
+        alt: "myCVtailor.ai — Tailor your CV to every job in 30 seconds",
+        type: "image/png",
       },
     ],
+    locale: "en_ZA",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "myCVtailor.ai — Tailor your CV to every job",
+    title: "myCVtailor.ai — Tailor your CV to every job in 30 seconds",
     description: "AI rewrites your CV to match any job description and pass ATS filters. Free, no sign up required.",
-    images: ["/og-image.png"],
+    images: ["https://mycvtailor.co.za/og-banner.png"],
   },
-  metadataBase: new URL("https://mycvtailor.co.za"),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
