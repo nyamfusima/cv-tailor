@@ -148,6 +148,15 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
       "date": "Year or Month Year"
     }
   ],
+  "projects": [
+    {
+      "name": "Project name",
+      "description": "Brief description",
+      "technologies": ["tech1", "tech2"],
+      "url": "url or empty string",
+      "dates": "date range or empty string"
+    }
+  ],
   "skills": [
     {
       "category": "Category name",
@@ -228,6 +237,15 @@ OUTPUT:
       "name": "Certification name from original CV only",
       "issuer": "Issuing body",
       "date": "copied exactly from original CV"
+    }
+  ],
+  "projects": [
+    {
+      "name": "Project name exactly as in original CV",
+      "description": "Rewritten description using job description keywords, max 2 sentences",
+      "technologies": ["tech1", "tech2"],
+      "url": "url or empty string",
+      "dates": "copied exactly from original CV or empty string"
     }
   ],
   "skills": [

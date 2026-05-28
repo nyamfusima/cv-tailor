@@ -127,6 +127,33 @@ const styles = StyleSheet.create({
     fontFamily: "Times-Italic",
     marginBottom: 4,
   },
+  projectHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 1,
+  },
+  projectName: {
+    fontFamily: "Times-Bold",
+    fontSize: 10,
+  },
+  projectDate: {
+    fontSize: 10,
+    fontFamily: "Times-Italic",
+  },
+  projectUrl: {
+    fontSize: 9,
+    color: "#1d4ed8",
+    marginBottom: 2,
+  },
+  projectDesc: {
+    fontSize: 10,
+    marginBottom: 2,
+    lineHeight: 1.4,
+  },
+  projectTech: {
+    fontSize: 9,
+    marginBottom: 4,
+  },
   refName: {
     fontFamily: "Times-Bold",
     fontSize: 10,
@@ -230,6 +257,30 @@ function HarvardDoc({ cv }: { cv: TailoredCV }) {
                   <Text style={styles.certDate}>{cert.date}</Text>
                 </View>
                 <Text style={styles.certIssuer}>{cert.issuer}</Text>
+              </View>
+            ))}
+          </>
+        )}
+
+        {/* Projects */}
+        {cv.projects && cv.projects.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Projects</Text>
+            <View style={styles.sectionDivider} />
+            {cv.projects.map((project, i) => (
+              <View key={i} style={{ marginBottom: 8 }}>
+                <View style={styles.projectHeader}>
+                  <Text style={styles.projectName}>{project.name}</Text>
+                  {project.dates && <Text style={styles.projectDate}>{project.dates}</Text>}
+                </View>
+                {project.url ? <Text style={styles.projectUrl}>{project.url}</Text> : null}
+                <Text style={styles.projectDesc}>{project.description}</Text>
+                {project.technologies && project.technologies.length > 0 && (
+                  <Text style={styles.projectTech}>
+                    <Text style={{ fontFamily: "Times-Bold" }}>Technologies: </Text>
+                    {project.technologies.join(", ")}
+                  </Text>
+                )}
               </View>
             ))}
           </>

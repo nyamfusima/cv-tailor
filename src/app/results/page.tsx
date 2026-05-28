@@ -198,7 +198,7 @@ function CVSections({ cv }: { cv: OriginalCV }) {
         </div>
       )}
       {cv.certifications && cv.certifications.length > 0 && (
-        <div className="mb-2">
+        <div className="mb-7">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Professional Development</h2>
           <div className="h-px bg-slate-200 mb-3" />
           <div className="space-y-3">
@@ -209,6 +209,30 @@ function CVSections({ cv }: { cv: OriginalCV }) {
                   <p className="text-xs italic text-slate-500">{cert.issuer}</p>
                 </div>
                 <p className="text-xs italic text-slate-400 sm:whitespace-nowrap sm:ml-4">{cert.date}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {cv.projects && cv.projects.length > 0 && (
+        <div className="mb-2">
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Projects</h2>
+          <div className="h-px bg-slate-200 mb-3" />
+          <div className="space-y-4">
+            {cv.projects.map((project, i) => (
+              <div key={i}>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 mb-0.5">
+                  <p className="text-sm font-bold text-slate-900">{project.name}</p>
+                  {project.dates && <p className="text-xs italic text-slate-400 sm:whitespace-nowrap sm:ml-4">{project.dates}</p>}
+                </div>
+                {project.url && <p className="text-xs text-blue-500 mb-1">{project.url}</p>}
+                <p className="text-sm text-slate-600">{project.description}</p>
+                {project.technologies && project.technologies.length > 0 && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    <span className="font-semibold not-italic text-slate-600">Technologies: </span>
+                    {project.technologies.join(", ")}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -293,6 +317,21 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
     onChange({ ...cv, certifications: certs.filter((_, i) => i !== ci) });
   const addCertification = () =>
     onChange({ ...cv, certifications: [...certs, { name: "Certification Name", issuer: "Issuer", date: String(new Date().getFullYear()) }] });
+
+  // ── Projects
+  const projects = cv.projects || [];
+  const updateProjectField = (pi: number, field: "name" | "description" | "url" | "dates", v: string) =>
+    onChange({ ...cv, projects: projects.map((p, i) => i === pi ? { ...p, [field]: v } : p) });
+  const updateProjectTech = (pi: number, ti: number, v: string) =>
+    onChange({ ...cv, projects: projects.map((p, i) => i === pi ? { ...p, technologies: (p.technologies || []).map((t, j) => j === ti ? v : t) } : p) });
+  const deleteProjectTech = (pi: number, ti: number) =>
+    onChange({ ...cv, projects: projects.map((p, i) => i === pi ? { ...p, technologies: (p.technologies || []).filter((_, j) => j !== ti) } : p) });
+  const addProjectTech = (pi: number) =>
+    onChange({ ...cv, projects: projects.map((p, i) => i === pi ? { ...p, technologies: [...(p.technologies || []), "Technology"] } : p) });
+  const deleteProject = (pi: number) =>
+    onChange({ ...cv, projects: projects.filter((_, i) => i !== pi) });
+  const addProject = () =>
+    onChange({ ...cv, projects: [...projects, { name: "Project Name", description: "Brief description of what you built and its impact.", technologies: [], url: "", dates: "" }] });
 
   // ── References
   const refs = cv.references || [];
@@ -628,6 +667,85 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
           {addBtn("+ Add certification", addCertification)}
         </div>
 
+        {/* ── Projects ── */}
+        <div className="mb-7">
+          {projects.length > 0 && (
+            <>
+              <div className="flex items-center mb-2">
+                <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Projects</h2>
+                <EditBtn active={isEditing("projects")} onClick={() => toggle("projects")} />
+              </div>
+              <div className="h-px bg-slate-200 mb-3" />
+              <div className="space-y-5">
+                {projects.map((project, pi) => {
+                  const editing = isEditing("projects");
+                  return (
+                    <div key={pi} className={editing ? "border border-indigo-200 rounded-xl p-4 -mx-1 bg-slate-50/50" : ""}>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-1 flex-1 min-w-0">
+                          <EditableText value={project.name} onChange={v => updateProjectField(pi, "name", v)} editing={editing} className="text-sm font-bold text-slate-900" />
+                          {editing && <DangerBtn onClick={() => deleteProject(pi)} label="Delete" />}
+                        </div>
+                        {editing ? (
+                          <input
+                            value={project.dates || ""}
+                            onChange={e => updateProjectField(pi, "dates", e.target.value)}
+                            placeholder="e.g. Jan 2024"
+                            className="text-xs italic text-slate-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white shrink-0"
+                            style={{ width: "9rem" }}
+                          />
+                        ) : (
+                          project.dates && <span className="text-xs italic text-slate-400 whitespace-nowrap shrink-0">{project.dates}</span>
+                        )}
+                      </div>
+                      {editing ? (
+                        <input
+                          value={project.url || ""}
+                          onChange={e => updateProjectField(pi, "url", e.target.value)}
+                          placeholder="URL (optional)"
+                          className="text-xs text-blue-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white w-full mb-2"
+                        />
+                      ) : (
+                        project.url && <p className="text-xs text-blue-500 mb-1">{project.url}</p>
+                      )}
+                      <EditableTextarea value={project.description} onChange={v => updateProjectField(pi, "description", v)} editing={editing} className="text-sm text-slate-600 leading-relaxed" />
+                      {(project.technologies && project.technologies.length > 0 || editing) && (
+                        <div className="mt-2">
+                          <span className="text-xs font-semibold not-italic text-slate-600">Technologies: </span>
+                          {editing ? (
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {(project.technologies || []).map((t, ti) => (
+                                <div key={ti} className="flex items-center bg-white border border-indigo-200 rounded-lg overflow-hidden">
+                                  <input
+                                    value={t}
+                                    onChange={e => updateProjectTech(pi, ti, e.target.value)}
+                                    className="text-xs px-2 py-1 outline-none text-slate-700"
+                                    style={{ width: `${Math.max(t.length + 1, 6)}ch` }}
+                                  />
+                                  <button onClick={() => deleteProjectTech(pi, ti)} className="px-1.5 text-slate-300 hover:text-red-400 hover:bg-red-50 transition-colors self-stretch flex items-center">×</button>
+                                </div>
+                              ))}
+                              <button
+                                onClick={() => addProjectTech(pi)}
+                                className="text-xs font-semibold text-indigo-500 border border-dashed border-indigo-300 rounded-lg px-2.5 py-1 hover:bg-indigo-50 transition-colors"
+                              >
+                                + tech
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-slate-500">{project.technologies?.join(", ")}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {addBtn("+ Add project", addProject)}
+        </div>
+
         {/* ── References ── */}
         {refs.length > 0 && (
           <div className="mb-7">
@@ -719,6 +837,16 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
           </button>
           {showAddSection && (
             <div className="absolute left-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden min-w-[160px]">
+              <button
+                onClick={() => {
+                  if (projects.length === 0) addProject();
+                  setShowAddSection(false);
+                }}
+                disabled={projects.length > 0}
+                className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Projects
+              </button>
               <button
                 onClick={() => {
                   if (refs.length === 0) addReference();

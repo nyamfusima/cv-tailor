@@ -18,6 +18,14 @@ export interface Certification {
   date: string;
 }
 
+export interface Project {
+  name: string;
+  description: string;
+  technologies?: string[];
+  url?: string;
+  dates?: string;
+}
+
 export interface Reference {
   name: string;
   title: string;
@@ -50,6 +58,7 @@ export interface OriginalCV {
   experience: Experience[];
   education: Education[];
   certifications?: Certification[];
+  projects?: Project[];
   skills: SkillCategory[];
 }
 
@@ -69,6 +78,7 @@ export interface TailoredCV {
   experience: Experience[];
   education: Education[];
   certifications?: Certification[];
+  projects?: Project[];
   skills: SkillCategory[];
   references?: Reference[];
   matchScore: number;

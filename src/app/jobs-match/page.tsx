@@ -9,10 +9,13 @@ export default function JobsMatchPage() {
   const router = useRouter();
   const [cv, setCV] = useState<TailoredCV | null>(null);
 
+  const [jobDescription, setJobDescription] = useState("");
+
   useEffect(() => {
-    const stored = sessionStorage.getItem("jobMatchCV");
+    const stored = sessionStorage.getItem("tailoredCV");
     if (!stored) { router.push("/upload"); return; }
     setCV(JSON.parse(stored));
+    setJobDescription(sessionStorage.getItem("jobDescription") || "");
   }, [router]);
 
   if (!cv) return (
@@ -51,7 +54,7 @@ export default function JobsMatchPage() {
           </p>
         </div>
 
-        <JobMatches cv={cv} jobDescription="" />
+        <JobMatches cv={cv} jobDescription={jobDescription} />
 
         <div className="mt-8 flex flex-col sm:flex-row gap-3">
           <button
