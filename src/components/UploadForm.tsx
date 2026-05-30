@@ -485,26 +485,29 @@ export default function UploadForm() {
           )}
 
           {/* Submit */}
-          {!limitReached && jobInputMode !== "jobs" && (
-            <button
-              onClick={handleSubmit}
-              disabled={loading || !cvFile || !jobDesc.trim()}
-              className="w-full text-white font-semibold py-4 rounded-2xl transition-all duration-200 text-sm tracking-wide"
-              style={{
-                background: loading || !cvFile || !jobDesc.trim()
-                  ? "#94a3b8"
-                  : "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
-                background: loading || !cvFile ? "#94a3b8" : "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
-                cursor: loading || !cvFile ? "not-allowed" : "pointer",
-              }}
-            >
-              {!user
-                ? "Sign in to find matching jobs"
-                : loading
-                ? "Scanning your CV..."
-                : "Find matching jobs →"}
-            </button>
-          )}
+{!limitReached && (
+  <button
+    onClick={handleSubmit}
+    disabled={loading || !cvFile || !jobDesc.trim()}
+    className="w-full text-white font-semibold py-4 rounded-2xl transition-all duration-200 text-sm tracking-wide"
+    style={{
+      background:
+        loading || !cvFile || !jobDesc.trim()
+          ? "#94a3b8"
+          : "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
+      cursor:
+        loading || !cvFile || !jobDesc.trim()
+          ? "not-allowed"
+          : "pointer",
+    }}
+  >
+    {!user
+      ? "Sign in to find matching jobs"
+      : loading
+      ? "Scanning your CV..."
+      : "Find matching jobs →"}
+  </button>
+)}
 
           <p className="text-center text-xs text-slate-400">
             Your data is never stored. Each session is private.
