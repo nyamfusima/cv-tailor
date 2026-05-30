@@ -35,7 +35,7 @@ export default function PricingPage() {
           <div className="flex items-center">
             <span className="font-semibold text-white tracking-tight text-lg">my</span>
             <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
-            <span className="font-semibold text-white tracking-tight text-lg">tailor.ai</span>
+            <span className="font-semibold text-white tracking-tight text-lg">tailor.co.za</span>
           </div>
 
           <div className="flex items-center gap-3">

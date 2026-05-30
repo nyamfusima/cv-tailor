@@ -175,8 +175,8 @@ export default function UploadForm() {
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link href="/" className="flex items-center">
           <span className="font-semibold text-slate-800 tracking-tight">my</span>
-          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
-          <span className="font-semibold text-slate-800 tracking-tight">tailor.ai</span>
+          <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-5 h-5" />
+          <span className="font-semibold text-slate-800 tracking-tight">tailor.co.za</span>
         </Link>
         <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 sm:gap-4 w-full">
           {user ? (
@@ -196,7 +196,7 @@ export default function UploadForm() {
               <Link
                 href="/pricing"
                 className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg"
-                style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+                style={{ background: "linear-gradient(135deg, #4F46E5)" }}
               >
                 Buy credits
               </Link>

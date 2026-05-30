@@ -136,7 +136,7 @@ const BentoGrid = ({
             Tailor your CV
           </h3>
           <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-emerald-800/80">
-            Paste a job description or job link and get your CV rewritten to match - keywords, tone, and ATS structure.
+            Paste a job description or job link and get your CV rewritten to match keywords, tone, and ATS structure.
           </p>
         </div>
         <span className="absolute bottom-6 right-6 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
@@ -173,7 +173,7 @@ const BentoGrid = ({
         textColor="text-pink-600"
         icon={<Lightning size={28} weight="duotone" />}
         title="Auto apply"
-        description="Apply to matched roles automatically - your CV, your criteria, zero effort."
+        description="Apply to matched roles automatically, your CV, your criteria, zero effort."
         disabled
       />
     </div>
