@@ -79,7 +79,7 @@ const BentoCard = ({
     onClick={!disabled ? onClick : undefined}
     disabled={disabled}
     className={`
-      group relative flex min-h-[320px] flex-col rounded-[20px] border p-8 text-left
+      group relative flex min-h-[240px] flex-col rounded-[20px] border p-6 text-left sm:min-h-[320px] sm:p-8
       shadow-[0_18px_45px_rgba(13,31,60,0.04)] outline-none transition-shadow
       focus-visible:ring-2 focus-visible:ring-[#0D1F3C]/20 focus-visible:ring-offset-2
       ${color} ${disabled ? "cursor-default opacity-55" : "cursor-pointer hover:shadow-[0_24px_55px_rgba(13,31,60,0.08)]"}
@@ -87,15 +87,15 @@ const BentoCard = ({
     `}
   >
     {disabled && (
-      <span className="absolute right-5 top-5 rounded-full bg-white/45 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-black/30">
+      <span className="absolute right-4 top-4 rounded-full bg-white/45 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-black/30 sm:right-5 sm:top-5 sm:px-3 sm:text-[11px]">
         {status}
       </span>
     )}
 
     <div className={`${textColor} opacity-95`}>{icon}</div>
 
-    <div className="mt-auto pb-12">
-      <h3 className={`text-2xl font-bold leading-tight ${textColor}`}>
+    <div className="mt-auto pb-10 sm:pb-12">
+      <h3 className={`text-xl font-bold leading-tight sm:text-2xl ${textColor}`}>
         {title}
       </h3>
       <p className={`mt-4 max-w-sm text-sm font-medium leading-6 ${textColor} opacity-80`}>
@@ -104,7 +104,7 @@ const BentoCard = ({
     </div>
 
     {!disabled && (
-      <span className={`absolute bottom-6 right-6 flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 ${arrowColor}`}>
+      <span className={`absolute bottom-5 right-5 flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 sm:bottom-6 sm:right-6 ${arrowColor}`}>
         <ArrowUpRight size={18} weight="bold" />
       </span>
     )}
@@ -128,18 +128,18 @@ const BentoGrid = ({
         whileHover={{ y: -3 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
         onClick={() => router.push("/upload")}
-        className="group relative min-h-[320px] cursor-pointer rounded-[20px] border border-emerald-100 bg-[#DDF3EC] p-8 text-left text-emerald-800 shadow-[0_18px_45px_rgba(13,31,60,0.04)] outline-none transition-shadow hover:shadow-[0_24px_55px_rgba(13,31,60,0.08)] focus-visible:ring-2 focus-visible:ring-[#0D1F3C]/20 focus-visible:ring-offset-2"
+        className="group relative min-h-[240px] cursor-pointer rounded-[20px] border border-emerald-100 bg-[#DDF3EC] p-6 text-left text-emerald-800 shadow-[0_18px_45px_rgba(13,31,60,0.04)] outline-none transition-shadow hover:shadow-[0_24px_55px_rgba(13,31,60,0.08)] focus-visible:ring-2 focus-visible:ring-[#0D1F3C]/20 focus-visible:ring-offset-2 sm:min-h-[320px] sm:p-8"
       >
         <MagicWand size={28} weight="duotone" className="opacity-95" />
-        <div className="mt-auto pb-12">
-          <h3 className="text-2xl font-bold leading-tight text-emerald-950">
+        <div className="mt-auto pb-10 sm:pb-12">
+          <h3 className="text-xl font-bold leading-tight text-emerald-950 sm:text-2xl">
             Tailor your CV
           </h3>
           <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-emerald-800/80">
             Paste a job description or job link and get your CV rewritten to match keywords, tone, and ATS structure.
           </p>
         </div>
-        <span className="absolute bottom-6 right-6 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
+        <span className="absolute bottom-5 right-5 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-600 text-white transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 sm:bottom-6 sm:right-6">
           <ArrowUpRight size={18} weight="bold" />
         </span>
       </motion.button>
