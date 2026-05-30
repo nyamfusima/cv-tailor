@@ -197,7 +197,7 @@ export default function JobMatchPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <p className="text-slate-400 text-sm">Loading...</p>
     </div>
   );
@@ -213,7 +213,7 @@ export default function JobMatchPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white">
 
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
@@ -274,7 +274,7 @@ export default function JobMatchPage() {
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2">Job Match</p>
           <h1
             className="text-3xl sm:text-4xl text-[#0d1f3c] mb-2"
-            style={{ fontFamily: "'DM Serif Display', serif" }}
+            style={{ color: "#0d1f3c" }}
           >
             {isSearching ? stageLabel[stage] : jobs.length > 0 ? "Your job matches" : "Find matching jobs"}
           </h1>

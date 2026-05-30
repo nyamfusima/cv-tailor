@@ -19,13 +19,13 @@ export default function JobsMatchPage() {
   }, [router]);
 
   if (!cv) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <p className="text-slate-400 text-sm">Loading...</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white">
 
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
         <Link href="/" className="flex items-center gap-1">
@@ -45,7 +45,7 @@ export default function JobsMatchPage() {
         <div className="mb-8">
           <h1
             className="text-3xl sm:text-4xl text-slate-900 leading-tight mb-3"
-            style={{ fontFamily: "'DM Serif Display', serif" }}
+            style={{ color: "#0d1f3c" }}
           >
             Jobs you qualify for
           </h1>

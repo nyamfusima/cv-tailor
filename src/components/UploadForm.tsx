@@ -12,7 +12,7 @@ export default function UploadForm() {
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [jobDesc, setJobDesc] = useState("");
   const [jobUrl, setJobUrl] = useState("");
-  const [jobInputMode, setJobInputMode] = useState<"paste" | "url" | "jobs">("paste");
+  const [jobInputMode, setJobInputMode] = useState<"paste" | "url">("paste");
   const [fetchingUrl, setFetchingUrl] = useState(false);
   const [fetchError, setFetchError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,7 +22,6 @@ export default function UploadForm() {
   const [upgradeSuccess, setUpgradeSuccess] = useState(false);
   const [masterCVLoaded, setMasterCVLoaded] = useState(false);
   const [tailorCredits, setTailorCredits] = useState<number | null>(null);
-  const [jobCredits, setJobCredits] = useState<number | null>(null);
 
   const mimeFromName = (name: string) => {
     const lower = name.toLowerCase();
@@ -43,16 +42,15 @@ export default function UploadForm() {
   };
 
   useEffect(() => {
-    if (!user) { setTailorCredits(null); setJobCredits(null); return; }
+    if (!user) { setTailorCredits(null); return; }
     supabase
       .from("users")
-      .select("tailor_credits, job_credits")
+      .select("tailor_credits")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
         if (data) {
           setTailorCredits(data.tailor_credits);
-          setJobCredits(data.job_credits ?? 0);
         }
       });
   }, [user]);
@@ -143,32 +141,6 @@ export default function UploadForm() {
     }
   };
 
-  const handleFindJobs = async () => {
-    if (!user) { router.push("/signin"); return; }
-    if (!cvFile) { setError("Please upload your CV first."); return; }
-    setError("");
-    setLimitReached(false);
-    setLoading(true);
-    try {
-      const form = new FormData();
-      form.append("cv", cvFile);
-      const res = await fetch("/api/parse-cv", { method: "POST", body: form });
-      const data = await res.json();
-      if (data.error === "NO_CREDITS") { setLimitReached(true); return; }
-      if (!res.ok) throw new Error(data.error || "Failed to parse CV.");
-      sessionStorage.setItem("jobMatchCV", JSON.stringify({
-        ...data.cv,
-        matchScore: 0,
-        scoreBreakdown: { keywordsMatch: 0, keywordsBefore: 0, skillsAlignment: 0, skillsBefore: 0, experienceRelevance: 0, experienceBefore: 0 },
-      }));
-      router.push("/jobs-match");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async () => {
     if (!user) {
       router.push("/signin");
@@ -197,7 +169,7 @@ export default function UploadForm() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white">
 
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -213,11 +185,6 @@ export default function UploadForm() {
               {tailorCredits !== null && (
                 <span className="text-xs font-medium text-slate-500 hidden sm:block">
                   {tailorCredits} tailor{tailorCredits !== 1 ? "s" : ""} left
-                </span>
-              )}
-              {jobCredits !== null && (
-                <span className="text-xs font-medium text-slate-500 hidden sm:block">
-                  {jobCredits} job search{jobCredits !== 1 ? "es" : ""} left
                 </span>
               )}
               <Link
@@ -304,7 +271,7 @@ export default function UploadForm() {
             AI-powered · ATS optimised
           </div>
           <h1
-            style={{ fontFamily: "'DM Serif Display', serif" }}
+            style={{ color: "#0d1f3c" }}
             className="text-4xl sm:text-5xl text-slate-900 leading-tight mb-4"
           >
             Land more<br />interviews.
@@ -412,17 +379,6 @@ export default function UploadForm() {
               >
                 🔗 Use job URL
               </button>
-              <button
-                onClick={() => { setJobInputMode("jobs"); setFetchError(""); }}
-                className="flex-1 py-3 text-xs font-semibold transition-all"
-                style={{
-                  backgroundColor: jobInputMode === "jobs" ? "#f0f4ff" : "transparent",
-                  color: jobInputMode === "jobs" ? "#0d1f3c" : "#94a3b8",
-                  borderBottom: jobInputMode === "jobs" ? "2px solid #0d1f3c" : "2px solid transparent",
-                }}
-              >
-                🔍 Find jobs
-              </button>
             </div>
 
             {/* Paste mode */}
@@ -501,35 +457,6 @@ export default function UploadForm() {
               </div>
             )}
 
-            {/* Jobs match mode */}
-            {jobInputMode === "jobs" && (
-              <div className="p-5">
-                <div className="flex items-start gap-3 mb-4">
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
-                  >
-                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800 mb-0.5">Find jobs you already qualify for</p>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      Upload your CV and we'll scan live job listings to find roles that match your skills and experience — no job description needed.
-                    </p>
-                  </div>
-                </div>
-                <ul className="space-y-2 mb-1">
-                  {["Real listings from LinkedIn, Indeed & more", "Ranked by how well your CV matches", "Apply directly from the results"].map((item) => (
-                    <li key={item} className="flex items-center gap-2 text-xs text-slate-500">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
 
           {/* No credits prompt */}
@@ -567,23 +494,6 @@ export default function UploadForm() {
                 background: loading || !cvFile || !jobDesc.trim()
                   ? "#94a3b8"
                   : "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
-                cursor: loading || !cvFile || !jobDesc.trim() ? "not-allowed" : "pointer",
-              }}
-            >
-              {!user
-                ? "Sign in to tailor my CV"
-                : loading
-                ? "Preparing..."
-                : "Tailor my CV"}
-            </button>
-          )}
-
-          {jobInputMode === "jobs" && (
-            <button
-              onClick={handleFindJobs}
-              disabled={loading || !cvFile}
-              className="w-full text-white font-semibold py-4 rounded-2xl transition-all duration-200 text-sm tracking-wide"
-              style={{
                 background: loading || !cvFile ? "#94a3b8" : "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
                 cursor: loading || !cvFile ? "not-allowed" : "pointer",
               }}

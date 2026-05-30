@@ -79,8 +79,7 @@ export default function SignInPage() {
 
   return (
     <div
-      className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4"
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
+      className="min-h-screen bg-white flex flex-col items-center justify-center px-4"
     >
       <div className="w-full max-w-md">
 
@@ -96,7 +95,7 @@ export default function SignInPage() {
           {/* Header */}
           <div className="text-center mb-6">
             <h1
-              style={{ fontFamily: "'DM Serif Display', serif" }}
+              style={{ color: "#0d1f3c" }}
               className="text-2xl text-slate-900 mb-1"
             >
               {showForgotPassword

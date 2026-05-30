@@ -83,7 +83,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white overflow-x-hidden">
       <style>{`
         @keyframes fadeUp   { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
         @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }

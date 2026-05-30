@@ -246,7 +246,7 @@ function OriginalCVCard({ cv }: { cv: OriginalCV }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
       <div className="px-6 sm:px-10 py-8 text-center" style={{ backgroundColor: "#64748b" }}>
-        <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-2xl sm:text-3xl text-white mb-2 tracking-tight">{cv.name}</h1>
+        <h1 className="text-2xl sm:text-3xl font-semibold text-white mb-2 tracking-tight">{cv.name}</h1>
         <p className="text-xs sm:text-sm text-slate-200 break-words">{[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ")}</p>
       </div>
       <CVSections cv={cv} />
@@ -382,7 +382,7 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
           </div>
         ) : (
           <>
-            <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-2xl sm:text-3xl text-white mb-2 tracking-tight">{cv.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-white mb-2 tracking-tight">{cv.name}</h1>
             <p className="text-xs sm:text-sm text-blue-200 break-words">{[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ")}</p>
           </>
         )}
@@ -887,7 +887,7 @@ export default function ResultsPage() {
   };
 
   if (!cv) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <p className="text-slate-400 text-sm">Loading...</p>
     </div>
   );
@@ -921,7 +921,7 @@ export default function ResultsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white">
 
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">

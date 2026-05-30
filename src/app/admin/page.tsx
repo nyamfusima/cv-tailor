@@ -134,13 +134,13 @@ export default function AdminPage() {
   };
 
   if (loading || fetching) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <p className="text-slate-400 text-sm">Loading...</p>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white">
 
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between">
@@ -180,7 +180,7 @@ export default function AdminPage() {
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{stat.label}</p>
                 <p
                   className="text-3xl font-bold"
-                  style={{ fontFamily: "'DM Serif Display', serif", color: "#0d1f3c" }}
+                  style={{ color: "#0d1f3c" }}
                 >
                   {stat.value}
                 </p>
@@ -297,7 +297,7 @@ export default function AdminPage() {
                   style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
                 >
                   <div>
-                    <p className="text-white font-bold text-lg" style={{ fontFamily: "'DM Serif Display', serif" }}>
+                    <p className="text-white font-bold text-lg">
                       {selected.tailored_cv?.name}
                     </p>
                     <p className="text-blue-100 text-xs mt-0.5">{primaryRole(selected)}</p>

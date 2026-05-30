@@ -123,7 +123,7 @@ const Pricing2 = ({
           Pricing
         </p>
         <h2
-          style={{ fontFamily: "'DM Serif Display', serif" }}
+          style={{ color: "#0d1f3c" }}
           className="text-3xl sm:text-4xl text-slate-900 text-center mb-4"
         >
           {heading}
@@ -210,7 +210,7 @@ const Pricing2 = ({
                         "text-4xl font-bold tracking-tight",
                         isPopular ? "text-white" : "text-[#0d1f3c]",
                       )}
-                      style={{ fontFamily: "'DM Serif Display', serif" }}
+                      style={{ color: isPopular ? "white" : "#0d1f3c" }}
                     >
                       {currentPrice}
                     </CardTitle>

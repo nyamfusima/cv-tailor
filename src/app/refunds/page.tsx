@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function RefundsPage() {
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white">
       <header className="border-b border-slate-100 px-4 sm:px-8 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <span className="font-semibold text-slate-800 tracking-tight">my</span>
@@ -13,7 +13,7 @@ export default function RefundsPage() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
-        <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-4xl text-slate-900 mb-2">Refund Policy</h1>
+        <h1 className="text-4xl font-semibold text-slate-900 mb-2">Refund Policy</h1>
         <p className="text-sm text-slate-400 mb-10">Last updated: March 2026</p>
 
         <div className="space-y-8 text-sm text-slate-600 leading-relaxed">

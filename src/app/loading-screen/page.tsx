@@ -100,8 +100,7 @@ if (!res.ok) throw new Error(data.error || "Something went wrong");
 
   if (error) return (
     <div
-      className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-6 text-center"
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
+      className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center"
     >
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 max-w-md w-full">
         <div className="w-12 h-12 rounded-full bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-5">
@@ -110,7 +109,7 @@ if (!res.ok) throw new Error(data.error || "Something went wrong");
           </svg>
         </div>
 
-        <h2 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-xl text-slate-900 mb-2">
+        <h2 className="text-xl font-semibold text-slate-900 mb-2">
           Something went wrong
         </h2>
         <p className="text-sm text-slate-500 mb-6 leading-relaxed">{error}</p>
@@ -145,8 +144,7 @@ if (!res.ok) throw new Error(data.error || "Something went wrong");
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center bg-slate-50 px-6"
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
+      className="min-h-screen flex flex-col items-center justify-center bg-white px-6"
     >
       {/* Logo */}
       <div className="flex items-center mb-16">
@@ -158,7 +156,7 @@ if (!res.ok) throw new Error(data.error || "Something went wrong");
       {/* Heading */}
       <div className="text-center mb-12">
         <h2
-          style={{ fontFamily: "'DM Serif Display', serif" }}
+          style={{ color: "#0d1f3c" }}
           className="text-3xl text-slate-900 mb-2"
         >
           {done ? "Your CV is ready." : "Working on your CV..."}

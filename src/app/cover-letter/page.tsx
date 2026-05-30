@@ -126,7 +126,7 @@ export default function CoverLetterPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
       <svg className="animate-spin w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24">
         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
@@ -136,14 +136,14 @@ export default function CoverLetterPage() {
   );
 
   if (error) return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
       <p className="text-sm text-red-500">{error}</p>
       <button onClick={() => cv && generate(cv, sessionStorage.getItem("jobDescription") || "")} className="text-sm text-slate-600 underline">Try again</button>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-white">
 
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
@@ -162,7 +162,7 @@ export default function CoverLetterPage() {
 
         <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <h1 style={{ fontFamily: "'DM Serif Display', serif" }} className="text-2xl sm:text-3xl text-slate-900 mb-1">Cover Letter</h1>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-1">Cover Letter</h1>
             <p className="text-sm text-slate-400">Click any paragraph to edit. Copy when ready.</p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
