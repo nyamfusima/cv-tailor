@@ -505,7 +505,7 @@ export default function UploadForm() {
       ? "Sign in to find matching jobs"
       : loading
       ? "Scanning your CV..."
-      : "Find matching jobs →"}
+      : "Tailoring your CV"}
   </button>
 )}
 
