@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,6 +13,10 @@ import {
   Buildings,
   Microphone,
   Lightning,
+  FilePdf,
+  UploadSimple,
+  CheckCircle,
+  X,
 } from "@phosphor-icons/react";
 
 /* ---------------- TYPES ---------------- */
@@ -46,7 +50,7 @@ const getScoreStyle = (score: number) => {
 const getJobTitle = (s: Session) =>
   s.job_description?.split("\n")[0]?.slice(0, 60) || "Untitled Role";
 
-/* ---------------- BOUNCE CARD ---------------- */
+/* ---------------- BENTO CARD ---------------- */
 interface BentoCardProps {
   color: string;
   textColor: string;
@@ -91,9 +95,7 @@ const BentoCard = ({
         {status}
       </span>
     )}
-
     <div className={`${textColor} opacity-95`}>{icon}</div>
-
     <div className="mt-auto pb-10 sm:pb-12">
       <h3 className={`text-xl font-bold leading-tight sm:text-2xl ${textColor}`}>
         {title}
@@ -102,7 +104,6 @@ const BentoCard = ({
         {description}
       </p>
     </div>
-
     {!disabled && (
       <span className={`absolute bottom-5 right-5 flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 sm:bottom-6 sm:right-6 ${arrowColor}`}>
         <ArrowUpRight size={18} weight="bold" />
@@ -183,6 +184,107 @@ const BentoGrid = ({
   </section>
 );
 
+/* ---------------- MASTER CV SECTION ---------------- */
+interface MasterCVSectionProps {
+  userData: UserData | null;
+  uploading: boolean;
+  uploadError: string | null;
+  onFileSelect: (file: File) => void;
+  onClearError: () => void;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+}
+
+const MasterCVSection = ({
+  userData,
+  uploading,
+  uploadError,
+  onFileSelect,
+  onClearError,
+  fileInputRef,
+}: MasterCVSectionProps) => {
+  const hasCV = !!userData?.master_cv_path;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) onFileSelect(file);
+    e.target.value = "";
+  };
+
+  return (
+    <div className="mb-6 bg-white rounded-xl border border-black/8 overflow-hidden shadow-[0_16px_45px_rgba(13,31,60,0.05)]">
+      <div className="px-4 py-3 border-b border-black/5 flex justify-between items-center">
+        <span className="text-sm font-medium text-[#0D1F3C]">Master CV</span>
+        {hasCV && (
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="text-xs text-[#1a3a6b] font-semibold hover:text-[#0D1F3C] transition-colors disabled:opacity-40"
+          >
+            Replace
+          </button>
+        )}
+      </div>
+
+      <div className="px-4 py-4">
+        {uploading ? (
+          <div className="flex items-center gap-3 text-sm text-slate-500">
+            <div className="h-4 w-4 rounded-full border-2 border-[#0D1F3C]/20 border-t-[#0D1F3C] animate-spin" />
+            Uploading your CV...
+          </div>
+        ) : hasCV ? (
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+              <FilePdf size={18} weight="duotone" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-[#0D1F3C]">
+                {userData.master_cv_name}
+              </p>
+              <p className="text-xs text-gray-400">
+                Used by Job Match &amp; Voice Interviewer
+              </p>
+            </div>
+            <CheckCircle size={18} weight="fill" className="ml-auto shrink-0 text-emerald-500" />
+          </div>
+        ) : (
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-[#0D1F3C]">No CV uploaded yet</p>
+              <p className="mt-0.5 text-xs text-gray-400">
+                Required for Job Match and Voice Interviewer. Accepts PDF or DOCX.
+              </p>
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex shrink-0 items-center gap-2 rounded-lg bg-[#0D1F3C] px-4 py-2 text-xs font-semibold text-white hover:bg-[#1a3a6b] transition-colors"
+            >
+              <UploadSimple size={14} weight="bold" />
+              Upload CV
+            </button>
+          </div>
+        )}
+
+        {uploadError && (
+          <div className="mt-3 flex items-start gap-2 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700">
+            <span className="flex-1">{uploadError}</span>
+            <button onClick={onClearError} className="shrink-0 mt-0.5">
+              <X size={12} weight="bold" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.docx"
+        className="hidden"
+        onChange={handleChange}
+      />
+    </div>
+  );
+};
+
 /* ---------------- MAIN ---------------- */
 export default function DashboardPage() {
   const router = useRouter();
@@ -192,6 +294,10 @@ export default function DashboardPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [fetching, setFetching] = useState(true);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+
+  const [cvUploading, setCvUploading] = useState(false);
+  const [cvUploadError, setCvUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
@@ -218,9 +324,32 @@ export default function DashboardPage() {
     const fetchTimer = window.setTimeout(() => {
       void fetchAll();
     }, 0);
-
     return () => window.clearTimeout(fetchTimer);
   }, [fetchAll, loading, router, user]);
+
+  const handleMasterCVUpload = async (file: File) => {
+    setCvUploadError(null);
+    setCvUploading(true);
+    try {
+      const form = new FormData();
+      form.append("cv", file);
+
+      const res = await fetch("/api/upload-master-cv", { method: "POST", body: form });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Upload failed.");
+
+      setUserData((prev) =>
+        prev ? { ...prev, master_cv_path: data.path, master_cv_name: data.name } : prev
+      );
+    } catch (err: unknown) {
+      setCvUploadError(
+        err instanceof Error ? err.message : "Upload failed. Please try again."
+      );
+    } finally {
+      setCvUploading(false);
+    }
+  };
 
   const credits = userData?.tailor_credits ?? 0;
   const canUseJobMatch = (userData?.job_credits ?? 0) > 0;
@@ -236,7 +365,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-white font-sans">
 
-      {/* HEADER — unchanged */}
+      {/* HEADER */}
       <header className="h-16 bg-white/90 backdrop-blur border-b border-black/6 flex items-center justify-between px-6 sticky top-0 z-30">
         <Link href="/" className="flex items-center gap-0 font-semibold text-[#0D1F3C]">
           my
@@ -278,6 +407,16 @@ export default function DashboardPage() {
 
         {/* BENTO */}
         <BentoGrid router={router} canUseJobMatch={canUseJobMatch} />
+
+        {/* MASTER CV */}
+        <MasterCVSection
+          userData={userData}
+          uploading={cvUploading}
+          uploadError={cvUploadError}
+          onFileSelect={(file) => void handleMasterCVUpload(file)}
+          onClearError={() => setCvUploadError(null)}
+          fileInputRef={fileInputRef}
+        />
 
         {/* SESSIONS */}
         <div className="bg-white rounded-xl border border-black/8 overflow-hidden shadow-[0_16px_45px_rgba(13,31,60,0.05)]">

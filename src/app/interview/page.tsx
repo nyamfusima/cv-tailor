@@ -104,7 +104,7 @@ export default function InterviewPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard"
-            className="text-xs text-slate-500 hover:text-[#0D1F3C] transition-colors"
+            className="rounded-lg bg-[#4F46E5] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#183763]"
           >
             Dashboard
           </Link>

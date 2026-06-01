@@ -90,36 +90,27 @@ export default function JobMatchPage() {
   const downloadAndExtract = async (): Promise<string | null> => {
     if (!user) return null;
 
-    // Step 1: Get CV path from DB
+    // Step 1: Get a signed URL from the server (bypasses storage RLS)
     setStage("downloading");
-    console.log("[job-match] Fetching user record to get master CV path...");
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("master_cv_path, master_cv_name")
-      .eq("id", user.id)
-      .single();
+    console.log("[job-match] Fetching signed CV URL...");
+    const urlRes = await fetch("/api/master-cv-url");
+    const urlData = await urlRes.json();
 
-    if (userError || !userData?.master_cv_path) {
-      const msg = userError?.message || "No master CV path found";
-      console.error("[job-match] User record error:", msg);
-      throw new Error("No master CV found. Upload one from your dashboard.");
+    if (!urlRes.ok) {
+      const msg = urlData.error || "Could not retrieve master CV.";
+      console.error("[job-match] master-cv-url error:", msg);
+      throw new Error(msg);
     }
 
-    const { master_cv_path, master_cv_name } = userData;
-    console.log(`[job-match] Downloading from storage: "${master_cv_path}"`);
+    const { url: signedUrl, name: master_cv_name } = urlData as { url: string; name: string };
+    console.log(`[job-match] Downloading CV from signed URL, file="${master_cv_name}"`);
 
-    // Step 2: Download from Supabase storage
-    const { data: blob, error: downloadError } = await supabase.storage
-      .from("master-cvs")
-      .download(master_cv_path);
-
-    if (downloadError || !blob) {
-      const msg = downloadError?.message || "Download returned empty";
-      console.error("[job-match] Storage download error:", msg);
-      throw new Error(`Failed to download your CV: ${msg}`);
-    }
-
-    console.log(`[job-match] Downloaded ${blob.size} bytes, type="${blob.type}"`);
+    // Step 2: Download using the signed URL
+    const blob = await fetch(signedUrl).then((r) => {
+      if (!r.ok) throw new Error("Failed to download CV file.");
+      return r.blob();
+    });
+    console.log(`[job-match] Downloaded ${blob.size} bytes`);
 
     // Step 3: Send to extract-cv-text
     setStage("extracting");
@@ -217,11 +208,11 @@ export default function JobMatchPage() {
 
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-0">
           <Link href="/" className="flex items-center gap-0.5">
             <span className="font-semibold text-[#0d1f3c] tracking-tight text-sm">my</span>
             <img src="/favicon.ico" alt="myCVtailor" className="w-4 h-4 mx-0.5" />
-            <span className="font-semibold text-[#0d1f3c] tracking-tight text-sm">tailor.ai</span>
+            <span className="font-semibold text-[#0d1f3c] tracking-tight text-sm">tailor.co.za</span>
           </Link>
           {adminData && (
             <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: "#0d1f3c" }}>
@@ -235,7 +226,7 @@ export default function JobMatchPage() {
               ← Back to admin
             </Link>
           ) : (
-            <Link href="/dashboard" className="text-xs text-slate-400 hover:text-slate-700 font-medium transition-colors">
+            <Link href="/dashboard" className="rounded-lg bg-[#4F46E5] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#183763]">
               Dashboard
             </Link>
           )}
