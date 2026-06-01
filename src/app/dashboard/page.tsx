@@ -161,10 +161,13 @@ const BentoGrid = ({
       <BentoCard
         color="border-stone-200 bg-[#F7EFEB]"
         textColor="text-stone-600"
+        arrowColor="bg-stone-700"
         icon={<Microphone size={28} weight="duotone" />}
         title="Voice interviewer"
         description="Practice with an AI interviewer trained on real questions for your target role."
-        disabled
+        disabled={!canUseJobMatch}
+        status="Upgrade"
+        onClick={() => router.push("/interview")}
       />
 
       {/* AUTO APPLY */}
