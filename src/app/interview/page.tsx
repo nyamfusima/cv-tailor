@@ -16,6 +16,7 @@ import {
   SpeakerHighIcon,
   CircleNotchIcon,
 } from "@phosphor-icons/react";
+import { VoicePoweredOrb } from "@/components/ui/voice-powered-orb";
 import {
   useVoiceInterview,
   type InterviewPlan,
@@ -308,37 +309,59 @@ function InterviewScreen({
   /* ── Pre-start screen ── */
   if (!isActive) {
     return (
-      <div className="mx-auto max-w-2xl">
-        <div className="mb-6 flex items-center gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#DDF3EC] text-emerald-700">
-            <MicrophoneIcon size={24} weight="duotone" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-[#0D1F3C]">Ready to begin</h1>
-            <p className="text-sm text-gray-400">
-              {total} questions · {plan.jobTitle}
-            </p>
-          </div>
+      <div className="mx-auto max-w-xl flex flex-col items-center text-center py-4 sm:py-8">
+
+        {/* Orb */}
+        <div className="w-48 h-48 sm:w-64 sm:h-64 mb-6 sm:mb-8">
+          <VoicePoweredOrb
+            enableVoiceControl={false}
+            hue={240}
+            className="rounded-full overflow-hidden"
+          />
         </div>
 
+        {/* Title */}
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#0D1F3C] mb-2 tracking-tight">
+          Your AI interviewer is ready
+        </h1>
+        <p className="text-sm text-gray-400 mb-5">
+          {plan.jobTitle}
+        </p>
+
+        {/* Info chips */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600">
+            <MicrophoneIcon size={12} weight="fill" />
+            {total} questions
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700">
+            ~15 min
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-slate-100 text-slate-600">
+            {supported ? "Voice + text" : "Text only"}
+          </span>
+        </div>
+
+        {/* Browser warning */}
         {!supported && (
-          <div className="mb-5 flex items-start gap-2.5 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <div className="w-full mb-6 flex items-start gap-2.5 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700 text-left">
             <WarningIcon size={16} weight="fill" className="mt-0.5 shrink-0" />
             <span>
               Voice input isn&apos;t supported in this browser. You&apos;ll type your answers instead.
-              Chrome or Edge recommended for full voice experience.
+              Chrome or Edge recommended for the full voice experience.
             </span>
           </div>
         )}
 
+        {/* CTA */}
         <button
           onClick={() => void start()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-4 text-sm font-semibold text-white transition-all hover:bg-[#183763]"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-4 text-sm font-semibold text-white transition-all hover:bg-[#183763] shadow-lg shadow-indigo-200"
         >
           <MicrophoneIcon size={16} weight="fill" />
           Begin Interview
         </button>
-        <p className="mt-3 text-center text-xs text-gray-400">
+        <p className="mt-3 text-xs text-gray-400">
           The AI will speak each question aloud, then listen for your answer
         </p>
       </div>
