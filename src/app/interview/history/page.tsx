@@ -179,12 +179,17 @@ export default function InterviewHistoryPage() {
         <Link href="/dashboard" className="flex items-center gap-0 font-semibold text-[#0D1F3C]">
           my<Image src="/favicon.ico" alt="" width={20} height={20} className="mx-0.5" />tailor.co.za
         </Link>
-        <Link
-          href="/interview"
-          className="rounded-lg bg-[#4F46E5] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#183763] transition-colors"
-        >
-          New interview
-        </Link>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link href="/dashboard" className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200">
+            Dashboard
+          </Link>
+          <Link
+            href="/interview"
+            className="rounded-lg bg-[#4F46E5] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#183763] transition-colors"
+          >
+            New interview
+          </Link>
+        </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-5 py-10">

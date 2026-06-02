@@ -937,6 +937,12 @@ export default function ResultsPage() {
           >
             ← Start over
           </button>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
+          >
+            Dashboard
+          </button>
         </div>
       </header>
 

@@ -150,12 +150,20 @@ export default function CoverLetterPage() {
           <img src="/favicon.ico" alt="TailorCV" className="w-7 h-7" />
           <span className="font-semibold text-slate-800 tracking-tight">TailorCV</span>
         </div>
-        <button
-          onClick={() => router.back()}
-          className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
-        >
-          ← Back to CV
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
+          >
+            ← Back to CV
+          </button>
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
+          >
+            Dashboard
+          </button>
+        </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">

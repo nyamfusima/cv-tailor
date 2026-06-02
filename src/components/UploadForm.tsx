@@ -188,8 +188,14 @@ export default function UploadForm() {
                 </span>
               )}
               <Link
-                href="/account"
+                href="/dashboard"
                 className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/account"
+                className="hidden sm:block rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
               >
                 Account
               </Link>

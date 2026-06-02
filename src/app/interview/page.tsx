@@ -321,12 +321,6 @@ function InterviewScreen({
           </div>
         </div>
 
-        {/* First question preview */}
-        <div className="mb-6 rounded-2xl border border-black/8 bg-white p-6 shadow-[0_8px_32px_rgba(13,31,60,0.06)]">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-gray-400">First question</p>
-          <p className="text-base font-medium leading-relaxed text-[#0D1F3C]">{currentQuestion}</p>
-        </div>
-
         {!supported && (
           <div className="mb-5 flex items-start gap-2.5 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
             <WarningIcon size={16} weight="fill" className="mt-0.5 shrink-0" />
@@ -689,8 +683,8 @@ export default function InterviewPage() {
         <Link href="/dashboard" className="flex items-center gap-0 font-semibold text-[#0D1F3C]">
           my<Image src="/favicon.ico" alt="" width={20} height={20} className="mx-0.5" />tailor.co.za
         </Link>
-        <div className="flex items-center gap-3">
-          <Link href="/interview/history" className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-[#4F46E5] transition-colors hover:bg-indigo-100">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link href="/interview/history" className="hidden sm:block rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-[#4F46E5] transition-colors hover:bg-indigo-100">
             Past interviews
           </Link>
           <Link href="/dashboard" className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200">

@@ -372,8 +372,8 @@ export default function DashboardPage() {
           <Image src="/favicon.ico" alt="" width={20} height={20} className="mx-0.5" />
           tailor.co.za
         </Link>
-        <div className="flex items-center gap-3">
-          <span className="text-xs px-3 py-1 rounded-full bg-white border border-black/8 text-slate-600">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="hidden sm:block text-xs px-3 py-1 rounded-full bg-white border border-black/8 text-slate-600">
             {credits} credits
           </span>
           <Link
