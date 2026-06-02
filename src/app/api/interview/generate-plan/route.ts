@@ -9,7 +9,7 @@ export interface InterviewQuestion {
   good_answer_hints: string;
 }
 
-const client = new Anthropic();
+const client = new Anthropic({ maxRetries: 4 });
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -43,12 +43,22 @@ ${cvText.slice(0, 4000)}
 Job Description:
 ${jdText.slice(0, 3000)}`;
 
+  const callClaude = async (model: string) => client.messages.create({
+    model,
+    max_tokens: 2048,
+    messages: [{ role: "user", content: prompt }],
+  });
+
   try {
-    const msg = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2048,
-      messages: [{ role: "user", content: prompt }],
-    });
+    let msg;
+    try {
+      msg = await callClaude("claude-sonnet-4-6");
+    } catch (primary) {
+      const isOverload = primary instanceof Anthropic.APIError && primary.status === 529;
+      if (!isOverload) throw primary;
+      console.warn("[generate-plan] Sonnet overloaded, falling back to Haiku");
+      msg = await callClaude("claude-haiku-4-5-20251001");
+    }
 
     const raw = msg.content[0].type === "text" ? msg.content[0].text.trim() : "";
     const cleaned = raw.replace(/^```(?:json)?\s*/m, "").replace(/\s*```$/m, "").trim();

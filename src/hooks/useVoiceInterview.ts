@@ -70,6 +70,9 @@ export function useVoiceInterview(
 
   // Browser support check + cleanup
   useEffect(() => {
+    // Reset here so React Strict Mode's simulated unmount/remount doesn't leave
+    // stoppedRef permanently true before the user has done anything.
+    stoppedRef.current = false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
     if (!SR || !window.speechSynthesis) setSupported(false);
@@ -87,9 +90,13 @@ export function useVoiceInterview(
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 0.92;
     u.lang = "en-US";
-    u.onend = () => resolve();
-    u.onerror = () => resolve();
+    // Timeout prevents the promise hanging if onend never fires (Chrome bug)
+    const t = setTimeout(() => resolve(), Math.max(text.length * 80, 8000));
+    u.onend = () => { clearTimeout(t); resolve(); };
+    u.onerror = () => { clearTimeout(t); resolve(); };
     window.speechSynthesis.speak(u);
+    // Fix Chrome stuck-paused state
+    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
   }), []);
 
   // ── STT ───────────────────────────────────────────────────────

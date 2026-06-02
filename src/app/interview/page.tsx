@@ -144,7 +144,7 @@ function SetupScreen({ onStart }: { onStart: (plan: InterviewPlan) => void }) {
               <WarningIcon size={15} weight="fill" />
               {cvError}
             </div>
-            <Link href="/dashboard" className="text-xs font-semibold text-[#0D1F3C] hover:underline">
+            <Link href="/dashboard" className="rounded-lg bg-[#4F46E5] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#183763]">
               Upload CV on dashboard →
             </Link>
           </div>
@@ -314,7 +314,7 @@ function InterviewScreen({
         )}
 
         <button
-          onClick={start}
+          onClick={() => void start()}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1F3C] px-6 py-4 text-sm font-semibold text-white transition-all hover:bg-[#1a3a6b]"
         >
           <MicrophoneIcon size={16} weight="fill" />
@@ -461,47 +461,177 @@ function InterviewScreen({
   );
 }
 
-/* ── Debrief Placeholder ────────────────────────────────────── */
+/* ── Debrief Screen ─────────────────────────────────────────── */
 
-function DebriefPlaceholder({
+const DEBRIEF_SECTIONS = [
+  "Overall Impression",
+  "Strongest Moment",
+  "Areas to Improve",
+  "Top 3 Tips for Next Time",
+] as const;
+
+const SECTION_COLOR: Record<string, string> = {
+  "Overall Impression": "border-l-blue-400",
+  "Strongest Moment": "border-l-emerald-400",
+  "Areas to Improve": "border-l-amber-400",
+  "Top 3 Tips for Next Time": "border-l-purple-400",
+};
+
+function parseDebrief(text: string): { title: string; content: string }[] {
+  const out: { title: string; content: string }[] = [];
+  for (let i = 0; i < DEBRIEF_SECTIONS.length; i++) {
+    const title = DEBRIEF_SECTIONS[i];
+    const next = DEBRIEF_SECTIONS[i + 1];
+    const re = new RegExp(title.replace(/\s+/g, "\\s+"), "i");
+    const start = text.search(re);
+    if (start === -1) continue;
+    const afterTitle = start + title.length;
+    const end = next ? text.search(new RegExp(next.replace(/\s+/g, "\\s+"), "i")) : text.length;
+    const content = text.slice(afterTitle, end !== -1 ? end : undefined).replace(/^[\s:]+/, "").trim();
+    if (content) out.push({ title, content });
+  }
+  return out;
+}
+
+function DebriefScreen({
+  plan,
   history,
   onRestart,
 }: {
+  plan: InterviewPlan;
   history: HistoryEntry[];
   onRestart: () => void;
 }) {
+  const [debrief, setDebrief] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function generate() {
+      try {
+        const res = await fetch("/api/interview/debrief", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobTitle: plan.jobTitle, history }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to generate debrief.");
+        setDebrief(data.debrief as string);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    void generate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSave = async () => {
+    if (!debrief || saving || saved) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetch("/api/interview/save-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobTitle: plan.jobTitle,
+          transcriptJson: history,
+          debriefText: debrief,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save.");
+      setSaved(true);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Save failed.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sections = debrief ? parseDebrief(debrief) : [];
+
   return (
     <div className="mx-auto max-w-2xl">
+      {/* Header */}
       <div className="mb-8 flex items-center gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#DDF3EC] text-emerald-700">
           <CheckCircleIcon size={24} weight="duotone" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-[#0D1F3C]">Interview complete</h1>
-          <p className="text-sm text-gray-400">Debrief and scoring coming in Stage 7</p>
+          <h1 className="text-2xl font-bold text-[#0D1F3C]">Interview debrief</h1>
+          <p className="text-sm text-gray-400">{plan.jobTitle} · {history.length} questions answered</p>
         </div>
       </div>
 
-      <div className="mb-6 overflow-hidden rounded-xl border border-black/8 bg-white shadow-[0_4px_16px_rgba(13,31,60,0.04)]">
-        <div className="border-b border-black/5 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-            Interview transcript ({history.length} Q&amp;As)
-          </p>
+      {/* Debrief content */}
+      {loading && (
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-black/8 bg-white px-5 py-6 shadow-[0_4px_16px_rgba(13,31,60,0.04)]">
+          <CircleNotchIcon size={18} className="animate-spin text-gray-400 shrink-0" />
+          <span className="text-sm text-gray-400">Generating your personalised debrief…</span>
         </div>
-        {history.map((entry, i) => (
-          <div key={i} className="border-b border-black/5 px-4 py-4 last:border-0">
-            <p className="mb-1.5 text-xs font-semibold text-[#0D1F3C]">Q{i + 1}. {entry.question}</p>
-            <p className="text-sm leading-relaxed text-gray-500">{entry.answer}</p>
-          </div>
-        ))}
-      </div>
+      )}
 
-      <button
-        onClick={onRestart}
-        className="rounded-xl border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[#0D1F3C] transition-colors hover:bg-gray-50"
-      >
-        Start new interview
-      </button>
+      {error && (
+        <div className="mb-6 rounded-xl bg-rose-50 px-5 py-4 text-sm text-rose-700">{error}</div>
+      )}
+
+      {sections.length > 0 && (
+        <div className="mb-6 space-y-4">
+          {sections.map(({ title, content }) => (
+            <div
+              key={title}
+              className={`rounded-xl border-l-4 border border-black/8 bg-white px-5 py-4 shadow-[0_4px_16px_rgba(13,31,60,0.04)] ${SECTION_COLOR[title] ?? "border-l-gray-300"}`}
+            >
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+                {title}
+              </p>
+              <p className="text-sm leading-relaxed text-[#0D1F3C]">{content}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Raw fallback if parsing fails */}
+      {debrief && sections.length === 0 && (
+        <div className="mb-6 rounded-xl border border-black/8 bg-white px-5 py-5 shadow-[0_4px_16px_rgba(13,31,60,0.04)]">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#0D1F3C]">{debrief}</p>
+        </div>
+      )}
+
+      {/* Save error */}
+      {saveError && (
+        <div className="mb-4 rounded-lg bg-rose-50 px-4 py-2.5 text-xs text-rose-700">{saveError}</div>
+      )}
+
+      {/* Actions */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => void handleSave()}
+          disabled={!debrief || saving || saved}
+          className="flex items-center gap-2 rounded-xl bg-[#0D1F3C] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#1a3a6b] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {saving ? (
+            <><CircleNotchIcon size={14} className="animate-spin" /> Saving…</>
+          ) : saved ? (
+            <><CheckCircleIcon size={14} weight="fill" className="text-emerald-400" /> Saved</>
+          ) : (
+            "Save to my account"
+          )}
+        </button>
+
+        <button
+          onClick={onRestart}
+          className="rounded-xl border border-black/10 bg-white px-5 py-2.5 text-sm font-semibold text-[#0D1F3C] transition-colors hover:bg-gray-50"
+        >
+          Start new interview
+        </button>
+      </div>
     </div>
   );
 }
@@ -543,6 +673,9 @@ export default function InterviewPage() {
           my<Image src="/favicon.ico" alt="" width={20} height={20} className="mx-0.5" />tailor.co.za
         </Link>
         <div className="flex items-center gap-3">
+          <Link href="/interview/history" className="text-xs text-slate-500 hover:text-[#0D1F3C] transition-colors">
+            Past interviews
+          </Link>
           <Link href="/dashboard" className="text-xs text-slate-500 hover:text-[#0D1F3C] transition-colors">
             Dashboard
           </Link>
@@ -564,8 +697,9 @@ export default function InterviewPage() {
             onEnd={(h) => { setHistory(h); setScreen("debrief"); }}
           />
         )}
-        {screen === "debrief" && (
-          <DebriefPlaceholder
+        {screen === "debrief" && plan && (
+          <DebriefScreen
+            plan={plan}
             history={history}
             onRestart={() => { setPlan(null); setHistory([]); setScreen("setup"); }}
           />

@@ -15,7 +15,7 @@ interface RespondBody {
   userAnswer: string;
 }
 
-const client = new Anthropic();
+const client = new Anthropic({ maxRetries: 2 });
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -61,7 +61,7 @@ Return ONLY the JSON object. No markdown, no explanation.`;
 
   try {
     const msg = await client.messages.create({
-      model: "claude-sonnet-4-6",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 300,
       system,
       messages: [{ role: "user", content: userMsg }],
