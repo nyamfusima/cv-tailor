@@ -387,7 +387,7 @@ function InterviewScreen({
       </div>
 
       {/* Interviewer card */}
-      <div className="mb-4 rounded-2xl border border-black/8 bg-white p-6 shadow-[0_8px_32px_rgba(13,31,60,0.06)]">
+      <div className="mb-4 rounded-2xl border border-black/8 bg-white p-4 sm:p-6 shadow-[0_8px_32px_rgba(13,31,60,0.06)]">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0D1F3C] text-white">

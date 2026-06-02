@@ -142,7 +142,7 @@ function CVSections({ cv }: { cv: OriginalCV }) {
           <div className="space-y-1.5">
             {cv.skills.map((group, i) => (
               <div key={i} className="flex gap-2 text-sm flex-wrap">
-                <span className="font-bold text-slate-800 shrink-0 min-w-[100px]">{group.category}:</span>
+                <span className="font-bold text-slate-800 shrink-0 min-w-[80px] sm:min-w-[100px]">{group.category}:</span>
                 <span className="text-slate-600">{group.skills.join(", ")}</span>
               </div>
             ))}
@@ -368,7 +368,7 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
               placeholder="Full name"
               className="text-lg font-bold text-center w-full bg-white/10 text-white border border-white/30 rounded-xl px-3 py-2 outline-none focus:bg-white/20 placeholder-white/30"
             />
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {(["email", "phone", "location", "linkedin"] as const).map(f => (
                 <input
                   key={f}
@@ -473,7 +473,7 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
                   </div>
                 ) : (
                   <div className="flex gap-2 flex-wrap">
-                    <span className="font-bold text-slate-800 shrink-0 min-w-[100px]">{group.category}:</span>
+                    <span className="font-bold text-slate-800 shrink-0 min-w-[80px] sm:min-w-[100px]">{group.category}:</span>
                     <span className="text-slate-600">{group.skills.join(", ")}</span>
                   </div>
                 )}
@@ -768,7 +768,7 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
                   <div key={ri}>
                     {editing ? (
                       <div className="border border-indigo-200 rounded-xl p-4 -mx-1 bg-slate-50/50 space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <input
                             value={ref.name}
                             onChange={e => updateRefField(ri, "name", e.target.value)}

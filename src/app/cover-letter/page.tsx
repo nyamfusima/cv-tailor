@@ -173,10 +173,10 @@ export default function CoverLetterPage() {
             <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-1">Cover Letter</h1>
             <p className="text-sm text-slate-400">Click any paragraph to edit. Copy when ready.</p>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
             <button
               onClick={() => cv && generate(cv, sessionStorage.getItem("jobDescription") || "")}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-800 border border-slate-200 px-3 py-2 rounded-xl transition-colors"
+              className="hidden sm:block text-xs font-semibold text-slate-500 hover:text-slate-800 border border-slate-200 px-3 py-2 rounded-xl transition-colors"
             >
               ↺ Regenerate
             </button>

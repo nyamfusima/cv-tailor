@@ -397,7 +397,7 @@ export default function UploadForm() {
                   value={jobDesc}
                   onChange={(e) => setJobDesc(e.target.value)}
                   placeholder="Paste the full job description here — the more detail, the better the tailoring..."
-                  rows={10}
+                  rows={7}
                   className="w-full px-4 py-3 text-sm text-slate-700 placeholder-slate-300 focus:outline-none resize-none"
                 />
               </>

@@ -96,7 +96,7 @@ function SessionCard({ session }: { session: InterviewSession }) {
 
       {/* Expanded debrief */}
       {open && (
-        <div className="border-t border-black/5 px-5 py-5 space-y-4">
+        <div className="border-t border-black/5 px-4 py-4 sm:px-5 sm:py-5 space-y-4">
           {sections.length > 0 ? (
             sections.map(({ title, content }) => (
               <div

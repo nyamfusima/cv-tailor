@@ -83,7 +83,7 @@ const BentoCard = ({
     onClick={!disabled ? onClick : undefined}
     disabled={disabled}
     className={`
-      group relative flex min-h-[240px] flex-col rounded-[20px] border p-6 text-left sm:min-h-[320px] sm:p-8
+      group relative flex min-h-[180px] flex-col rounded-[20px] border p-5 text-left sm:min-h-[280px] sm:p-8
       shadow-[0_18px_45px_rgba(13,31,60,0.04)] outline-none transition-shadow
       focus-visible:ring-2 focus-visible:ring-[#0D1F3C]/20 focus-visible:ring-offset-2
       ${color} ${disabled ? "cursor-default opacity-55" : "cursor-pointer hover:shadow-[0_24px_55px_rgba(13,31,60,0.08)]"}
@@ -96,11 +96,11 @@ const BentoCard = ({
       </span>
     )}
     <div className={`${textColor} opacity-95`}>{icon}</div>
-    <div className="mt-auto pb-10 sm:pb-12">
-      <h3 className={`text-xl font-bold leading-tight sm:text-2xl ${textColor}`}>
+    <div className="mt-auto pb-8 sm:pb-12">
+      <h3 className={`text-lg font-bold leading-tight sm:text-2xl ${textColor}`}>
         {title}
       </h3>
-      <p className={`mt-4 max-w-sm text-sm font-medium leading-6 ${textColor} opacity-80`}>
+      <p className={`mt-2 sm:mt-4 max-w-sm text-xs sm:text-sm font-medium leading-6 ${textColor} opacity-80`}>
         {description}
       </p>
     </div>
@@ -129,14 +129,14 @@ const BentoGrid = ({
         whileHover={{ y: -3 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
         onClick={() => router.push("/upload")}
-        className="group relative min-h-[240px] cursor-pointer rounded-[20px] border border-emerald-100 bg-[#DDF3EC] p-6 text-left text-emerald-800 shadow-[0_18px_45px_rgba(13,31,60,0.04)] outline-none transition-shadow hover:shadow-[0_24px_55px_rgba(13,31,60,0.08)] focus-visible:ring-2 focus-visible:ring-[#0D1F3C]/20 focus-visible:ring-offset-2 sm:min-h-[320px] sm:p-8"
+        className="group relative min-h-[180px] cursor-pointer rounded-[20px] border border-emerald-100 bg-[#DDF3EC] p-5 text-left text-emerald-800 shadow-[0_18px_45px_rgba(13,31,60,0.04)] outline-none transition-shadow hover:shadow-[0_24px_55px_rgba(13,31,60,0.08)] focus-visible:ring-2 focus-visible:ring-[#0D1F3C]/20 focus-visible:ring-offset-2 sm:min-h-[280px] sm:p-8"
       >
         <MagicWand size={28} weight="duotone" className="opacity-95" />
-        <div className="mt-auto pb-10 sm:pb-12">
-          <h3 className="text-xl font-bold leading-tight text-emerald-950 sm:text-2xl">
+        <div className="mt-auto pb-8 sm:pb-12">
+          <h3 className="text-lg font-bold leading-tight text-emerald-950 sm:text-2xl">
             Tailor your CV
           </h3>
-          <p className="mt-4 max-w-2xl text-sm font-medium leading-6 text-emerald-800/80">
+          <p className="mt-2 sm:mt-4 max-w-2xl text-xs sm:text-sm font-medium leading-6 text-emerald-800/80">
             Paste a job description or job link and get your CV rewritten to match keywords, tone, and ATS structure.
           </p>
         </div>
@@ -393,7 +393,7 @@ export default function DashboardPage() {
 
         {/* HERO */}
         <div className="mb-10">
-          <h1 className="max-w-2xl text-4xl font-bold leading-[0.98] tracking-tight text-black sm:text-5xl">
+          <h1 className="max-w-2xl text-3xl font-bold leading-[0.98] tracking-tight text-black sm:text-5xl">
             Welcome back
             {user?.user_metadata?.full_name
               ? `, ${user.user_metadata.full_name.split(" ")[0]}`
@@ -479,13 +479,13 @@ export default function DashboardPage() {
             onClick={(e) => e.stopPropagation()}
             className="bg-white rounded-2xl w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 overflow-hidden max-h-[80vh] overflow-y-auto"
           >
-            <div className="p-5 border-b md:border-b-0 md:border-r border-black/5">
+            <div className="p-4 sm:p-5 border-b md:border-b-0 md:border-r border-black/5">
               <h3 className="text-sm font-medium text-[#0D1F3C] mb-3">Tailored CV</h3>
               <pre className="text-xs whitespace-pre-wrap text-gray-600">
                 {JSON.stringify(selectedSession.tailored_cv, null, 2)}
               </pre>
             </div>
-            <div className="p-5 bg-white">
+            <div className="p-4 sm:p-5 bg-white">
               <h3 className="text-sm font-medium text-[#0D1F3C] mb-3">Job description</h3>
               <pre className="text-xs whitespace-pre-wrap text-gray-600">
                 {selectedSession.job_description}

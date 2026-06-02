@@ -404,12 +404,12 @@ export default function JobMatchPage() {
                     {(job.matchedSkills.length > 0 || job.missingSkills.length > 0) && (
                       <div className="flex flex-wrap gap-1.5">
                         {job.matchedSkills.map(s => (
-                          <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium border border-emerald-100">
+                          <span key={s} className="text-[10px] px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium border border-emerald-100">
                             {s}
                           </span>
                         ))}
                         {job.missingSkills.map(s => (
-                          <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-slate-50 text-slate-400 font-medium border border-slate-100">
+                          <span key={s} className="text-[10px] px-2 py-1 rounded-full bg-slate-50 text-slate-400 font-medium border border-slate-100">
                             {s}
                           </span>
                         ))}
