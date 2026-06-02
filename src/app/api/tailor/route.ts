@@ -75,17 +75,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check credits (skip for admin accounts)
-    const ADMIN_EMAILS = [
-      "nyamfusima@gmail.com",
-      "hamza26mohamud@gmail.com",
-      "the.real.chad.naude@gmail.com",
-      "ngqongwaayandisa@gmail.com",
-      "somilamangqu@gmail.com",
-      "moabithapelo1@gmail.com",
-      "sikhanyiselesky@gmail.com",
-      "zengetwasisipho@gmail.com",
-    ];
+    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,the.real.chad.naude@gmail.com,ngqongwaayandisa@gmail.com,somilamangqu@gmail.com,moabithapelo1@gmail.com,sikhanyiselesky@gmail.com,zengetwasisipho@gmail.com")
+      .split(",").map(e => e.trim());
     const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
 
     if (!isAdmin) {

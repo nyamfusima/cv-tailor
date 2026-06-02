@@ -70,7 +70,7 @@ export default function JobMatchPage() {
     console.log("[job-match] Checking user record for:", user.id);
     const { data, error } = await supabase
       .from("users")
-      .select("master_cv_path, master_cv_name, job_credits")
+      .select("master_cv_path, master_cv_name, plan")
       .eq("id", user.id)
       .single();
 
@@ -81,9 +81,8 @@ export default function JobMatchPage() {
       return;
     }
 
-    const credits = data?.job_credits ?? 0;
-    console.log("[job-match] Master CV path:", data?.master_cv_path ?? "none", "| job_credits:", credits);
-    setIsPro(credits > 0);
+    console.log("[job-match] Master CV path:", data?.master_cv_path ?? "none", "| plan:", data?.plan);
+    setIsPro(data?.plan === "pro");
     setHasMasterCV(!!data?.master_cv_path);
   };
 

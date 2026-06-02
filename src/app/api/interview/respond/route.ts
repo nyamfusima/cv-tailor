@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { getUserCredits, hasJobCredits } from "@/lib/user";
 
 interface HistoryEntry { question: string; answer: string; }
 interface InterviewQuestion { id: number; question: string; type: string; }
@@ -17,10 +18,21 @@ interface RespondBody {
 
 const client = new Anthropic({ maxRetries: 2 });
 
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,ngqongwaayandisa@gmail.com,zengetwasisipho@gmail.com")
+  .split(",").map(e => e.trim());
+
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
+  if (!isAdmin) {
+    const userData = await getUserCredits(user.id);
+    if (!userData || !hasJobCredits(userData)) {
+      return NextResponse.json({ error: "PRO_REQUIRED" }, { status: 403 });
+    }
+  }
 
   const {
     cvText, jdText, jobTitle, questionPlan,

@@ -5,7 +5,7 @@ export async function getUserCredits(userId: string): Promise<UserCredits | null
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("users")
-    .select("*")
+    .select("id, email, plan, tailor_count, tailor_reset_date")
     .eq("id", userId)
     .single();
 
@@ -16,71 +16,39 @@ export async function getUserCredits(userId: string): Promise<UserCredits | null
 export async function deductTailorCredit(userId: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const user = await getUserCredits(userId);
-  if (!user || user.tailor_credits <= 0) return false;
+  if (!user) return false;
+
+  if (user.plan === "pro") return true;
+
+  const now = new Date();
+  const resetDate = new Date(user.tailor_reset_date);
+
+  if (now >= resetDate) {
+    // Monthly reset: count this use as 1 and advance the reset date to start of next month
+    const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const { error } = await supabase
+      .from("users")
+      .update({ tailor_count: 1, tailor_reset_date: nextReset.toISOString() })
+      .eq("id", userId);
+    return !error;
+  }
+
+  if (user.tailor_count >= 3) return false;
 
   const { error } = await supabase
     .from("users")
-    .update({
-      tailor_credits: user.tailor_credits - 1,
-      total_tailors_used: user.total_tailors_used + 1,
-    })
+    .update({ tailor_count: user.tailor_count + 1 })
     .eq("id", userId);
-
-  return !error;
-}
-
-export async function deductPDFCredit(userId: string): Promise<boolean> {
-  const supabase = await createSupabaseServerClient();
-  const user = await getUserCredits(userId);
-  if (!user || user.pdf_credits <= 0) return false;
-
-  const { error } = await supabase
-    .from("users")
-    .update({ pdf_credits: user.pdf_credits - 1 })
-    .eq("id", userId);
-
-  return !error;
-}
-
-export async function addCredits(
-  userId: string,
-  tailorCredits: number,
-  pdfCredits: number
-): Promise<void> {
-  const supabase = await createSupabaseServerClient();
-  const user = await getUserCredits(userId);
-  if (!user) return;
-
-  await supabase
-    .from("users")
-    .update({
-      tailor_credits: user.tailor_credits + tailorCredits,
-      pdf_credits: user.pdf_credits + pdfCredits,
-    })
-    .eq("id", userId);
-}
-
-export async function deductJobCredit(userId: string): Promise<boolean> {
-  const supabase = await createSupabaseServerClient();
-  const user = await getUserCredits(userId);
-  if (!user || (user.job_credits ?? 0) <= 0) return false;
-
-  const { error } = await supabase
-    .from("users")
-    .update({ job_credits: user.job_credits - 1 })
-    .eq("id", userId);
-
   return !error;
 }
 
 export function hasTailorCredits(user: UserCredits): boolean {
-  return user.tailor_credits > 0;
-}
-
-export function hasPDFCredits(user: UserCredits): boolean {
-  return user.pdf_credits > 0;
+  if (user.plan === "pro") return true;
+  // If the monthly reset date has passed the next deduct will reset the count
+  if (new Date() >= new Date(user.tailor_reset_date)) return true;
+  return user.tailor_count < 3;
 }
 
 export function hasJobCredits(user: UserCredits): boolean {
-  return (user.job_credits ?? 0) > 0;
+  return user.plan === "pro";
 }

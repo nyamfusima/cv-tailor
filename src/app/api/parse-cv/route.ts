@@ -2,16 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseFile } from "@/lib/parseFile";
 import Anthropic from "@anthropic-ai/sdk";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { getUserCredits, deductJobCredit, hasJobCredits } from "@/lib/user";
+import { getUserCredits, hasJobCredits } from "@/lib/user";
 
 const client = new Anthropic();
 
-const ADMIN_EMAILS = [
-  "nyamfusima@gmail.com",
-  "hamza26mohamud@gmail.com",
-  "ngqongwaayandisa@gmail.com",
-  "zengetwasisipho@gmail.com",
-];
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,ngqongwaayandisa@gmail.com,zengetwasisipho@gmail.com")
+  .split(",").map(e => e.trim());
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,7 +24,6 @@ export async function POST(req: NextRequest) {
       if (!userData || !hasJobCredits(userData)) {
         return NextResponse.json({ error: "NO_CREDITS" }, { status: 403 });
       }
-      await deductJobCredit(user.id);
     }
 
     const formData = await req.formData();

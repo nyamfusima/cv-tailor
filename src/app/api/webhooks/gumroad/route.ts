@@ -6,12 +6,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const PLAN_CREDITS = {
-  pro_monthly: { tailorCredits: 999999, pdfCredits: 999999 },
-  pro_yearly: { tailorCredits: 999999, pdfCredits: 999999 },
-};
+const VALID_PLANS = new Set(["pro_monthly", "pro_yearly"]);
 
-// Map Gumroad product URLs to plan types
 const PRODUCT_MAP: Record<string, string> = {
   pro_monthly: "pro_monthly",
   pro_yearly: "pro_yearly",
@@ -32,27 +28,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No email" }, { status: 400 });
     }
 
-    // Handle refunds — remove credits
+    // Handle refunds — downgrade back to free
     if (refunded) {
-      const planType = PRODUCT_MAP[productPermalink];
-      if (planType) {
-        const plan = PLAN_CREDITS[planType as keyof typeof PLAN_CREDITS];
-        const { data: userData } = await supabaseAdmin
-          .from("users")
-          .select("tailor_credits, pdf_credits")
-          .eq("email", email)
-          .single();
-
-        if (userData) {
-          await supabaseAdmin
-            .from("users")
-            .update({
-              tailor_credits: Math.max(0, userData.tailor_credits - plan.tailorCredits),
-              pdf_credits: Math.max(0, userData.pdf_credits - plan.pdfCredits),
-            })
-            .eq("email", email);
-        }
-      }
+      await supabaseAdmin
+        .from("users")
+        .update({ plan: "free" })
+        .eq("email", email);
+      console.log(`Downgraded ${email} to free (refund)`);
       return NextResponse.json({ success: true });
     }
 
@@ -72,45 +54,19 @@ export async function POST(req: NextRequest) {
       if (pending) planType = pending.plan_type;
     }
 
-    if (!planType) {
+    if (!planType || !VALID_PLANS.has(planType)) {
       console.error("Could not determine plan type for:", email, productPermalink);
       return NextResponse.json({ error: "Unknown plan" }, { status: 400 });
     }
 
-    const plan = PLAN_CREDITS[planType as keyof typeof PLAN_CREDITS];
-
-    // Find user by email
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from("users")
-      .select("id, tailor_credits, pdf_credits")
-      .eq("email", email)
-      .single();
-
-    if (userError || !userData) {
-      console.error("User not found for email:", email);
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Add credits
-    const newTailorCredits = planType.startsWith("pro_")
-      ? 999999
-      : userData.tailor_credits + plan.tailorCredits;
-
-    const newPdfCredits = planType.startsWith("pro_")
-      ? 999999
-      : userData.pdf_credits + plan.pdfCredits;
-
     const { error: updateError } = await supabaseAdmin
       .from("users")
-      .update({
-        tailor_credits: newTailorCredits,
-        pdf_credits: newPdfCredits,
-      })
+      .update({ plan: "pro" })
       .eq("email", email);
 
     if (updateError) {
-      console.error("Failed to update credits:", updateError);
-      return NextResponse.json({ error: "Failed to update credits" }, { status: 500 });
+      console.error("Failed to upgrade user plan:", updateError);
+      return NextResponse.json({ error: "Failed to update plan" }, { status: 500 });
     }
 
     // Clean up pending purchase
@@ -119,8 +75,7 @@ export async function POST(req: NextRequest) {
       .delete()
       .eq("email", email);
 
-    console.log(`Credits added for ${email}: ${newTailorCredits} tailors, ${newPdfCredits} PDFs`);
-
+    console.log(`✅ Upgraded ${email} to pro (plan: ${planType})`);
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error("Webhook error:", err);

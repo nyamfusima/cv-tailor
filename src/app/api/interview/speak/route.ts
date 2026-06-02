@@ -1,11 +1,25 @@
 import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { getUserCredits, hasJobCredits } from "@/lib/user";
+
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,ngqongwaayandisa@gmail.com,zengetwasisipho@gmail.com")
+  .split(",").map(e => e.trim());
 
 export async function POST(req: NextRequest) {
-  // Auth guard — only Pro users should reach this
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
+
+  const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
+  if (!isAdmin) {
+    const userData = await getUserCredits(user.id);
+    if (!userData || !hasJobCredits(userData)) {
+      return new Response(JSON.stringify({ error: "PRO_REQUIRED" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
 
   const { text } = await req.json() as { text: string };
   if (!text?.trim()) return new Response("No text provided", { status: 400 });

@@ -45,12 +45,16 @@ export default function UploadForm() {
     if (!user) { setTailorCredits(null); return; }
     supabase
       .from("users")
-      .select("tailor_credits")
+      .select("plan, tailor_count")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
         if (data) {
-          setTailorCredits(data.tailor_credits);
+          if (data.plan === "pro") {
+            setTailorCredits(null); // Pro: unlimited, hide counter
+          } else {
+            setTailorCredits(Math.max(0, 3 - (data.tailor_count ?? 0)));
+          }
         }
       });
   }, [user]);

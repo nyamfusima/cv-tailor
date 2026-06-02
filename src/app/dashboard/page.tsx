@@ -21,10 +21,9 @@ import {
 
 /* ---------------- TYPES ---------------- */
 interface UserData {
-  tailor_credits: number;
-  pdf_credits: number;
-  job_credits: number;
-  total_tailors_used: number;
+  plan: "free" | "pro";
+  tailor_count: number;
+  tailor_reset_date: string;
   master_cv_path: string | null;
   master_cv_name: string | null;
 }
@@ -351,8 +350,9 @@ export default function DashboardPage() {
     }
   };
 
-  const credits = userData?.tailor_credits ?? 0;
-  const canUseJobMatch = (userData?.job_credits ?? 0) > 0;
+  const isPro = userData?.plan === "pro";
+  const tailorsLeft = isPro ? null : Math.max(0, 3 - (userData?.tailor_count ?? 0));
+  const canUseJobMatch = isPro;
 
   if (loading || fetching) {
     return (
@@ -374,7 +374,7 @@ export default function DashboardPage() {
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
           <span className="hidden sm:block text-xs px-3 py-1 rounded-full bg-white border border-black/8 text-slate-600">
-            {credits} credits
+            {isPro ? "Pro plan" : `${tailorsLeft} credit${tailorsLeft !== 1 ? "s" : ""}`}
           </span>
           <Link
             href="/pricing"

@@ -685,8 +685,8 @@ export default function InterviewPage() {
     if (!user) { router.push("/"); return; }
     async function checkPro() {
       if (!user) return;
-      const { data } = await supabase.from("users").select("job_credits").eq("id", user.id).single();
-      if ((data?.job_credits ?? 0) <= 0) { router.push("/pricing"); return; }
+      const { data } = await supabase.from("users").select("plan").eq("id", user.id).single();
+      if (data?.plan !== "pro") { router.push("/pricing"); return; }
       setIsPro(true);
     }
     void checkPro();
