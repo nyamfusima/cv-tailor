@@ -382,7 +382,7 @@ export default function DashboardPage() {
           >
             Upgrade
           </Link>
-          <button onClick={() => void signOut()} className="text-xs text-slate-500 hover:text-[#0D1F3C] transition-colors">
+          <button onClick={() => void signOut()} className="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-500 transition-colors hover:bg-rose-100">
             Sign out
           </button>
         </div>

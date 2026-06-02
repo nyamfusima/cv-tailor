@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server";
 export interface InterviewQuestion {
   id: number;
   question: string;
-  type: "behavioural" | "technical" | "situational" | "motivation";
+  type: "intro" | "behavioural" | "technical" | "situational" | "motivation";
   good_answer_hints: string;
 }
 
@@ -32,10 +32,15 @@ export async function POST(req: NextRequest) {
 Return ONLY a valid JSON array with no markdown, no backticks, no explanation. Each item must have:
 - "id": number
 - "question": string (the full interview question)
-- "type": one of "behavioural" | "technical" | "situational" | "motivation"
+- "type": one of "intro" | "behavioural" | "technical" | "situational" | "motivation"
 - "good_answer_hints": string (2-3 bullet points on what a strong answer includes, for internal use only)
 
-Generate exactly 6 questions: 2 behavioural, 2 technical (based on the JD requirements), 1 situational, 1 motivation/culture fit.${jobTitle ? `\n\nThe role is: ${jobTitle}` : ""}
+Generate exactly 10 questions in this order — start easy and build to technical:
+1. A warm opening: "Tell me about yourself" or "Walk me through your background" (type: "intro")
+2-3. General behavioural questions about teamwork, communication, or handling challenges (type: "behavioural")
+4-5. Situational questions based on realistic scenarios in this role (type: "situational")
+6-8. Technical questions derived directly from the skills and requirements in the job description (type: "technical")
+9-10. Motivation and culture-fit questions — include one forward-looking question like "Where do you see yourself in 3 years?" (type: "motivation")${jobTitle ? `\n\nThe role is: ${jobTitle}` : ""}
 
 CV:
 ${cvText.slice(0, 4000)}

@@ -222,7 +222,7 @@ export default function JobMatchPage() {
         </div>
         <div>
           {adminData ? (
-            <Link href="/admin" className="text-xs text-slate-400 hover:text-slate-700 font-medium transition-colors">
+            <Link href="/admin" className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200">
               ← Back to admin
             </Link>
           ) : (
@@ -238,8 +238,7 @@ export default function JobMatchPage() {
         {/* Admin banner */}
         {adminData && (
           <div
-            className="mb-6 rounded-2xl px-5 py-4 flex items-center gap-4"
-            style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+            className="mb-6 rounded-2xl px-5 py-4 flex items-center gap-4 bg-[#4F46E5]"
           >
             <div
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -282,8 +281,7 @@ export default function JobMatchPage() {
         {!adminData && isPro === false && (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
             <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+              className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-[#4F46E5]"
             >
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -295,8 +293,7 @@ export default function JobMatchPage() {
             </p>
             <Link
               href="/pricing"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-white px-5 py-2.5 rounded-xl hover:opacity-90 transition-all"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-white px-5 py-2.5 rounded-xl bg-[#4F46E5] hover:bg-[#183763] transition-colors"
             >
               Upgrade to Pro →
             </Link>
@@ -312,8 +309,7 @@ export default function JobMatchPage() {
             </p>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-white px-5 py-2.5 rounded-xl hover:opacity-90 transition-all"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-white px-5 py-2.5 rounded-xl bg-[#4F46E5] hover:bg-[#183763] transition-colors"
             >
               Go to dashboard →
             </Link>
@@ -324,8 +320,7 @@ export default function JobMatchPage() {
         {!adminData && isPro !== false && hasMasterCV === true && !searched && !isSearching && (
           <button
             onClick={handleFindJobs}
-            className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-white px-6 py-3 rounded-xl hover:opacity-90 transition-all"
-            style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+            className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-white px-6 py-3 rounded-xl bg-[#4F46E5] hover:bg-[#183763] transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -351,8 +346,7 @@ export default function JobMatchPage() {
             <p className="text-sm text-red-600 mb-2">{error}</p>
             <button
               onClick={handleFindJobs}
-              className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg hover:opacity-90 transition-all"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+              className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg bg-[#4F46E5] hover:bg-[#183763] transition-colors"
             >
               Try again
             </button>
@@ -369,7 +363,7 @@ export default function JobMatchPage() {
               <button
                 onClick={handleFindJobs}
                 disabled={isSearching}
-                className="text-xs text-slate-400 hover:text-slate-700 font-medium transition-colors disabled:opacity-40"
+                className="rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200 disabled:opacity-40"
               >
                 ↺ Refresh
               </button>
@@ -426,8 +420,7 @@ export default function JobMatchPage() {
                       href={job.applyUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-auto block w-full text-center text-xs font-semibold text-white py-2.5 rounded-xl hover:opacity-90 transition-all"
-                      style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+                      className="mt-auto block w-full text-center text-xs font-semibold text-white py-2.5 rounded-xl bg-[#4F46E5] hover:bg-[#183763] transition-colors"
                     >
                       Apply →
                     </a>
@@ -447,8 +440,7 @@ export default function JobMatchPage() {
             </p>
             <button
               onClick={handleFindJobs}
-              className="text-xs font-semibold text-white px-4 py-2 rounded-lg hover:opacity-90 transition-all"
-              style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+              className="text-xs font-semibold text-white px-4 py-2 rounded-lg bg-[#4F46E5] hover:bg-[#183763] transition-colors"
             >
               Try again
             </button>

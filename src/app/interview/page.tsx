@@ -31,12 +31,14 @@ type Screen = "setup" | "interview" | "debrief";
 /* ── UI constants ───────────────────────────────────────────── */
 
 const TYPE_LABEL: Record<InterviewQuestion["type"], string> = {
+  intro: "Intro",
   behavioural: "Behavioural",
   technical: "Technical",
   situational: "Situational",
   motivation: "Motivation",
 };
 const TYPE_COLOR: Record<InterviewQuestion["type"], string> = {
+  intro: "bg-slate-100 text-slate-600",
   behavioural: "bg-blue-50 text-blue-700",
   technical: "bg-purple-50 text-purple-700",
   situational: "bg-amber-50 text-amber-700",
@@ -195,7 +197,7 @@ function SetupScreen({ onStart }: { onStart: (plan: InterviewPlan) => void }) {
       <button
         onClick={() => void handleStart()}
         disabled={!canStart}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1F3C] px-6 py-4 text-sm font-semibold text-white transition-all hover:bg-[#1a3a6b] disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-4 text-sm font-semibold text-white transition-all hover:bg-[#183763] disabled:cursor-not-allowed disabled:opacity-40"
       >
         {generating ? (
           <>
@@ -211,13 +213,33 @@ function SetupScreen({ onStart }: { onStart: (plan: InterviewPlan) => void }) {
       </button>
 
       <p className="mt-3 text-center text-xs text-gray-400">
-        The AI will generate 6 personalised questions from your CV and the JD
+        The AI will generate 10 personalised questions, starting simple and building to technical
       </p>
     </div>
   );
 }
 
 /* ── Status Indicator ───────────────────────────────────────── */
+
+/* ── Timer Badge ────────────────────────────────────────────── */
+
+function TimerBadge({ timeLeft }: { timeLeft: number }) {
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  const display = `${m}:${s.toString().padStart(2, "0")}`;
+  const color =
+    timeLeft > 300
+      ? "bg-emerald-50 text-emerald-700"
+      : timeLeft > 120
+      ? "bg-amber-50 text-amber-700"
+      : "bg-rose-50 text-rose-600";
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold tabular-nums ${color}`}>
+      {display}
+    </span>
+  );
+}
 
 function StatusIndicator({ status }: { status: InterviewStatus }) {
   const config: Record<InterviewStatus, { label: string; color: string; icon: React.ReactNode }> = {
@@ -273,8 +295,10 @@ function InterviewScreen({
     transcript,
     supported,
     isActive,
+    timeLeft,
     start,
     stop,
+    stopListening,
     submitManual,
   } = useVoiceInterview(plan, onEnd);
 
@@ -315,7 +339,7 @@ function InterviewScreen({
 
         <button
           onClick={() => void start()}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1F3C] px-6 py-4 text-sm font-semibold text-white transition-all hover:bg-[#1a3a6b]"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-4 text-sm font-semibold text-white transition-all hover:bg-[#183763]"
         >
           <MicrophoneIcon size={16} weight="fill" />
           Begin Interview
@@ -333,27 +357,9 @@ function InterviewScreen({
   return (
     <div className="mx-auto max-w-2xl">
 
-      {/* Progress bar */}
+      {/* Timer + end button */}
       <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-[#0D1F3C]">
-            Question {planIndex + 1} of {total}
-          </span>
-          <div className="flex items-center gap-1">
-            {plan.questions.map((_, i) => (
-              <span
-                key={i}
-                className={`h-1.5 rounded-full transition-all ${
-                  i < planIndex
-                    ? "w-4 bg-emerald-500"
-                    : i === planIndex
-                    ? "w-4 bg-[#0D1F3C]"
-                    : "w-1.5 bg-gray-200"
-                }`}
-              />
-            ))}
-          </div>
-        </div>
+        <TimerBadge timeLeft={timeLeft} />
         <button
           onClick={stop}
           className="flex items-center gap-1.5 rounded-lg border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:border-rose-200 hover:text-rose-600"
@@ -421,7 +427,18 @@ function InterviewScreen({
         )}
       </div>
 
-      {/* Submit — only shown in fallback mode or when STT is idle */}
+      {/* Done Answering — voice mode */}
+      {supported && status === "listening" && (
+        <button
+          onClick={stopListening}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#183763]"
+        >
+          Done Answering
+          <ArrowRightIcon size={16} weight="bold" />
+        </button>
+      )}
+
+      {/* Submit — text fallback mode only */}
       {!supported && (
         <button
           onClick={() => {
@@ -429,7 +446,7 @@ function InterviewScreen({
             setManualInput("");
           }}
           disabled={!manualInput.trim() || status === "thinking"}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0D1F3C] px-6 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#1a3a6b] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#4F46E5] px-6 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#183763] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {status === "thinking" ? (
             <>
@@ -453,9 +470,9 @@ function InterviewScreen({
       <p className="mt-3 text-center text-xs text-gray-400">
         {supported
           ? status === "listening"
-            ? "Speak your answer — the AI will listen until you pause"
-            : "The AI will automatically start listening after it finishes speaking"
-          : `${total - planIndex - 1} question${total - planIndex - 1 === 1 ? "" : "s"} remaining`}
+            ? "Finished speaking? Hit Done — or wait 3 seconds and it'll submit automatically"
+            : "The AI will start listening automatically after it finishes speaking"
+          : "Type your answer and hit Submit"}
       </p>
     </div>
   );
@@ -614,7 +631,7 @@ function DebriefScreen({
         <button
           onClick={() => void handleSave()}
           disabled={!debrief || saving || saved}
-          className="flex items-center gap-2 rounded-xl bg-[#0D1F3C] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#1a3a6b] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex items-center gap-2 rounded-xl bg-[#4F46E5] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-[#183763] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {saving ? (
             <><CircleNotchIcon size={14} className="animate-spin" /> Saving…</>
@@ -673,13 +690,13 @@ export default function InterviewPage() {
           my<Image src="/favicon.ico" alt="" width={20} height={20} className="mx-0.5" />tailor.co.za
         </Link>
         <div className="flex items-center gap-3">
-          <Link href="/interview/history" className="text-xs text-slate-500 hover:text-[#0D1F3C] transition-colors">
+          <Link href="/interview/history" className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-[#4F46E5] transition-colors hover:bg-indigo-100">
             Past interviews
           </Link>
-          <Link href="/dashboard" className="text-xs text-slate-500 hover:text-[#0D1F3C] transition-colors">
+          <Link href="/dashboard" className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200">
             Dashboard
           </Link>
-          <button onClick={() => void signOut()} className="text-xs text-slate-500 hover:text-[#0D1F3C] transition-colors">
+          <button onClick={() => void signOut()} className="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-500 transition-colors hover:bg-rose-100">
             Sign out
           </button>
         </div>

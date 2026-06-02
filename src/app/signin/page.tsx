@@ -171,11 +171,7 @@ export default function SignInPage() {
               <button
                 onClick={handleForgotPassword}
                 disabled={loading}
-                className="w-full text-white font-semibold py-3 rounded-xl text-sm transition-all"
-                style={{
-                  background: loading ? "#94a3b8" : "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
-                  cursor: loading ? "not-allowed" : "pointer",
-                }}
+                className={`w-full font-semibold py-3 rounded-xl text-sm transition-all text-white ${loading ? "bg-slate-400 cursor-not-allowed" : "bg-[#4F46E5] hover:bg-[#183763] cursor-pointer"}`}
               >
                 {loading ? "Please wait..." : "Send reset link →"}
               </button>
@@ -183,8 +179,7 @@ export default function SignInPage() {
               <p className="text-center text-xs text-slate-400 mt-2">
                 <button
                   onClick={() => { setShowForgotPassword(false); setError(""); setSuccess(""); }}
-                  className="font-semibold underline"
-                  style={{ color: "#0d1f3c" }}
+                  className="font-semibold text-[#4F46E5] hover:text-indigo-700 transition-colors"
                 >
                   Back to sign in
                 </button>
@@ -239,7 +234,7 @@ export default function SignInPage() {
                 <p className="text-right">
                   <button
                     onClick={() => { setShowForgotPassword(true); setError(""); setSuccess(""); }}
-                    className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                    className="text-xs font-semibold text-[#4F46E5] hover:text-indigo-700 transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -249,11 +244,7 @@ export default function SignInPage() {
               <button
                 onClick={handleEmailAuth}
                 disabled={loading}
-                className="w-full text-white font-semibold py-3 rounded-xl text-sm transition-all"
-                style={{
-                  background: loading ? "#94a3b8" : "linear-gradient(135deg, #0d1f3c, #1a3a6b)",
-                  cursor: loading ? "not-allowed" : "pointer",
-                }}
+                className={`w-full font-semibold py-3 rounded-xl text-sm transition-all text-white ${loading ? "bg-slate-400 cursor-not-allowed" : "bg-[#4F46E5] hover:bg-[#183763] cursor-pointer"}`}
               >
                 {loading
                   ? "Please wait..."

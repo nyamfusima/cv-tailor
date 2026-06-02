@@ -933,7 +933,7 @@ export default function ResultsPage() {
           <span className="hidden sm:block text-xs text-slate-400 font-medium tracking-wide uppercase">Step 2 of 2</span>
           <button
             onClick={() => router.push("/upload")}
-            className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
+            className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
           >
             ← Start over
           </button>
@@ -1068,7 +1068,7 @@ export default function ResultsPage() {
               <div className="flex justify-start">
                 <button
                   onClick={() => router.push("/")}
-                  className="text-sm text-slate-400 hover:text-slate-700 transition-colors font-medium"
+                  className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
                 >
                   ← Tailor another CV
                 </button>

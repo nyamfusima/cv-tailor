@@ -189,14 +189,13 @@ export default function UploadForm() {
               )}
               <Link
                 href="/account"
-                className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
+                className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
               >
                 Account
               </Link>
               <Link
                 href="/pricing"
-                className="text-xs font-semibold text-white px-3 py-1.5 rounded-lg"
-                style={{ background: "linear-gradient(135deg, #4F46E5)" }}
+                className="rounded-lg bg-[#4F46E5] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#183763]"
               >
                 Buy credits
               </Link>

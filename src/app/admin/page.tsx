@@ -159,7 +159,7 @@ export default function AdminPage() {
         </div>
         <button
           onClick={fetchData}
-          className="text-xs text-slate-400 hover:text-slate-700 transition-colors font-medium"
+          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-200"
         >
           ↺ Refresh
         </button>
@@ -270,8 +270,7 @@ export default function AdminPage() {
                     </button>
                     <button
                       onClick={() => handleJobMatch(session)}
-                      className="text-[10px] font-semibold px-2 py-1 rounded-lg text-white hover:opacity-90 transition-all"
-                      style={{ background: "linear-gradient(135deg, #0d1f3c, #1a3a6b)" }}
+                      className="text-[10px] font-semibold px-2 py-1 rounded-lg text-white bg-[#4F46E5] hover:bg-[#183763] transition-colors"
                       title="Run job match for this user's CV"
                     >
                       Job match →

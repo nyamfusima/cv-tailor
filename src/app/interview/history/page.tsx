@@ -181,7 +181,7 @@ export default function InterviewHistoryPage() {
         </Link>
         <Link
           href="/interview"
-          className="rounded-lg bg-[#0D1F3C] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1a3a6b] transition-colors"
+          className="rounded-lg bg-[#4F46E5] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#183763] transition-colors"
         >
           New interview
         </Link>
@@ -208,7 +208,7 @@ export default function InterviewHistoryPage() {
             </p>
             <Link
               href="/interview"
-              className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-[#0D1F3C] px-4 py-2 text-xs font-semibold text-white hover:bg-[#1a3a6b] transition-colors"
+              className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-[#4F46E5] px-4 py-2 text-xs font-semibold text-white hover:bg-[#183763] transition-colors"
             >
               Start your first interview
             </Link>

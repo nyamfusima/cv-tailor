@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-/* ── Shared types (imported by the interview page too) ─────────── */
+/* ── Shared types ──────────────────────────────────────────────── */
 
 export type InterviewStatus = "idle" | "speaking" | "listening" | "thinking";
 
 export interface InterviewQuestion {
   id: number;
   question: string;
-  type: "behavioural" | "technical" | "situational" | "motivation";
+  type: "intro" | "behavioural" | "technical" | "situational" | "motivation";
   good_answer_hints: string;
 }
 
@@ -23,6 +23,8 @@ export interface HistoryEntry {
   answer: string;
 }
 
+export const INTERVIEW_DURATION_SECS = 10 * 60; // 10 minutes
+
 export interface UseVoiceInterviewReturn {
   status: InterviewStatus;
   currentQuestion: string;
@@ -31,8 +33,10 @@ export interface UseVoiceInterviewReturn {
   history: HistoryEntry[];
   supported: boolean;
   isActive: boolean;
+  timeLeft: number;       // seconds remaining
   start: () => void;
   stop: () => void;
+  stopListening: () => void;
   submitManual: (answer: string) => void;
 }
 
@@ -52,67 +56,94 @@ export function useVoiceInterview(
   const [supported, setSupported] = useState(true);
   const [isActive, setIsActive] = useState(false);
 
-  // Refs keep latest values accessible inside async callbacks without stale closures
+  const [timeLeft, setTimeLeft] = useState(INTERVIEW_DURATION_SECS);
+
+  // Refs for values accessed inside async callbacks / event handlers
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const finalTextRef = useRef("");
   const planIndexRef = useRef(0);
   const historyRef = useRef<HistoryEntry[]>([]);
   const currentQRef = useRef(plan.questions[0]?.question ?? "");
   const stoppedRef = useRef(false);
-  // Forward ref breaks the circular dep between startListening → submitRef → handleAnswerSubmit
+  // Forward ref breaks the circular dep: startListening → submitRef → handleAnswerSubmit
   const submitRef = useRef<((answer: string) => void) | null>(null);
 
-  // Helpers that update both state (for re-renders) and refs (for callbacks)
+  // Helpers: update both state (re-render) and ref (callbacks)
   const setPlanIndex = (n: number) => { planIndexRef.current = n; setPlanIndexState(n); };
   const setCurrentQuestion = (q: string) => { currentQRef.current = q; setCurrentQuestionState(q); };
   const setHistory = (h: HistoryEntry[]) => { historyRef.current = h; setHistoryState(h); };
 
-  // Browser support check + cleanup
+  // Support check + cleanup
   useEffect(() => {
-    // Reset here so React Strict Mode's simulated unmount/remount doesn't leave
-    // stoppedRef permanently true before the user has done anything.
+    // Reset so React Strict Mode's simulated unmount/remount doesn't permanently
+    // leave stoppedRef = true before the user has interacted.
     stoppedRef.current = false;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
-    if (!SR || !window.speechSynthesis) setSupported(false);
+    if (!SR) setSupported(false);
     return () => {
       stoppedRef.current = true;
-      window.speechSynthesis?.cancel();
+      if (timerRef.current) clearInterval(timerRef.current);
+      audioRef.current?.pause();
+      audioRef.current = null;
       recognitionRef.current?.abort?.();
     };
   }, []);
 
-  // ── TTS ───────────────────────────────────────────────────────
-  const speak = useCallback((text: string): Promise<void> => new Promise((resolve) => {
-    if (!window.speechSynthesis) { resolve(); return; }
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 0.92;
-    u.lang = "en-US";
-    // Timeout prevents the promise hanging if onend never fires (Chrome bug)
-    const t = setTimeout(() => resolve(), Math.max(text.length * 80, 8000));
-    u.onend = () => { clearTimeout(t); resolve(); };
-    u.onerror = () => { clearTimeout(t); resolve(); };
-    window.speechSynthesis.speak(u);
-    // Fix Chrome stuck-paused state
-    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-  }), []);
+  // ── TTS via ElevenLabs ────────────────────────────────────────
+  const speak = useCallback(async (text: string): Promise<void> => {
+    try {
+      const res = await fetch("/api/interview/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) return; // silently skip — don't block the interview
 
-  // ── STT ───────────────────────────────────────────────────────
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+
+      await new Promise<void>((resolve) => {
+        audio.onended = () => { URL.revokeObjectURL(url); audioRef.current = null; resolve(); };
+        audio.onerror = () => { URL.revokeObjectURL(url); audioRef.current = null; resolve(); };
+        void audio.play().catch(() => { URL.revokeObjectURL(url); audioRef.current = null; resolve(); });
+      });
+    } catch {
+      // Don't block the interview on any TTS failure
+    }
+  }, []);
+
+  // ── STT — continuous with 3s silence detection ────────────────
   const startListening = useCallback(() => {
     if (stoppedRef.current) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+
     const rec = new SR();
     recognitionRef.current = rec;
     finalTextRef.current = "";
     setTranscript("");
     setStatus("listening");
 
-    rec.continuous = false;
+    rec.continuous = true;       // don't stop on short pauses
     rec.interimResults = true;
     rec.lang = "en-US";
+
+    let silenceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const resetSilenceTimer = () => {
+      if (silenceTimer) clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => {
+        // 3 s of silence after speech → auto-stop
+        if (finalTextRef.current.trim().length > 0) rec.stop();
+      }, 3000);
+    };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onresult = (e: any) => {
@@ -125,14 +156,19 @@ export function useVoiceInterview(
         }
       }
       setTranscript(finalTextRef.current + interim);
+      resetSilenceTimer();
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onerror = (e: any) => {
-      if (e.error !== "aborted") submitRef.current?.(finalTextRef.current.trim());
+      if (silenceTimer) clearTimeout(silenceTimer);
+      if (e.error === "aborted" || e.error === "no-speech") return;
+      console.error("[STT]", e.error);
+      submitRef.current?.(finalTextRef.current.trim());
     };
 
     rec.onend = () => {
+      if (silenceTimer) clearTimeout(silenceTimer);
       if (!stoppedRef.current) submitRef.current?.(finalTextRef.current.trim());
     };
 
@@ -189,7 +225,6 @@ export function useVoiceInterview(
       if (!stoppedRef.current) startListening();
     } catch {
       if (stoppedRef.current) return;
-      // Fallback: skip to next planned question rather than stalling
       const next = planIndexRef.current + 1;
       if (next < plan.questions.length) {
         setPlanIndex(next);
@@ -204,14 +239,40 @@ export function useVoiceInterview(
     }
   }, [plan, speak, startListening, onComplete]);
 
-  // Keep forward ref current so startListening always calls the latest version
   useEffect(() => { submitRef.current = handleAnswerSubmit; }, [handleAnswerSubmit]);
+
+  // End interview when the 10-minute timer runs out
+  useEffect(() => {
+    if (timeLeft === 0 && isActive && !stoppedRef.current) {
+      stoppedRef.current = true;
+      if (timerRef.current) clearInterval(timerRef.current);
+      audioRef.current?.pause();
+      audioRef.current = null;
+      recognitionRef.current?.abort?.();
+      recognitionRef.current = null;
+      onComplete(historyRef.current);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft]);
 
   // ── Public API ────────────────────────────────────────────────
   const start = useCallback(async () => {
     if (stoppedRef.current || isActive) return;
     setIsActive(true);
     setPlanIndex(0);
+    setTimeLeft(INTERVIEW_DURATION_SECS);
+
+    // Start the 10-minute countdown
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
     const firstQ = plan.questions[0]?.question ?? "";
     setCurrentQuestion(firstQ);
     setStatus("speaking");
@@ -221,11 +282,18 @@ export function useVoiceInterview(
 
   const stop = useCallback(() => {
     stoppedRef.current = true;
-    window.speechSynthesis?.cancel();
+    if (timerRef.current) clearInterval(timerRef.current);
+    audioRef.current?.pause();
+    audioRef.current = null;
     recognitionRef.current?.abort?.();
     recognitionRef.current = null;
     onComplete(historyRef.current);
   }, [onComplete]);
+
+  // Lets the user manually finish their answer (mapped to "Done Answering" button)
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+  }, []);
 
   const submitManual = useCallback((answer: string) => {
     recognitionRef.current?.abort?.();
@@ -241,8 +309,10 @@ export function useVoiceInterview(
     history,
     supported,
     isActive,
+    timeLeft,
     start,
     stop,
+    stopListening,
     submitManual,
   };
 }
