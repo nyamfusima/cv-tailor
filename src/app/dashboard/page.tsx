@@ -373,15 +373,23 @@ export default function DashboardPage() {
           tailor.co.za
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
-          <span className="hidden sm:block text-xs px-3 py-1 rounded-full bg-white border border-black/8 text-slate-600">
-            {isPro ? "Pro plan" : `${tailorsLeft} credit${tailorsLeft !== 1 ? "s" : ""}`}
-          </span>
-          <Link
-            href="/pricing"
-            className="text-xs bg-[#4F46E5] text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-[#183763] transition-colors"
-          >
-            Upgrade
-          </Link>
+          {isPro ? (
+            <span className="text-xs px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
+              Pro
+            </span>
+          ) : (
+            <>
+              <span className="hidden sm:block text-xs px-3 py-1 rounded-full bg-white border border-black/8 text-slate-600">
+                {tailorsLeft} credit{tailorsLeft !== 1 ? "s" : ""}
+              </span>
+              <Link
+                href="/pricing"
+                className="text-xs bg-[#4F46E5] text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-[#183763] transition-colors"
+              >
+                Upgrade
+              </Link>
+            </>
+          )}
           <button onClick={() => void signOut()} className="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-500 transition-colors hover:bg-rose-100">
             Sign out
           </button>
