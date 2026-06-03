@@ -374,7 +374,7 @@ export default function DashboardPage() {
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
           {isPro ? (
-            <span className="text-xs px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-semibold">
+            <span className="text-xs px-3 py-1.5 rounded-lg bg-[#4F46E5] text-white font-semibold">
               Pro
             </span>
           ) : (
