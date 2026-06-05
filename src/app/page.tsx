@@ -182,7 +182,7 @@ export default function LandingPage() {
           <div className="flex items-center">
             <span className={`font-bold text-base tracking-tight transition-colors duration-300 mr-1 ${scrolled ? "text-slate-900" : "text-white"}`}>my</span>
             <img src="/favicon.ico" alt="" className="w-4 h-4" />
-            <span className={`font-bold text-base tracking-tight transition-colors duration-300 ${scrolled ? "text-slate-900" : "text-white"}`}>tailor.ai</span>
+            <span className={`font-bold text-base tracking-tight transition-colors duration-300 ${scrolled ? "text-slate-900" : "text-white"}`}>tailor.co.za</span>
           </div>
 
           {/* Center links */}
@@ -272,7 +272,7 @@ export default function LandingPage() {
             {/* Stats */}
             <div className={`flex flex-wrap items-center gap-x-4 gap-y-3 justify-center lg:justify-start ${mounted ? "anim-up d4" : "opacity-0"}`}>
               {[
-                { value: null, to: 2000, suffix: "+", label: "CVs tailored" },
+                { value: null, to: 8000, suffix: "+", label: "CVs tailored" },
                 { value: "~30s", to: null, suffix: "", label: "Average time" },
                 { value: "3",    to: null, suffix: "", label: "Free tailors" },
               ].map((s) => (
@@ -301,7 +301,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-xs" style={{ color:"rgba(255,255,255,0.85)" }}>
-                  <strong className="font-semibold text-white">+200</strong> job seekers joined this week
+                  <strong className="font-semibold text-white">+316</strong> job seekers joined this week
                 </p>
               </div>
             </div>
@@ -703,8 +703,8 @@ export default function LandingPage() {
       <footer className="border-t border-slate-100 px-4 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-2">
         <div className="flex items-center">
           <span className="text-sm text-slate-400">my</span>
-          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-4 h-4" />
-          <span className="text-sm text-slate-400">tailor.ai</span>
+          <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-4 h-4" />
+          <span className="text-sm text-slate-400">tailor.co.za</span>
         </div>
         <div className="flex items-center gap-4 text-xs text-slate-400">
           <Link href="/terms" className="hover:text-slate-700">Terms</Link>

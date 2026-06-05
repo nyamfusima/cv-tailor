@@ -6,8 +6,8 @@ export default function PrivacyPage() {
       <header className="border-b border-slate-100 px-4 sm:px-8 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <span className="font-semibold text-slate-800 tracking-tight">my</span>
-          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
-          <span className="font-semibold text-slate-800 tracking-tight">tailor.ai</span>
+          <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-5 h-5" />
+          <span className="font-semibold text-slate-800 tracking-tight">tailor.co.za</span>
         </Link>
         <Link href="/" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">← Back</Link>
       </header>
@@ -20,7 +20,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-slate-800 mb-3">1. Information We Collect</h2>
-            <p>We collect the following information when you use myCVtailor.ai:</p>
+            <p>We collect the following information when you use myCVtailor.co.za:</p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>Your email address and name (via Google Sign-In)</li>
               <li>Credit balance and usage history</li>
@@ -80,8 +80,8 @@ export default function PrivacyPage() {
       <footer className="border-t border-slate-100 px-4 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-2 mt-8">
         <div className="flex items-center">
           <span className="text-sm text-slate-400">my</span>
-          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-4 h-4" />
-          <span className="text-sm text-slate-400">tailor.ai</span>
+          <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-4 h-4" />
+          <span className="text-sm text-slate-400">tailor.co.za</span>
         </div>
         <div className="flex items-center gap-4 text-xs text-slate-400">
           <Link href="/terms" className="hover:text-slate-700">Terms</Link>

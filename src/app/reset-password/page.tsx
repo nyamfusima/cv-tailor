@@ -43,8 +43,8 @@ export default function ResetPasswordPage() {
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center mb-8">
           <span className="font-semibold text-slate-800 tracking-tight text-lg">my</span>
-          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-6 h-6" />
-          <span className="font-semibold text-slate-800 tracking-tight text-lg">tailor.ai</span>
+          <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-6 h-6" />
+          <span className="font-semibold text-slate-800 tracking-tight text-lg">tailor.co.za</span>
         </Link>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">

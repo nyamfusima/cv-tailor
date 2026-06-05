@@ -149,8 +149,8 @@ if (!res.ok) throw new Error(data.error || "Something went wrong");
       {/* Logo */}
       <div className="flex items-center mb-16">
         <span className="font-semibold text-slate-800 tracking-tight">my</span>
-        <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
-        <span className="font-semibold text-slate-800 tracking-tight">tailor.ai</span>
+        <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-5 h-5" />
+        <span className="font-semibold text-slate-800 tracking-tight">tailor.co.za</span>
       </div>
 
       {/* Heading */}

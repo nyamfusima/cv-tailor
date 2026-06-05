@@ -6,8 +6,8 @@ export default function RefundsPage() {
       <header className="border-b border-slate-100 px-4 sm:px-8 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center">
           <span className="font-semibold text-slate-800 tracking-tight">my</span>
-          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
-          <span className="font-semibold text-slate-800 tracking-tight">tailor.ai</span>
+          <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-5 h-5" />
+          <span className="font-semibold text-slate-800 tracking-tight">tailor.co.za</span>
         </Link>
         <Link href="/" className="text-xs text-slate-400 hover:text-slate-700 transition-colors">← Back</Link>
       </header>
@@ -20,7 +20,7 @@ export default function RefundsPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-slate-800 mb-3">7-Day Money Back Guarantee</h2>
-            <p>We stand behind our product. If you are not satisfied with myCVtailor.ai for any reason, we will give you a full refund within 7 days of your purchase — no questions asked.</p>
+            <p>We stand behind our product. If you are not satisfied with myCVtailor.co.za for any reason, we will give you a full refund within 7 days of your purchase — no questions asked.</p>
           </section>
 
           <section>
@@ -58,8 +58,8 @@ export default function RefundsPage() {
       <footer className="border-t border-slate-100 px-4 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-2 mt-8">
         <div className="flex items-center">
           <span className="text-sm text-slate-400">my</span>
-          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-4 h-4" />
-          <span className="text-sm text-slate-400">tailor.ai</span>
+          <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-4 h-4" />
+          <span className="text-sm text-slate-400">tailor.co.za</span>
         </div>
         <div className="flex items-center gap-4 text-xs text-slate-400">
           <Link href="/terms" className="hover:text-slate-700">Terms</Link>

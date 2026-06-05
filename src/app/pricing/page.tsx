@@ -34,7 +34,7 @@ export default function PricingPage() {
         <nav className="relative z-10 px-4 sm:px-8 py-5 flex items-center justify-between">
           <div className="flex items-center">
             <span className="font-semibold text-white tracking-tight text-lg">my</span>
-            <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
+            <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-5 h-5" />
             <span className="font-semibold text-white tracking-tight text-lg">tailor.co.za</span>
           </div>
 

@@ -30,8 +30,8 @@ export default function JobsMatchPage() {
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex items-center justify-between sticky top-0 z-10">
         <Link href="/" className="flex items-center gap-1">
           <span className="font-semibold text-slate-800 tracking-tight">my</span>
-          <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
-          <span className="font-semibold text-slate-800 tracking-tight">tailor.ai</span>
+          <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-5 h-5" />
+          <span className="font-semibold text-slate-800 tracking-tight">tailor.co.za</span>
         </Link>
         <button
           onClick={() => router.push("/upload")}

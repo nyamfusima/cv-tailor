@@ -147,8 +147,8 @@ export default function AdminPage() {
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center">
             <span className="font-semibold text-slate-800 tracking-tight">my</span>
-            <img src="/favicon.ico" alt="myCVtailor.ai" className="w-5 h-5" />
-            <span className="font-semibold text-slate-800 tracking-tight">tailor.ai</span>
+            <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-5 h-5" />
+            <span className="font-semibold text-slate-800 tracking-tight">tailor.co.za</span>
           </Link>
           <span
             className="text-xs font-bold px-2 py-0.5 rounded-full text-white"
