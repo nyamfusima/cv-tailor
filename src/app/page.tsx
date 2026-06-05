@@ -238,13 +238,6 @@ export default function LandingPage() {
         <div ref={hero.ref} className="relative max-w-7xl mx-auto px-5 sm:px-8 flex-1 flex flex-col lg:flex-row items-center gap-12 lg:gap-16 py-16 lg:py-20">
           {/* LEFT — copy */}
           <div className="flex-1 text-center lg:text-left">
-            {/* Badge */}
-            <div className={`inline-flex items-center gap-2 text-xs font-medium px-4 py-2 rounded-full mb-7 border ${mounted ? "anim-up d0" : "opacity-0"}`}
-              style={{ backgroundColor:"rgba(255,255,255,0.1)", borderColor:"rgba(255,255,255,0.22)", color:"rgba(255,255,255,0.92)" }}>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 badge-dot" />
-              Your first 3 tailors are free (one time) - no card needed
-            </div>
-
             {/* Headline */}
             <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.1] mb-5 ${mounted ? "anim-up d1" : "opacity-0"}`}>
               Tailor your CV to<br />
