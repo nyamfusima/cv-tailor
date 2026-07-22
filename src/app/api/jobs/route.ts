@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-const client = new Anthropic();
+const client = new OpenAI();
 
 const RAPIDAPI_KEY = process.env.RAPIDAPI_JOB_MATCH_KEY || process.env.RAPIDAPI_KEY || process.env.RAPID_API_KEY;
 const RAPIDAPI_MEGA_HOST = process.env.RAPIDAPI_JOBS_MEGA_HOST || "jsearch-mega.p.rapidapi.com";
@@ -526,12 +526,12 @@ export async function POST(req: NextRequest) {
       userCountry = (headerCountry || countryFromLocation(cv?.location))?.toString().toUpperCase() || null;
     }
 
-    // Step 1 - Extract search info from CV using Claude. Fall back if parsing fails.
+    // Step 1 - Extract search info from CV using OpenAI. Fall back if parsing fails.
     let jobQuery = extractFallbackQuery(cv);
     try {
-      const queryMessage = await client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 512,
+      const queryMessage = await client.chat.completions.create({
+        model: "gpt-5.1",
+        max_completion_tokens: 512,
         messages: [
           {
             role: "user",
@@ -551,8 +551,7 @@ Return ONLY a JSON object, no markdown:
         ],
       });
 
-      const raw =
-        queryMessage.content[0].type === "text" ? queryMessage.content[0].text : "";
+      const raw = queryMessage.choices[0]?.message?.content ?? "";
       jobQuery = parseQueryPayload(raw, cv);
     } catch (queryError) {
       console.warn("Jobs API query extraction fallback:", queryError);
@@ -715,7 +714,7 @@ Return ONLY a JSON object, no markdown:
       })
       .filter(Boolean) as any[];
 
-    // Step 4 - Use Claude to score each job against the full CV (replaces keyword scores).
+    // Step 4 - Use OpenAI to score each job against the full CV (replaces keyword scores).
     try {
       const cvProfile = [
         `Target role: ${jobQuery.primaryTitle}`,
@@ -730,9 +729,10 @@ Return ONLY a JSON object, no markdown:
         `${i + 1}. ${job.title} at ${job.company} — ${(job._desc || job.description || "").replace(/\.\.\.$/, "")}`
       ).join("\n\n");
 
-      const scoringResponse = await client.messages.create({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 200,
+      const scoringResponse = await client.chat.completions.create({
+        model: "gpt-5-mini",
+        reasoning_effort: "minimal",
+        max_completion_tokens: 200,
         messages: [{
           role: "user",
           content: `You are a senior recruiter. Score how well this candidate fits each job (0–100). Be precise and differentiated: excellent fit = 80–95, good fit = 65–79, partial fit = 45–64, poor fit = 20–44. Consider skill overlap, seniority match, and role alignment.
@@ -747,7 +747,7 @@ Return ONLY a JSON array of integers in order, one per job. Example: [87, 63, 91
         }],
       });
 
-      const rawText = scoringResponse.content[0].type === "text" ? scoringResponse.content[0].text : "";
+      const rawText = scoringResponse.choices[0]?.message?.content ?? "";
       const arrayMatch = rawText.match(/\[[\d,\s]+\]/);
       if (arrayMatch) {
         const aiScores: number[] = JSON.parse(arrayMatch[0]);
@@ -758,7 +758,7 @@ Return ONLY a JSON array of integers in order, one per job. Example: [87, 63, 91
         });
       }
     } catch {
-      // keep local keyword scores if Claude scoring fails
+      // keep local keyword scores if OpenAI scoring fails
     }
 
     const sorted = jobCards

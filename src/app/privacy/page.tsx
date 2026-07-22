@@ -40,7 +40,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-lg font-semibold text-slate-800 mb-3">3. CV and Job Description Data</h2>
-            <p>Your CV and job description content is sent to our AI provider (Anthropic) for processing and is immediately discarded after your tailored CV is generated. We do not store, sell, or use your CV content for any other purpose.</p>
+            <p>Your CV and job description content is sent to our AI provider (OpenAI) for processing and is immediately discarded after your tailored CV is generated. We do not store, sell, or use your CV content for any other purpose.</p>
           </section>
 
           <section>
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
             <p>We use the following third party services:</p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li><strong>Supabase</strong> — authentication and user data storage</li>
-              <li><strong>Anthropic</strong> — AI processing of CV content</li>
+              <li><strong>OpenAI</strong> — AI processing of CV content</li>
               <li><strong>Vercel</strong> — hosting and analytics</li>
               <li><strong>Paddle</strong> — payment processing</li>
             </ul>

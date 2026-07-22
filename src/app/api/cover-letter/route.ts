@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
-const client = new Anthropic();
+const client = new OpenAI();
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -21,9 +21,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2048,
+    const completion = await client.chat.completions.create({
+      model: "gpt-5.1",
+      max_completion_tokens: 2048,
       messages: [
         {
           role: "user",
@@ -70,7 +70,7 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
       ],
     });
 
-    const raw = message.content[0].type === "text" ? message.content[0].text : "";
+    const raw = completion.choices[0]?.message?.content ?? "";
     const cleaned = raw.replace(/```json|```/g, "").trim();
     const letter = JSON.parse(cleaned);
 

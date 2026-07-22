@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { getUserCredits, hasJobCredits } from "@/lib/user";
 
@@ -16,7 +16,7 @@ interface RespondBody {
   userAnswer: string;
 }
 
-const client = new Anthropic({ maxRetries: 2 });
+const client = new OpenAI({ maxRetries: 2 });
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,ngqongwaayandisa@gmail.com,zengetwasisipho@gmail.com")
   .split(",").map(e => e.trim());
@@ -72,14 +72,17 @@ Close the interview warmly in 2 sentences. Return JSON: {"type":"end","text":"<w
 Return ONLY the JSON object. No markdown, no explanation.`;
 
   try {
-    const msg = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 300,
-      system,
-      messages: [{ role: "user", content: userMsg }],
+    const msg = await client.chat.completions.create({
+      model: "gpt-5-mini",
+      reasoning_effort: "minimal",
+      max_completion_tokens: 300,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: userMsg },
+      ],
     });
 
-    const raw = msg.content[0].type === "text" ? msg.content[0].text.trim() : "";
+    const raw = (msg.choices[0]?.message?.content ?? "").trim();
     const cleaned = raw.replace(/^```(?:json)?\s*/m, "").replace(/\s*```$/m, "").trim();
     const result = JSON.parse(cleaned) as { type: string; text: string };
     return NextResponse.json(result);

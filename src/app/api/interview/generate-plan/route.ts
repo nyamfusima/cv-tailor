@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { getUserCredits, hasJobCredits } from "@/lib/user";
 
@@ -10,7 +10,7 @@ export interface InterviewQuestion {
   good_answer_hints: string;
 }
 
-const client = new Anthropic({ maxRetries: 4 });
+const client = new OpenAI({ maxRetries: 4 });
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,ngqongwaayandisa@gmail.com,zengetwasisipho@gmail.com")
   .split(",").map(e => e.trim());
@@ -60,24 +60,25 @@ ${cvText.slice(0, 4000)}
 Job Description:
 ${jdText.slice(0, 3000)}`;
 
-  const callClaude = async (model: string) => client.messages.create({
+  const callOpenAI = async (model: string) => client.chat.completions.create({
     model,
-    max_tokens: 2048,
+    max_completion_tokens: 2048,
     messages: [{ role: "user", content: prompt }],
   });
 
   try {
     let msg;
     try {
-      msg = await callClaude("claude-sonnet-4-6");
+      msg = await callOpenAI("gpt-5.1");
     } catch (primary) {
-      const isOverload = primary instanceof Anthropic.APIError && primary.status === 529;
+      const isOverload = primary instanceof OpenAI.APIError &&
+        (primary.status === 429 || (primary.status ?? 0) >= 500);
       if (!isOverload) throw primary;
-      console.warn("[generate-plan] Sonnet overloaded, falling back to Haiku");
-      msg = await callClaude("claude-haiku-4-5-20251001");
+      console.warn("[generate-plan] gpt-5.1 overloaded, falling back to gpt-5-mini");
+      msg = await callOpenAI("gpt-5-mini");
     }
 
-    const raw = msg.content[0].type === "text" ? msg.content[0].text.trim() : "";
+    const raw = (msg.choices[0]?.message?.content ?? "").trim();
     const cleaned = raw.replace(/^```(?:json)?\s*/m, "").replace(/\s*```$/m, "").trim();
     const questions = JSON.parse(cleaned) as InterviewQuestion[];
 

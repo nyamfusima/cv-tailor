@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseFile } from "@/lib/parseFile";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { getUserCredits, deductTailorCredit, hasTailorCredits } from "@/lib/user";
 import { createClient } from "@supabase/supabase-js";
 
-const client = new Anthropic();
+const client = new OpenAI();
 
 function derivePrimaryRole(tailored: any, original: any) {
   // Prefer the tailored first experience title, then original, then summary snippet
@@ -21,14 +21,14 @@ function derivePrimaryRole(tailored: any, original: any) {
 async function callAI(prompt: string, retries = 3): Promise<string> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const message = await client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 16384,
+      const completion = await client.chat.completions.create({
+        model: "gpt-5.1",
+        max_completion_tokens: 16384,
         messages: [{ role: "user", content: prompt }],
       });
-      return message.content[0].type === "text" ? message.content[0].text : "";
+      return completion.choices[0]?.message?.content ?? "";
     } catch (err: any) {
-      const isOverloaded = err?.status === 529 || err?.error?.type === "overloaded_error";
+      const isOverloaded = err?.status === 429 || err?.status === 500 || err?.status === 503;
       if (isOverloaded && attempt < retries) {
         const delay = 2000 * Math.pow(2, attempt); // 2s, 4s, 8s
         await new Promise((res) => setTimeout(res, delay));

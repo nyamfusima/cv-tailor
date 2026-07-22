@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { getUserCredits, hasJobCredits } from "@/lib/user";
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,ngqongwaayandisa@gmail.com,zengetwasisipho@gmail.com")
   .split(",").map(e => e.trim());
 
-const client = new Anthropic();
+const client = new OpenAI();
 
 const RAPIDAPI_KEY = process.env.RAPIDAPI_JOB_MATCH_KEY || process.env.RAPIDAPI_KEY || process.env.RAPID_API_KEY;
 const RAPIDAPI_HOST = "jsearch.p.rapidapi.com";
@@ -141,11 +141,11 @@ export async function POST(req: NextRequest) {
     let skills: string[] = [];
     let location: string | null = null;
 
-    console.log("[job-match] Step 1: Extracting job query from CV with Claude...");
+    console.log("[job-match] Step 1: Extracting job query from CV with OpenAI...");
     try {
-      const msg = await client.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 512,
+      const msg = await client.chat.completions.create({
+        model: "gpt-5.1",
+        max_completion_tokens: 512,
         messages: [{
           role: "user",
           content: `Extract job search data from this CV. Return ONLY valid JSON, no markdown:
@@ -155,7 +155,7 @@ CV (first 3000 chars):
 ${cvText.slice(0, 3000)}`,
         }],
       });
-      const raw = msg.content[0].type === "text" ? msg.content[0].text : "";
+      const raw = msg.choices[0]?.message?.content ?? "";
       const match = raw.replace(/```json|```/g, "").trim().match(/\{[\s\S]*\}/);
       if (match) {
         const parsed = JSON.parse(match[0]);
@@ -163,9 +163,9 @@ ${cvText.slice(0, 3000)}`,
         if (Array.isArray(parsed.skills)) skills = parsed.skills.map(String).slice(0, 10);
         if (typeof parsed.location === "string" && parsed.location !== "null") location = parsed.location;
       }
-      console.log(`[job-match] Claude extracted: title="${primaryTitle}", skills=[${skills.join(", ")}], location="${location}"`);
+      console.log(`[job-match] OpenAI extracted: title="${primaryTitle}", skills=[${skills.join(", ")}], location="${location}"`);
     } catch (e: any) {
-      console.warn("[job-match] Claude extraction failed, using defaults:", e?.message);
+      console.warn("[job-match] OpenAI extraction failed, using defaults:", e?.message);
     }
 
     // Step 2: Detect country from request header or CV location
