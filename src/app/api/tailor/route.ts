@@ -172,6 +172,21 @@ FACTUAL INTEGRITY (most important):
 - Preserve all major projects, technologies, and achievements unless they are completely irrelevant to the job
 - Preserve exact company names, job titles, and institution names
 
+CRITICAL ANTI-HALLUCINATION RULES:
+- The job description is ONLY used for keyword alignment. It is NOT evidence that the candidate has done something.
+- Never rewrite experience as if the candidate performed responsibilities that appear only in the job description
+- Forbidden transformations — never do anything like these:
+  "Built APIs" must never become "Managed founder inboxes"
+  "Created AI agents" must never become "Protected executive time"
+  "Built automation pipelines" must never become "Managed project operations"
+  "Developed chatbot systems" must never become "Performed executive assistant duties"
+- The candidate's actual engineering work must remain visible. Prefer "Built AI chatbots that automated customer interactions" over "Protected founder time through AI assistants"
+
+BANNED VOCABULARY — never use these phrases unless they already appear word-for-word in the original CV:
+- "founder productivity", "executive support", "inbox management", "calendar management", "organised digital filing", "stakeholder communications", "protected client time"
+- Synthetic "-style" wording of any kind: "production-style", "workflow-style", "lead-style", "email-style"
+- Avoid synthetic business jargon everywhere — use plain technical language
+
 TECHNICAL SPECIFICITY:
 - Keep APIs, databases, AI models, frameworks, and production systems named exactly as written in the original CV
 - Preserve project details and measurable achievements
@@ -192,6 +207,15 @@ DATES (critical — no exceptions):
 - Never add start years, end years, or durations that are not explicitly in the original CV
 - Preserve the exact order of all experience and education entries — do not reorder them
 
+EDUCATION:
+- Preserve ALL coursework exactly as written — never remove coursework entries, never shorten coursework lists
+- Only reorder coursework by relevance to the job description
+
+PROJECTS:
+- Preserve all technologies exactly — never remove AI models, APIs, databases, frameworks, rankings, metrics, or deployment details
+- Never simplify projects into generic business language
+- Bad: "Generated reports and insights". Good: "Built an AI-powered application using OpenAI GPT and job market APIs to generate tailored CVs and interview simulations"
+
 BULLET POINTS:
 - Each bullet must start directly with a strong action verb — no dash, no hyphen, no bullet character, no leading symbol of any kind
 - Maximum 20 words per bullet — cut ruthlessly, every word must carry weight
@@ -207,15 +231,23 @@ SUMMARY:
 CERTIFICATIONS:
 - Copy from the original CV only — do not add any
 
+PRESERVATION CHECK — before generating output, internally verify:
+1. Every experience entry still exists
+2. Every project still exists
+3. Every certification still exists
+4. Every coursework item still exists
+5. Every technology still exists
+If any item was removed, restore it unless it directly violates factual accuracy. The tailored CV must preserve at least 95% of the original information while improving ATS alignment.
+
 OUTPUT:
 - Return ONLY the JSON object in the exact format the user specifies — no preamble, no explanation, no markdown, no fences
 - All string values must be plain text — no asterisks, no hyphens, no markdown of any kind inside values`;
 
-    const tailorPrompt = `Tailor the candidate's CV below to the job description, following every one of your rules.
+    const buildTailorPrompt = (originalJson: unknown) => `Tailor the candidate's CV below to the job description, following every one of your rules. The CV is provided as structured JSON extracted verbatim from the original — every entry, bullet, technology, coursework item, and detail in it must be accounted for in your output.
 
-<cv>
-${cvText}
-</cv>
+<cv_json>
+${JSON.stringify(originalJson, null, 2)}
+</cv_json>
 
 <job_description>
 ${jobDescription}
@@ -255,7 +287,7 @@ Return ONLY this JSON object:
   "projects": [
     {
       "name": "Project name exactly as in original CV",
-      "description": "Rewritten description using job description keywords, max 2 sentences",
+      "description": "Rewritten description that keeps every technology, metric, and deployment detail, max 2 sentences",
       "technologies": ["tech1", "tech2"],
       "url": "url or empty string",
       "dates": "copied exactly from original CV or empty string"
@@ -280,19 +312,20 @@ Return ONLY this JSON object:
   "assumptions": ["every inferred skill or adjacent-technology mention, with a short reason it was included — empty array if none"]
 }`;
 
-    const [rawOriginal, rawTailored] = await Promise.all([
-      callAI(originalPrompt),
-      callAI(tailorPrompt, tailorSystem),
-    ]);
+    // Step 1 — extract the original CV verbatim into structured JSON
+    const rawOriginal = await callAI(originalPrompt);
 
-    let original, tailored;
-
+    let original;
     try {
       original = JSON.parse(extractJSON(rawOriginal));
     } catch {
       throw new Error("Failed to parse the original CV structure. Please try again.");
     }
 
+    // Step 2 — tailor from the extracted JSON, not raw text, so no detail can be silently dropped
+    const rawTailored = await callAI(buildTailorPrompt(original), tailorSystem);
+
+    let tailored;
     try {
       tailored = JSON.parse(extractJSON(rawTailored));
     } catch {
