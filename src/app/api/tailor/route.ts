@@ -18,13 +18,16 @@ function derivePrimaryRole(tailored: any, original: any) {
   return summary ? summary.split(/[.|\n]/)[0].slice(0, 80) : "Unknown";
 }
 
-async function callAI(prompt: string, retries = 3): Promise<string> {
+async function callAI(prompt: string, system?: string, retries = 3): Promise<string> {
+  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = system
+    ? [{ role: "system", content: system }, { role: "user", content: prompt }]
+    : [{ role: "user", content: prompt }];
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const completion = await client.chat.completions.create({
         model: "gpt-5.1",
         max_completion_tokens: 16384,
-        messages: [{ role: "user", content: prompt }],
+        messages,
       });
       return completion.choices[0]?.message?.content ?? "";
     } catch (err: any) {
@@ -156,17 +159,32 @@ Return ONLY a JSON object in this exact format, no extra text, no markdown fence
   ]
 }`;
 
-    const tailorPrompt = `You are an expert CV rewriter and ATS specialist. Rewrite the candidate's CV to match the job description using the exact keywords and language from the job description.
-
-<cv>
-${cvText}
-</cv>
-
-<job_description>
-${jobDescription}
-</job_description>
+    const tailorSystem = `You are an expert technical CV rewriter and ATS specialist. You optimize CVs to match job descriptions without ever distorting the candidate's real history.
 
 RULES — every single one is mandatory:
+
+FACTUAL INTEGRITY (most important):
+- The tailored CV must remain at least 90% factually identical to the original CV. The objective is optimization, not rewriting the candidate's career history.
+- NEVER invent responsibilities, tools, projects, achievements, certifications, or metrics that are not explicitly present in the original CV
+- NEVER replace technical accomplishments with generic business language
+- NEVER downgrade advanced engineering work into generic assistant tasks
+- Do not remove founder experience, AI engineering work, hackathon achievements, production projects, APIs, RAG systems, or technical implementation details merely to increase keyword matching — these are what make the candidate stand out
+- Preserve all major projects, technologies, and achievements unless they are completely irrelevant to the job
+- Preserve exact company names, job titles, and institution names
+
+TECHNICAL SPECIFICITY:
+- Keep APIs, databases, AI models, frameworks, and production systems named exactly as written in the original CV
+- Preserve project details and measurable achievements
+
+KEYWORD ALIGNMENT — achieve it ONLY by:
+- Reordering existing content so the most job-relevant items appear first
+- Rephrasing existing experience using the job description's exact vocabulary
+- Highlighting transferable skills
+- If the job description mentions a technology not in the CV, mention it ONLY where it is reasonably adjacent to existing experience, using hedged wording such as "familiar with", "exposure to", or "similar platforms" — and record every such mention in the "assumptions" output field
+
+SKILLS:
+- Add a skill only if (a) it appears explicitly in the original CV, or (b) it can be directly inferred from existing projects with high confidence — record every inferred skill in the "assumptions" output field
+- Reorder so the most job-relevant skills appear first
 
 DATES (critical — no exceptions):
 - Copy every date, year, and date range EXACTLY as written in the original CV — do not change a single character
@@ -179,27 +197,31 @@ BULLET POINTS:
 - Maximum 20 words per bullet — cut ruthlessly, every word must carry weight
 - No filler phrases: do not use "responsible for", "tasked with", "helped to", "assisted in", "worked on", "demonstrated ability to", "proven track record of", "instrumental in", "played a key role in", "contributed to"
 - Start with impact: lead with what was achieved or delivered, not what the person did day-to-day
-- Each bullet must contain at least one keyword or phrase from the job description where it naturally fits
+- Use keywords or phrases from the job description only where they naturally fit — never at the cost of technical accuracy
 
 SUMMARY:
 - Maximum 3 sentences
 - No clichés or vague claims — every sentence must be specific and tied to the job description
 - Do not start with "I" or the candidate's name
 
-CONTENT INTEGRITY:
-- Never invent qualifications, companies, degrees, metrics, or responsibilities
-- Only reword what exists — do not add new experiences or achievements
-- Preserve exact company names, job titles, and institution names
-- Certifications: copy from original CV only, do not add any
-
-SKILLS:
-- Reorder so the most job-relevant skills appear first
-- Do not add skills that are not in the original CV
+CERTIFICATIONS:
+- Copy from the original CV only — do not add any
 
 OUTPUT:
-- Return ONLY the JSON object below — no preamble, no explanation, no markdown, no fences
-- All string values must be plain text — no asterisks, no hyphens, no markdown of any kind inside values
+- Return ONLY the JSON object in the exact format the user specifies — no preamble, no explanation, no markdown, no fences
+- All string values must be plain text — no asterisks, no hyphens, no markdown of any kind inside values`;
 
+    const tailorPrompt = `Tailor the candidate's CV below to the job description, following every one of your rules.
+
+<cv>
+${cvText}
+</cv>
+
+<job_description>
+${jobDescription}
+</job_description>
+
+Return ONLY this JSON object:
 {
   "name": "Full name",
   "email": "email",
@@ -253,12 +275,14 @@ OUTPUT:
     "skillsBefore": 55,
     "experienceRelevance": 85,
     "experienceBefore": 38
-  }
+  },
+  "addedKeywords": ["every job description keyword newly worked into the CV"],
+  "assumptions": ["every inferred skill or adjacent-technology mention, with a short reason it was included — empty array if none"]
 }`;
 
     const [rawOriginal, rawTailored] = await Promise.all([
       callAI(originalPrompt),
-      callAI(tailorPrompt),
+      callAI(tailorPrompt, tailorSystem),
     ]);
 
     let original, tailored;
