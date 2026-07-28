@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Document, Page, StyleSheet, Text, View, pdf } from "@react-pdf/renderer";
+import { type DocumentProps, Document, Page } from "@react-pdf/renderer";
 import { TailoredCV } from "@/lib/types";
+import { Body, PDF_FONTS, PdfTheme, downloadFittedDocument, pdfStyles } from "@/lib/pdf";
 
 interface CoverLetter {
   subject: string;
@@ -12,46 +13,42 @@ interface CoverLetter {
   name: string;
 }
 
-const letterStyles = StyleSheet.create({
-  page: {
-    padding: 48,
-    fontSize: 11,
-    fontFamily: "Times-Roman",
-    lineHeight: 1.6,
-    color: "#0f172a",
-  },
-  subject: {
-    fontSize: 12,
-    marginBottom: 16,
-    fontFamily: "Times-Bold",
-  },
-  paragraph: {
-    marginBottom: 12,
-  },
-  signOff: {
-    marginTop: 8,
-  },
-  name: {
-    marginTop: 4,
-    fontFamily: "Times-Bold",
-  },
-});
+/**
+ * Cover letter. Shares the spacing engine and word-wrapping rules with the CV
+ * template; only the type scale differs, and that comes from the `letter`
+ * document profile.
+ */
+function CoverLetterDoc({
+  letter,
+  theme,
+  ...documentProps
+}: { letter: CoverLetter; theme: PdfTheme } & DocumentProps) {
+  const styles = pdfStyles(theme);
 
-function CoverLetterDoc({ letter }: { letter: CoverLetter }) {
   return (
-    <Document>
-      <Page size="A4" style={letterStyles.page}>
-        <Text style={letterStyles.subject}>{letter.subject}</Text>
-        <Text style={letterStyles.paragraph}>{letter.greeting}</Text>
-        {letter.paragraphs.map((p, i) => (
-          <Text key={i} style={letterStyles.paragraph}>
-            {p}
-          </Text>
+    <Document {...documentProps}>
+      <Page size="A4" style={styles.page}>
+        <Body
+          theme={theme}
+          first
+          style={{ fontFamily: PDF_FONTS.bold, fontSize: theme.profile.titleFontSize }}
+        >
+          {letter.subject}
+        </Body>
+        <Body theme={theme} gap="entry">
+          {letter.greeting}
+        </Body>
+        {letter.paragraphs.map((paragraph, i) => (
+          <Body key={i} theme={theme} gap="entry">
+            {paragraph}
+          </Body>
         ))}
-        <View style={letterStyles.signOff}>
-          <Text>{letter.sign_off}</Text>
-          <Text style={letterStyles.name}>{letter.name}</Text>
-        </View>
+        <Body theme={theme} gap="entry">
+          {letter.sign_off}
+        </Body>
+        <Body theme={theme} style={{ fontFamily: PDF_FONTS.bold }}>
+          {letter.name}
+        </Body>
       </Page>
     </Document>
   );
@@ -112,14 +109,14 @@ export default function CoverLetterPage() {
     if (!letter) return;
     setDownloading(true);
     try {
-      const blob = await pdf(<CoverLetterDoc letter={letter} />).toBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
       const safeName = letter.name ? letter.name.replace(/\s+/g, "_") : "cover_letter";
-      a.download = `${safeName}_Cover_Letter.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadFittedDocument(
+        (theme, documentProps) => (
+          <CoverLetterDoc letter={letter} theme={theme} {...documentProps} />
+        ),
+        "letter",
+        `${safeName}_Cover_Letter.pdf`,
+      );
     } finally {
       setDownloading(false);
     }
