@@ -93,7 +93,10 @@ const defaultPlans: PricingPlan[] = [
       { text: "Full ATS breakdown", included: true },
       { text: "Cover letter generator", included: true },
       { text: "Master CV storage", included: true },
-      { text: "Dashboard + history", included: true },
+      { text: "Editable tailored CVs", included: true },
+      { text: "Dashboard + CV history", included: true },
+      { text: "AI voice interview practice", included: true },
+      { text: "Interview feedback + history", included: true },
       { text: "Priority processing", included: true },
     ],
     button: {
