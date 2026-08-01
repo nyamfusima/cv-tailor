@@ -8,6 +8,12 @@ function verifySignature(payload: string, signature: string, secret: string): bo
   return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
 }
 
+function planExpiresAt(planType: string) {
+  const expiresAt = new Date();
+  expiresAt.setMonth(expiresAt.getMonth() + (planType === "pro_yearly" ? 12 : 1));
+  return expiresAt.toISOString();
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = req.headers.get("x-signature") ?? "";
@@ -44,7 +50,11 @@ export async function POST(req: NextRequest) {
 
   const { error: updateError } = await supabase
     .from("users")
-    .update({ plan: "pro" })
+    .update({
+      plan: "pro",
+      plan_type: planType,
+      plan_expires_at: planExpiresAt(planType),
+    })
     .eq("id", userId);
 
   if (updateError) {

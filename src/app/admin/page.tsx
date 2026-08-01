@@ -23,6 +23,14 @@ interface Stats {
   todaySessions: number;
 }
 
+interface ProUser {
+  id: string;
+  email: string;
+  plan: "pro";
+  plan_type: "pro_monthly" | "pro_yearly" | null;
+  plan_expires_at: string | null;
+}
+
 type RoleBreakdown = { role: string; count: number };
 
 export default function AdminPage() {
@@ -31,6 +39,7 @@ export default function AdminPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [roles, setRoles] = useState<RoleBreakdown[]>([]);
+  const [proUsers, setProUsers] = useState<ProUser[]>([]);
   const [fetching, setFetching] = useState(true);
   const [selected, setSelected] = useState<Session | null>(null);
   const [activeTab, setActiveTab] = useState<"cv" | "job" | "tailored">("tailored");
@@ -47,10 +56,11 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/admin/sessions", { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch admin data");
-      const { sessions: data, stats } = await res.json();
+      const { sessions: data, stats, proUsers: proUserData } = await res.json();
       setSessions(data);
       setStats(stats);
       setRoles(buildRoleBreakdown(data));
+      setProUsers(proUserData ?? []);
     } catch (err) {
       console.error(err);
     }
@@ -133,6 +143,21 @@ export default function AdminPage() {
       .slice(0, 6);
   };
 
+  const formatExpiry = (expiry: string | null) => {
+    if (!expiry) return "Not recorded";
+    const date = new Date(expiry);
+    if (Number.isNaN(date.getTime())) return "Not recorded";
+    return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  };
+
+  const expiryStatus = (expiry: string | null) => {
+    if (!expiry) return { label: "Unknown", className: "bg-slate-100 text-slate-600" };
+    const daysLeft = Math.ceil((new Date(expiry).getTime() - Date.now()) / 86_400_000);
+    if (daysLeft < 0) return { label: "Expired", className: "bg-red-100 text-red-700" };
+    if (daysLeft <= 7) return { label: `${daysLeft}d left`, className: "bg-amber-100 text-amber-700" };
+    return { label: `${daysLeft}d left`, className: "bg-emerald-100 text-emerald-700" };
+  };
+
   if (loading || fetching) return (
     <div className="min-h-screen bg-white flex items-center justify-center">
       <p className="text-slate-400 text-sm">Loading...</p>
@@ -206,6 +231,42 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-8 overflow-hidden">
+          <div className="p-5 border-b border-slate-100">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pro plan users</p>
+            <p className="text-sm text-slate-600 mt-1">{proUsers.length} active Pro {proUsers.length === 1 ? "member" : "members"}</p>
+          </div>
+          {proUsers.length === 0 ? (
+            <p className="p-5 text-sm text-slate-400">No Pro users yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[580px] text-left">
+                <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400">
+                  <tr>
+                    <th className="px-5 py-3 font-semibold">Email</th>
+                    <th className="px-5 py-3 font-semibold">Plan</th>
+                    <th className="px-5 py-3 font-semibold">Expires</th>
+                    <th className="px-5 py-3 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {proUsers.map((proUser) => {
+                    const status = expiryStatus(proUser.plan_expires_at);
+                    return (
+                      <tr key={proUser.id} className="text-sm">
+                        <td className="px-5 py-3 text-slate-700">{proUser.email}</td>
+                        <td className="px-5 py-3 text-slate-600">{proUser.plan_type === "pro_yearly" ? "Yearly" : proUser.plan_type === "pro_monthly" ? "Monthly" : "Pro"}</td>
+                        <td className="px-5 py-3 text-slate-600">{formatExpiry(proUser.plan_expires_at)}</td>
+                        <td className="px-5 py-3"><span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${status.className}`}>{status.label}</span></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
 
         <div className="flex gap-6 items-start">
 

@@ -13,6 +13,12 @@ const PRODUCT_MAP: Record<string, string> = {
   pro_yearly: "pro_yearly",
 };
 
+function planExpiresAt(planType: string) {
+  const expiresAt = new Date();
+  expiresAt.setMonth(expiresAt.getMonth() + (planType === "pro_yearly" ? 12 : 1));
+  return expiresAt.toISOString();
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.text();
@@ -61,7 +67,11 @@ export async function POST(req: NextRequest) {
 
     const { error: updateError } = await supabaseAdmin
       .from("users")
-      .update({ plan: "pro" })
+      .update({
+        plan: "pro",
+        plan_type: planType,
+        plan_expires_at: planExpiresAt(planType),
+      })
       .eq("email", email);
 
     if (updateError) {

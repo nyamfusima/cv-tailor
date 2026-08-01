@@ -46,8 +46,20 @@ export async function GET(_req: NextRequest) {
       (s as any).created_at?.startsWith(today)
     ).length;
 
+    const { data: proUsers, error: proUsersError } = await supabaseAdmin
+      .from("users")
+      .select("id, email, plan, plan_type, plan_expires_at")
+      .eq("plan", "pro")
+      .order("plan_expires_at", { ascending: true, nullsFirst: false });
+
+    if (proUsersError) {
+      console.error("Failed to fetch Pro users", proUsersError);
+      return NextResponse.json({ error: "FETCH_FAILED" }, { status: 500 });
+    }
+
     return NextResponse.json({
       sessions: data,
+      proUsers: proUsers ?? [],
       stats: {
         totalSessions,
         totalUsers: uniqueUsers,

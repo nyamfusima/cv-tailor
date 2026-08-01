@@ -977,7 +977,7 @@ export default function ResultsPage() {
             <button
               onClick={handleDownload}
               disabled={downloading}
-              className="flex-1 sm:flex-none text-white font-semibold px-4 sm:px-6 py-2.5 rounded-xl transition-all duration-200 text-sm flex items-center justify-center gap-2"
+              className="hidden sm:flex flex-1 sm:flex-none text-white font-semibold px-4 sm:px-6 py-2.5 rounded-xl transition-all duration-200 text-sm items-center justify-center gap-2"
               style={{
                 backgroundColor: downloading ? "#94a3b8" : "#0d1f3c",
                 cursor: downloading ? "not-allowed" : "pointer",
@@ -997,6 +997,20 @@ export default function ResultsPage() {
         </div>
 
         {/* Score panel — shows on top on mobile */}
+        <div className="sm:hidden mb-6">
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="w-full text-white font-semibold px-4 py-3 rounded-xl transition-all duration-200 text-sm flex items-center justify-center gap-2"
+            style={{
+              backgroundColor: downloading ? "#94a3b8" : "#0d1f3c",
+              cursor: downloading ? "not-allowed" : "pointer",
+            }}
+          >
+            {downloading ? "Preparing download..." : "Download tailored CV (PDF)"}
+          </button>
+        </div>
+
         <div className="lg:hidden mb-6">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">ATS Match Score</p>
