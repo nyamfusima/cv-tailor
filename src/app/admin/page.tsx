@@ -235,7 +235,7 @@ export default function AdminPage() {
         <section className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-8 overflow-hidden">
           <div className="p-5 border-b border-slate-100">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pro plan users</p>
-            <p className="text-sm text-slate-600 mt-1">{proUsers.length} active Pro {proUsers.length === 1 ? "member" : "members"}</p>
+            <p className="text-sm text-slate-600 mt-1">{proUsers.length} Pro {proUsers.length === 1 ? "member" : "members"}</p>
           </div>
           {proUsers.length === 0 ? (
             <p className="p-5 text-sm text-slate-400">No Pro users yet.</p>
