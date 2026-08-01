@@ -10,6 +10,8 @@ type AdminProUser = {
   plan: "pro";
   plan_type: "pro_monthly" | "pro_yearly" | null;
   plan_expires_at: string | null;
+  buyer_name: string | null;
+  purchased_at: string | null;
 };
 
 function monthlyExpiry(purchasedAt: string | null): string | null {
@@ -62,50 +64,45 @@ export async function GET(_req: NextRequest) {
       (s as any).created_at?.startsWith(today)
     ).length;
 
-    const { data: proUsers, error: proUsersError } = await supabaseAdmin
-      .from("users")
-      .select("id, email, plan, plan_type, plan_expires_at")
-      .eq("plan", "pro")
-      .order("plan_expires_at", { ascending: true, nullsFirst: false });
+    const { data: confirmedPurchases, error: confirmedPurchasesError } = await supabaseAdmin
+      .from("confirmed_purchases")
+      .select("purchase_id, plan_type, buyer_name, purchase_email, buyer_email, user_email, purchased_at, subscription_end_date, refunded, fully_refunded, disputed, access_revoked")
+      .in("plan_type", ["pro_monthly", "pro_yearly"])
+      .order("purchased_at", { ascending: false });
 
-    if (proUsersError) {
-      // Keep the historical sessions dashboard available until the optional
-      // subscription-expiry migration has been applied.
-      console.error("Failed to fetch Pro users", proUsersError);
-    }
-
-    // Older paid subscriptions may still be held in pending_purchases. Include
-    // their monthly plan records in the admin view without mutating payment data.
-    const { data: pendingPurchases, error: pendingPurchasesError } = await supabaseAdmin
-      .from("pending_purchases")
-      .select("user_id, email, plan_type, created_at")
-      .eq("plan_type", "pro_monthly")
-      .order("created_at", { ascending: false });
-
-    if (pendingPurchasesError) {
-      console.error("Failed to fetch pending Pro purchases", pendingPurchasesError);
+    if (confirmedPurchasesError) {
+      // The rest of the admin page remains available until this migration is applied.
+      console.error("Failed to fetch confirmed purchases", confirmedPurchasesError);
     }
 
     const proUsersByEmail = new Map<string, AdminProUser>();
-    if (!proUsersError) {
-      (proUsers ?? []).forEach((proUser) => {
-        proUsersByEmail.set(proUser.email, proUser as AdminProUser);
-      });
-    }
+    if (!confirmedPurchasesError) {
+      (confirmedPurchases ?? []).forEach((purchase) => {
+        if (purchase.refunded || purchase.fully_refunded || purchase.disputed || purchase.access_revoked) return;
+        const email = purchase.purchase_email || purchase.buyer_email || purchase.user_email;
+        if (!email) return;
+        const planType = purchase.plan_type as "pro_monthly" | "pro_yearly";
+        const expiresAt = purchase.subscription_end_date || (planType === "pro_monthly"
+          ? monthlyExpiry(purchase.purchased_at)
+          : (() => {
+              if (!purchase.purchased_at) return null;
+              const expiry = new Date(purchase.purchased_at);
+              expiry.setFullYear(expiry.getFullYear() + 1);
+              return expiry.toISOString();
+            })());
 
-    if (!pendingPurchasesError) {
-      (pendingPurchases ?? []).forEach((purchase) => {
-        if (!purchase.email) return;
-        const pendingProUser: AdminProUser = {
-          id: purchase.user_id ? `pending-${purchase.user_id}` : `pending-${purchase.email}`,
-          email: purchase.email,
+        const confirmedProUser: AdminProUser = {
+          id: purchase.purchase_id,
+          email,
           plan: "pro",
-          plan_type: "pro_monthly",
-          plan_expires_at: monthlyExpiry(purchase.created_at),
+          plan_type: planType,
+          plan_expires_at: expiresAt,
+          buyer_name: purchase.buyer_name,
+          purchased_at: purchase.purchased_at,
         };
-        const existing = proUsersByEmail.get(purchase.email);
-        if (!existing || !existing.plan_expires_at) {
-          proUsersByEmail.set(purchase.email, pendingProUser);
+        const existing = proUsersByEmail.get(email);
+        if (!existing || (confirmedProUser.purchased_at && (!existing.purchased_at || confirmedProUser.purchased_at > existing.purchased_at))) {
+          proUsersByEmail.set(email, confirmedProUser);
         }
       });
     }

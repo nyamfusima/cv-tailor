@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     const email = params.get("email");
     const productPermalink = params.get("short_product_id") || params.get("product_permalink") || "";
     const refunded = params.get("refunded") === "true";
+    const purchaseId = params.get("sale_id") || params.get("purchase_id");
 
     console.log("Gumroad webhook received:", { email, productPermalink, refunded });
 
@@ -40,6 +41,12 @@ export async function POST(req: NextRequest) {
         .from("users")
         .update({ plan: "free" })
         .eq("email", email);
+      if (purchaseId) {
+        await supabaseAdmin
+          .from("confirmed_purchases")
+          .update({ refunded: true, fully_refunded: true })
+          .eq("purchase_id", purchaseId);
+      }
       console.log(`Downgraded ${email} to free (refund)`);
       return NextResponse.json({ success: true });
     }
@@ -77,6 +84,35 @@ export async function POST(req: NextRequest) {
     if (updateError) {
       console.error("Failed to upgrade user plan:", updateError);
       return NextResponse.json({ error: "Failed to update plan" }, { status: 500 });
+    }
+
+    const purchasedAt = new Date(
+      params.get("sale_timestamp") || params.get("created_at") || Date.now()
+    );
+    const confirmedPurchaseId = purchaseId || `gumroad-${email}-${purchasedAt.getTime()}`;
+    const { error: confirmedPurchaseError } = await supabaseAdmin
+      .from("confirmed_purchases")
+      .upsert({
+        purchase_id: confirmedPurchaseId,
+        plan_type: planType,
+        item_name: params.get("product_name") || params.get("product_permalink") || null,
+        buyer_name: params.get("full_name") || params.get("buyer_name") || null,
+        purchase_email: email,
+        buyer_email: params.get("buyer_email") || null,
+        user_email: email,
+        purchased_at: purchasedAt.toISOString(),
+        subscription_end_date: null,
+        sale_price: Number(params.get("price") || params.get("sale_price") || 0),
+        refunded: false,
+        fully_refunded: false,
+        disputed: false,
+        access_revoked: false,
+      }, { onConflict: "purchase_id" });
+
+    if (confirmedPurchaseError) {
+      // Do not reject a genuine payment if the optional audit table has not yet
+      // been migrated. The user plan has already been updated above.
+      console.error("Failed to record confirmed purchase", confirmedPurchaseError);
     }
 
     // Clean up pending purchase

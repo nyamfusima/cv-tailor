@@ -29,6 +29,8 @@ interface ProUser {
   plan: "pro";
   plan_type: "pro_monthly" | "pro_yearly" | null;
   plan_expires_at: string | null;
+  buyer_name: string | null;
+  purchased_at: string | null;
 }
 
 type RoleBreakdown = { role: string; count: number };
@@ -150,6 +152,11 @@ export default function AdminPage() {
     return date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   };
 
+  const formatPurchaseDate = (date: string | null) => {
+    if (!date || Number.isNaN(new Date(date).getTime())) return "Not recorded";
+    return new Date(date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  };
+
   const expiryStatus = (expiry: string | null) => {
     if (!expiry) return { label: "Unknown", className: "bg-slate-100 text-slate-600" };
     const daysLeft = Math.ceil((new Date(expiry).getTime() - Date.now()) / 86_400_000);
@@ -234,18 +241,20 @@ export default function AdminPage() {
 
         <section className="bg-white rounded-2xl border border-slate-200 shadow-sm mb-8 overflow-hidden">
           <div className="p-5 border-b border-slate-100">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pro plan users</p>
-            <p className="text-sm text-slate-600 mt-1">{proUsers.length} Pro {proUsers.length === 1 ? "member" : "members"}</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Confirmed Pro purchases</p>
+            <p className="text-sm text-slate-600 mt-1">{proUsers.length} confirmed Pro {proUsers.length === 1 ? "purchase" : "purchases"}</p>
           </div>
           {proUsers.length === 0 ? (
-            <p className="p-5 text-sm text-slate-400">No Pro users yet.</p>
+            <p className="p-5 text-sm text-slate-400">No confirmed Pro purchases yet.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[580px] text-left">
+              <table className="w-full min-w-[760px] text-left">
                 <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400">
                   <tr>
+                    <th className="px-5 py-3 font-semibold">Buyer</th>
                     <th className="px-5 py-3 font-semibold">Email</th>
                     <th className="px-5 py-3 font-semibold">Plan</th>
+                    <th className="px-5 py-3 font-semibold">Purchased</th>
                     <th className="px-5 py-3 font-semibold">Expires</th>
                     <th className="px-5 py-3 font-semibold">Status</th>
                   </tr>
@@ -255,8 +264,10 @@ export default function AdminPage() {
                     const status = expiryStatus(proUser.plan_expires_at);
                     return (
                       <tr key={proUser.id} className="text-sm">
+                        <td className="px-5 py-3 text-slate-700">{proUser.buyer_name || "—"}</td>
                         <td className="px-5 py-3 text-slate-700">{proUser.email}</td>
                         <td className="px-5 py-3 text-slate-600">{proUser.plan_type === "pro_yearly" ? "Yearly" : proUser.plan_type === "pro_monthly" ? "Monthly" : "Pro"}</td>
+                        <td className="px-5 py-3 text-slate-600">{formatPurchaseDate(proUser.purchased_at)}</td>
                         <td className="px-5 py-3 text-slate-600">{formatExpiry(proUser.plan_expires_at)}</td>
                         <td className="px-5 py-3"><span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${status.className}`}>{status.label}</span></td>
                       </tr>
