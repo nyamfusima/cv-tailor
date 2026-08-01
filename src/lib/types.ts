@@ -100,7 +100,7 @@ export interface JobListing {
 export interface UserCredits {
   id: string;
   email: string;
-  plan: "free" | "pro";
+  plan: "free" | "pro" | "expired";
   tailor_count: number;
   tailor_reset_date: string;
 }
