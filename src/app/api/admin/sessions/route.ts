@@ -53,13 +53,14 @@ export async function GET(_req: NextRequest) {
       .order("plan_expires_at", { ascending: true, nullsFirst: false });
 
     if (proUsersError) {
+      // Keep the historical sessions dashboard available until the optional
+      // subscription-expiry migration has been applied.
       console.error("Failed to fetch Pro users", proUsersError);
-      return NextResponse.json({ error: "FETCH_FAILED" }, { status: 500 });
     }
 
     return NextResponse.json({
       sessions: data,
-      proUsers: proUsers ?? [],
+      proUsers: proUsersError ? [] : (proUsers ?? []),
       stats: {
         totalSessions,
         totalUsers: uniqueUsers,
