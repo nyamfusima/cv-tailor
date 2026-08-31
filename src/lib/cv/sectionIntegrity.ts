@@ -36,6 +36,14 @@ export class SectionIntegrityError extends Error {
   }
 }
 
+export class ExtractionIntegrityError extends Error {
+  readonly code = "EXTRACTION_INTEGRITY_FAILED";
+  constructor(readonly report: SectionIntegrityReport) {
+    super(report.issues[0]?.message ?? "Extraction integrity failed.");
+    this.name = "ExtractionIntegrityError";
+  }
+}
+
 function ngrams(text: string, size = 3): Set<string> {
   const words = text
     .toLowerCase()

@@ -1,5 +1,5 @@
 import { asArray, asRecord, asString, asStringArray, normalizeKey } from "./json";
-import { isCredibleCourseList, recoverCourseworkBounded } from "./courseworkBounds";
+import { isCredibleCourseList, isEmptyCourseworkLabel, recoverCourseworkBounded } from "./courseworkBounds";
 import { isDedicatedSectionTitle } from "./extractionReport";
 import type {
   CanonicalCV,
@@ -27,14 +27,14 @@ function parseCoursework(raw: unknown, educationId: string): CanonicalCoursework
   items.forEach((item) => {
     if (typeof item === "string") {
       const text = item.trim();
-      if (!text) return;
+      if (!text || isEmptyCourseworkLabel(text)) return;
       out.push({ id: `${educationId}-coursework-${out.length + 1}`, text });
       return;
     }
     const rec = asRecord(item);
     if (!rec) return;
     const text = asString(rec.text || rec.name).trim();
-    if (!text) return;
+    if (!text || isEmptyCourseworkLabel(text)) return;
     const id = asString(rec.id) || `${educationId}-coursework-${out.length + 1}`;
     out.push({ id, text });
   });

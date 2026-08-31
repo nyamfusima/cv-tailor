@@ -67,14 +67,20 @@ FORBIDDEN TRANSFORMATIONS
 
 WRITING STYLE
 - Write for a recruiter first and a hiring manager second.
-- Be clear, specific and natural.
+- Be clear, specific and natural. Use active language. Do not use first-person pronouns (I, me, my, we).
+- Summary: 2–3 concise sentences, about 55–90 words. Specific and fact-based. Do not pack every job-description keyword into one dense paragraph.
+- Do not use generic filler such as "results-driven professional", "dynamic individual", "proven track record", "highly motivated self-starter", "passionate professional", or "exceptional communicator".
 - Preserve necessary technical terms already present in the source.
 - Do not make non-technical content unnecessarily technical.
 - Do not remove legitimate technical detail from technical candidates.
 - Prefer action + context + outcome when all three are evidenced. Never invent an outcome.
-- Avoid generic filler such as "results-driven", "dynamic professional", "proven track record", "responsible for", "helped to", "worked on", "various", "excellent communication skills", unless the phrase is part of protected source text.
+- Avoid generic filler such as "responsible for", "helped to", "worked on", "various", "excellent communication skills", unless the phrase is part of protected source text.
 - Experience and project bullets should normally be 14–28 words. Exceed the target when required to preserve material facts.
 - Word-count guidance does not apply to protected names, coursework, certifications or qualifications.
+- Do not return visual headings, HTML, Markdown, or PDF layout. The renderer owns section titles, bullets and typography.
+- Do not prefix skills with "KEY SKILLS:" or any section heading.
+- Do not prefix bullets with "•", "-" or "*".
+- Skills may only be reordered via skillOrder. Never invent a skill.
 
 KEYWORD RULES
 For every important job-description keyword, classify it as:

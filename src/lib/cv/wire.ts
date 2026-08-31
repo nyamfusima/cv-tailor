@@ -1,6 +1,7 @@
 import type { OriginalCV, TailoredCV } from "../types";
 import type { DisplaySelection } from "./displaySelection";
 import { applyDisplaySelection } from "./displaySelection";
+import { filterCourseworkLabels } from "./displayText";
 import type { HardRequirements } from "./hardRequirements";
 import type { SectionIntegrityReport } from "./sectionIntegrity";
 import type { AlignmentScore, CanonicalCV, PreservationReport, TailorDelta } from "./types";
@@ -162,5 +163,6 @@ export function derivePrimaryRole(tailored: CanonicalCV, original: CanonicalCV):
 }
 
 export function courseworkDisplay(coursework: string[] | undefined): string | null {
-  return coursework?.length ? coursework.join(", ") : null;
+  const items = filterCourseworkLabels(coursework);
+  return items.length ? items.join(", ") : null;
 }

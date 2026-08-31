@@ -1,6 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  AFTER_FAILURE_ROUTE,
+  isDirectFlowBlockingError,
+  shouldIgnoreLegacyReviewState,
+  userMessageFromTailorResponse,
+} from "@/lib/cv/directFlow";
+import { USER_ERROR_GENERIC } from "@/lib/cv/userFacingErrors";
 
 const steps = [
   { id: 1, label: "Parsing your CV", detail: "Extracting text from your uploaded file..." },
@@ -16,6 +23,13 @@ export default function LoadingScreen() {
   const [error, setError] = useState("");
   const [retrying, setRetrying] = useState(false);
 
+  const failToUpload = (timers: ReturnType<typeof setTimeout>[], message: string) => {
+    timers.forEach(clearTimeout);
+    sessionStorage.removeItem("pendingTailor");
+    sessionStorage.setItem("tailorError", message);
+    router.push(AFTER_FAILURE_ROUTE);
+  };
+
   const run = async () => {
     setError("");
     setRetrying(false);
@@ -23,7 +37,10 @@ export default function LoadingScreen() {
     setCurrentStep(0);
 
     const stored = sessionStorage.getItem("pendingTailor");
-    if (!stored) { router.push("/"); return; }
+    if (!stored) {
+      router.push(AFTER_FAILURE_ROUTE);
+      return;
+    }
 
     const pending = JSON.parse(stored) as {
       cvBase64?: string;
@@ -32,27 +49,32 @@ export default function LoadingScreen() {
       jobDescription?: string;
       reviewedSource?: unknown;
       requestId?: string;
-      extractionConfirmed?: boolean;
     };
-    const { cvBase64, cvName, cvType, jobDescription, reviewedSource, requestId, extractionConfirmed } = pending;
-    if (!jobDescription) { router.push("/upload"); return; }
+    if (shouldIgnoreLegacyReviewState(pending) || !pending.jobDescription) {
+      sessionStorage.removeItem("pendingTailor");
+      router.push(AFTER_FAILURE_ROUTE);
+      return;
+    }
 
+    const { cvBase64, cvName, cvType, jobDescription, requestId } = pending;
     const stepTimings = [1000, 3000, 8000];
-    const timers: NodeJS.Timeout[] = [];
+    const timers: ReturnType<typeof setTimeout>[] = [];
     stepTimings.forEach((delay, i) => {
       timers.push(setTimeout(() => setCurrentStep(i + 1), delay));
     });
 
     try {
       const stableRequestId = requestId || crypto.randomUUID();
-      sessionStorage.setItem("pendingTailor", JSON.stringify({ ...pending, requestId: stableRequestId }));
+      sessionStorage.setItem("pendingTailor", JSON.stringify({
+        cvBase64,
+        cvName,
+        cvType,
+        jobDescription,
+        requestId: stableRequestId,
+      }));
       const fd = new FormData();
       fd.append("jobDescription", jobDescription);
       fd.append("requestId", stableRequestId);
-      fd.append("extractionConfirmed", extractionConfirmed ? "true" : "false");
-      if (reviewedSource) {
-        fd.append("reviewedSource", JSON.stringify(reviewedSource));
-      }
       if (cvBase64 && cvName) {
         const byteString = atob(cvBase64);
         const ab = new ArrayBuffer(byteString.length);
@@ -66,83 +88,55 @@ export default function LoadingScreen() {
       const res = await fetch("/api/tailor", { method: "POST", body: fd });
       const data = await res.json();
 
-      // Handle limit reached
       if (data.error === "SIGN_IN_REQUIRED") {
-  timers.forEach(clearTimeout);
-  sessionStorage.setItem("tailorError", "SIGN_IN_REQUIRED");
-  router.push("/upload");
-  return;
-}
+        timers.forEach(clearTimeout);
+        sessionStorage.setItem("tailorError", "SIGN_IN_REQUIRED");
+        router.push(AFTER_FAILURE_ROUTE);
+        return;
+      }
 
-if (data.error === "NO_CREDITS") {
-  timers.forEach(clearTimeout);
-  sessionStorage.setItem("tailorError", "NO_CREDITS");
-  router.push("/upload");
-  return;
-}
+      if (data.error === "NO_CREDITS" || data.error === "LIMIT_REACHED") {
+        timers.forEach(clearTimeout);
+        sessionStorage.setItem("tailorError", data.error);
+        router.push(AFTER_FAILURE_ROUTE);
+        return;
+      }
 
-if (data.error === "LIMIT_REACHED") {
-  timers.forEach(clearTimeout);
-  sessionStorage.setItem("tailorError", "LIMIT_REACHED");
-  router.push("/upload");
-  return;
-}
+      if (isDirectFlowBlockingError(data.error) || !res.ok) {
+        failToUpload(timers, userMessageFromTailorResponse(data));
+        return;
+      }
 
-if (data.error === "SECTION_INTEGRITY_FAILED") {
-  timers.forEach(clearTimeout);
-  const next = JSON.parse(sessionStorage.getItem("pendingTailor") || "{}");
-  sessionStorage.setItem("pendingTailor", JSON.stringify({
-    ...next,
-    reviewedSource: data.source,
-    extractionReport: {
-      warnings: (data.issues ?? []).map((issue: { code: string; message: string }) => `${issue.code}: ${issue.message}`),
-      requiresUserReview: true,
-    },
-    integrityIssues: data.issues,
-  }));
-  router.push("/review");
-  return;
-}
-
-if (data.error === "EXTRACTION_REVIEW_REQUIRED") {
-  timers.forEach(clearTimeout);
-  const next = JSON.parse(sessionStorage.getItem("pendingTailor") || "{}");
-  sessionStorage.setItem("pendingTailor", JSON.stringify({
-    ...next,
-    reviewedSource: data.source,
-    extractionReport: data.extractionReport,
-  }));
-  router.push("/review");
-  return;
-}
-
-if (!res.ok) throw new Error(data.error || data.message || "Something went wrong");
-
-      // Validate the response has the expected shape
       if (!Array.isArray(data.experience) || !Array.isArray(data.skills)) {
-        throw new Error("The AI returned an unexpected response. Please try again.");
+        failToUpload(timers, USER_ERROR_GENERIC);
+        return;
       }
 
       timers.forEach(clearTimeout);
       setCurrentStep(3);
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 600));
       setCurrentStep(4);
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 600));
       setDone(true);
 
       sessionStorage.setItem("tailoredCV", JSON.stringify(data));
       sessionStorage.setItem("jobDescription", jobDescription);
       sessionStorage.removeItem("pendingTailor");
 
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 400));
       router.push("/results");
-    } catch (err: any) {
+    } catch {
       timers.forEach(clearTimeout);
-      setError(err.message || "Something went wrong. Please try again.");
+      setError(USER_ERROR_GENERIC);
     }
   };
 
-  useEffect(() => { run(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void run();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (error) return (
     <div
@@ -175,13 +169,13 @@ if (!res.ok) throw new Error(data.error || data.message || "Something went wrong
                 </svg>
                 Retrying...
               </span>
-            ) : "↺ Try again"}
+            ) : "Try again"}
           </button>
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push(AFTER_FAILURE_ROUTE)}
             className="flex-1 text-slate-600 font-semibold py-3 rounded-xl text-sm border border-slate-200 hover:border-slate-300 transition-all"
           >
-            ← Start over
+            Back to upload
           </button>
         </div>
       </div>
@@ -192,14 +186,12 @@ if (!res.ok) throw new Error(data.error || data.message || "Something went wrong
     <div
       className="min-h-screen flex flex-col items-center justify-center bg-white px-6"
     >
-      {/* Logo */}
       <div className="flex items-center mb-16">
         <span className="font-semibold text-slate-800 tracking-tight">my</span>
         <img src="/favicon.ico" alt="myCVtailor.co.za" className="w-5 h-5" />
         <span className="font-semibold text-slate-800 tracking-tight">tailor.co.za</span>
       </div>
 
-      {/* Heading */}
       <div className="text-center mb-12">
         <h2
           style={{ color: "#0d1f3c" }}
@@ -212,7 +204,6 @@ if (!res.ok) throw new Error(data.error || data.message || "Something went wrong
         </p>
       </div>
 
-      {/* Steps */}
       <div className="w-full max-w-sm space-y-4">
         {steps.map((step, i) => {
           const isComplete = currentStep > i;
@@ -265,7 +256,6 @@ if (!res.ok) throw new Error(data.error || data.message || "Something went wrong
         })}
       </div>
 
-      {/* Progress bar */}
       <div className="w-full max-w-sm mt-10">
         <div className="h-1 bg-slate-200 rounded-full overflow-hidden">
           <div

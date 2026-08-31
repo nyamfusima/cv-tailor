@@ -35,14 +35,22 @@ describe("generated PDF text", () => {
     assert.match(blob, /community shop/);
 
     const nameAt = blob.toLowerCase().indexOf("alex rivera");
+    const summaryAt = blob.toLowerCase().indexOf("summary");
+    const skillsAt = blob.toLowerCase().indexOf("key skills");
     const experienceAt = blob.toLowerCase().indexOf("experience");
     const educationAt = blob.toLowerCase().indexOf("education");
-    assert.ok(nameAt >= 0 && experienceAt > nameAt);
+    const projectsAt = blob.toLowerCase().indexOf("projects");
+    assert.ok(nameAt >= 0 && summaryAt > nameAt);
+    assert.ok(skillsAt > summaryAt);
+    assert.ok(experienceAt > skillsAt);
     assert.ok(educationAt > experienceAt);
+    assert.ok(projectsAt > educationAt);
   });
 
   it("documents the resume template as selectable single-column text", () => {
     assert.equal(DOCUMENT_PROFILES.resume.fontSize, 10);
+    assert.equal(DOCUMENT_PROFILES.resume.headingFontSize, 11);
+    assert.equal(DOCUMENT_PROFILES.resume.titleFontSize, 18);
     assert.equal(PDF_FONTS.regular, "Times-Roman");
   });
 });

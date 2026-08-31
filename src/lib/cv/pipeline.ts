@@ -4,7 +4,7 @@ import { buildExtractionReport } from "./extractionReport";
 import { analyzeHardRequirements } from "./hardRequirements";
 import { scoreJobAlignment } from "./matchScore";
 import { coerceDelta, emptyDelta, mergeProtectedFromSource, restoreMissingFromSource } from "./mergeProtected";
-import { SectionIntegrityError, validatePresentation, validateSectionIntegrity } from "./sectionIntegrity";
+import { ExtractionIntegrityError, SectionIntegrityError, validatePresentation, validateSectionIntegrity } from "./sectionIntegrity";
 import { logTailorTelemetry } from "./openai";
 import {
   buildExtractPrompt,
@@ -17,7 +17,6 @@ import {
 import { EXTRACT_JSON_SCHEMA, REPAIR_DELTA_JSON_SCHEMA, TAILOR_DELTA_JSON_SCHEMA } from "./schema";
 import {
   ExtractionFailedError,
-  ExtractionReviewRequiredError,
   IncompleteModelOutputError,
   ModelJsonParseError,
   PreservationFailureError,
@@ -82,6 +81,7 @@ export async function extractSourceCv(input: {
     report.warnings.push(...integrity.issues.map((issue) => `${issue.code}: ${issue.message}`));
     report.requiresUserReview = true;
     report.highConfidence = true;
+    throw new ExtractionIntegrityError(integrity);
   }
 
   return { source, report, extract: toMeta(extractRes, EXTRACT_PROMPT_VERSION) };
@@ -108,13 +108,6 @@ export async function runTailorPipeline(input: {
     source = extracted.source;
     extractMeta = extracted.extract;
     extractionReport = extracted.report;
-    if (extracted.report.highConfidence && !input.extractionConfirmed) {
-      throw new ExtractionReviewRequiredError(
-        "Please review the extracted CV. Some source sections may be missing.",
-        extracted.report,
-        extracted.source,
-      );
-    }
   } else if (input.cvText) {
     extractionReport = buildExtractionReport({
       cvText: input.cvText,
@@ -205,7 +198,7 @@ export async function runTailorPipeline(input: {
   const integrity = validatePresentation(tailored);
   if (!integrity.valid) {
     throw new SectionIntegrityError(
-      "The tailored CV mixed sections or broke protected numbers. Please review the source CV.",
+      "The tailored CV mixed sections or broke protected numbers.",
       integrity,
       source,
     );

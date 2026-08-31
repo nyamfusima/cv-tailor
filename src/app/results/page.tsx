@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { courseworkDisplay } from "@/lib/cv/wire";
+import { stripBulletPrefix, visibleSkillGroups } from "@/lib/cv/displayText";
 import { TailoredCV, OriginalCV } from "@/lib/types";
 import { downloadPDF } from "@/lib/generatePDF";
 
@@ -130,20 +132,20 @@ function CVSections({ cv }: { cv: OriginalCV }) {
     <div className="px-6 sm:px-10 py-8 font-serif">
       {cv.summary && (
         <div className="mb-7">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Summary</h2>
-          <div className="h-px bg-slate-200 mb-3" />
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 mb-2">Summary</h2>
+          <div className="h-px bg-slate-900 mb-3" />
           <p className="text-sm text-slate-700 leading-relaxed">{cv.summary}</p>
         </div>
       )}
-      {cv.skills?.length > 0 && (
+      {visibleSkillGroups(cv.skills).length > 0 && (
         <div className="mb-7">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Key Skills</h2>
-          <div className="h-px bg-slate-200 mb-3" />
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 mb-2">Key Skills</h2>
+          <div className="h-px bg-slate-900 mb-3" />
           <div className="space-y-1.5">
-            {cv.skills.map((group, i) => (
+            {visibleSkillGroups(cv.skills).map((group, i) => (
               <div key={i} className="flex gap-2 text-sm flex-wrap">
-                <span className="font-bold text-slate-800 shrink-0 min-w-[80px] sm:min-w-[100px]">{group.category}:</span>
-                <span className="text-slate-600">{group.skills.join(", ")}</span>
+                <span className="font-bold text-slate-800 shrink-0">{group.category}:</span>
+                <span className="text-slate-600 font-normal">{group.skills.join(", ")}</span>
               </div>
             ))}
           </div>
@@ -151,21 +153,21 @@ function CVSections({ cv }: { cv: OriginalCV }) {
       )}
       {cv.experience?.length > 0 && (
         <div className="mb-7">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Experience</h2>
-          <div className="h-px bg-slate-200 mb-3" />
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 mb-2">Experience</h2>
+          <div className="h-px bg-slate-900 mb-3" />
           <div className="space-y-6">
             {cv.experience.map((job, i) => (
               <div key={i}>
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-0.5 gap-0.5">
                   <p className="text-sm font-bold text-slate-900">{job.title}</p>
-                  <p className="text-xs italic text-slate-400 sm:whitespace-nowrap sm:ml-4">{job.dates}</p>
+                  <p className="text-xs italic text-slate-500 sm:whitespace-nowrap sm:ml-4">{job.dates}</p>
                 </div>
                 <p className="text-sm italic text-slate-500 mb-2">{job.company}</p>
                 <ul className="space-y-1.5">
                   {job.bullets.map((b, j) => (
                     <li key={j} className="text-sm text-slate-600 flex gap-2">
-                      <span className="shrink-0 text-slate-300 mt-0.5">•</span>
-                      <span>{b}</span>
+                      <span className="shrink-0 text-slate-400 mt-0.5">•</span>
+                      <span>{stripBulletPrefix(b)}</span>
                     </li>
                   ))}
                 </ul>
@@ -176,20 +178,47 @@ function CVSections({ cv }: { cv: OriginalCV }) {
       )}
       {cv.education?.length > 0 && (
         <div className="mb-7">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Education</h2>
-          <div className="h-px bg-slate-200 mb-3" />
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 mb-2">Education</h2>
+          <div className="h-px bg-slate-900 mb-3" />
           <div className="space-y-4">
-            {cv.education.map((edu, i) => (
-              <div key={i}>
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5">
-                  <p className="text-sm font-bold text-slate-900">{edu.degree}</p>
-                  <p className="text-xs italic text-slate-400">{edu.dates}</p>
+            {cv.education.map((edu, i) => {
+              const coursework = courseworkDisplay(edu.coursework);
+              return (
+                <div key={i}>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5">
+                    <p className="text-sm font-bold text-slate-900">{edu.degree}</p>
+                    <p className="text-xs italic text-slate-500">{edu.dates}</p>
+                  </div>
+                  <p className="text-sm italic text-slate-500 mb-1">{edu.institution}</p>
+                  {coursework ? (
+                    <p className="text-xs text-slate-500">
+                      <span className="font-bold not-italic text-slate-700">Relevant coursework: </span>
+                      {coursework}
+                    </p>
+                  ) : null}
                 </div>
-                <p className="text-sm italic text-slate-500 mb-1">{edu.institution}</p>
-                {edu.coursework && edu.coursework.length > 0 && (
-                  <p className="text-xs text-slate-500">
-                    <span className="font-semibold not-italic text-slate-600">Relevant coursework: </span>
-                    {edu.coursework.join(", ")}
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {cv.projects && cv.projects.length > 0 && (
+        <div className="mb-7">
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 mb-2">Projects</h2>
+          <div className="h-px bg-slate-900 mb-3" />
+          <div className="space-y-4">
+            {cv.projects.map((project, i) => (
+              <div key={i}>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 mb-0.5">
+                  <p className="text-sm font-bold text-slate-900">{project.name}</p>
+                  {project.dates && <p className="text-xs italic text-slate-500 sm:whitespace-nowrap sm:ml-4">{project.dates}</p>}
+                </div>
+                {project.url && <p className="text-xs text-blue-600 mb-1">{project.url}</p>}
+                <p className="text-sm text-slate-600">{project.description}</p>
+                {project.technologies && project.technologies.length > 0 && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    <span className="font-bold not-italic text-slate-700">Technologies: </span>
+                    {project.technologies.join(", ")}
                   </p>
                 )}
               </div>
@@ -199,8 +228,8 @@ function CVSections({ cv }: { cv: OriginalCV }) {
       )}
       {cv.certifications && cv.certifications.length > 0 && (
         <div className="mb-7">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Professional Development</h2>
-          <div className="h-px bg-slate-200 mb-3" />
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 mb-2">Certifications</h2>
+          <div className="h-px bg-slate-900 mb-3" />
           <div className="space-y-3">
             {cv.certifications.map((cert, i) => (
               <div key={i} className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5">
@@ -208,7 +237,7 @@ function CVSections({ cv }: { cv: OriginalCV }) {
                   <p className="text-sm font-bold text-slate-900">{cert.name}</p>
                   <p className="text-xs italic text-slate-500">{cert.issuer}</p>
                 </div>
-                <p className="text-xs italic text-slate-400 sm:whitespace-nowrap sm:ml-4">{cert.date}</p>
+                <p className="text-xs italic text-slate-500 sm:whitespace-nowrap sm:ml-4">{cert.date}</p>
               </div>
             ))}
           </div>
@@ -217,53 +246,31 @@ function CVSections({ cv }: { cv: OriginalCV }) {
       {cv.customSections && cv.customSections.length > 0 && (
         cv.customSections.map((section) => (
           <div key={section.id} className="mb-7">
-            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">{section.title}</h2>
-            <div className="h-px bg-slate-200 mb-3" />
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 mb-2">{section.title}</h2>
+            <div className="h-px bg-slate-900 mb-3" />
             <ul className="space-y-1.5">
               {section.items.map((item) => (
                 <li key={item.id} className="text-sm text-slate-600 flex gap-2">
-                  <span className="shrink-0 text-slate-300 mt-0.5">•</span>
-                  <span>{item.text}</span>
+                  <span className="shrink-0 text-slate-400 mt-0.5">•</span>
+                  <span>{stripBulletPrefix(item.text)}</span>
                 </li>
               ))}
             </ul>
           </div>
         ))
       )}
-      {cv.projects && cv.projects.length > 0 && (
-        <div className="mb-2">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Projects</h2>
-          <div className="h-px bg-slate-200 mb-3" />
-          <div className="space-y-4">
-            {cv.projects.map((project, i) => (
-              <div key={i}>
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5 mb-0.5">
-                  <p className="text-sm font-bold text-slate-900">{project.name}</p>
-                  {project.dates && <p className="text-xs italic text-slate-400 sm:whitespace-nowrap sm:ml-4">{project.dates}</p>}
-                </div>
-                {project.url && <p className="text-xs text-blue-500 mb-1">{project.url}</p>}
-                <p className="text-sm text-slate-600">{project.description}</p>
-                {project.technologies && project.technologies.length > 0 && (
-                  <p className="text-xs text-slate-500 mt-1">
-                    <span className="font-semibold not-italic text-slate-600">Technologies: </span>
-                    {project.technologies.join(", ")}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 function OriginalCVCard({ cv }: { cv: OriginalCV }) {
+  const contact = [cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ");
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-      <div className="px-6 sm:px-10 py-8 text-center" style={{ backgroundColor: "#64748b" }}>
-        <h1 className="text-2xl sm:text-3xl font-semibold text-white mb-2 tracking-tight">{cv.name}</h1>
-        <p className="text-xs sm:text-sm text-slate-200 break-words">{[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ")}</p>
+      <div className="px-6 sm:px-10 pt-8 pb-5 text-center bg-white">
+        <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-wide text-slate-900 font-serif">{cv.name}</h1>
+        {contact ? <p className="text-[10px] sm:text-xs text-slate-700 mt-2 break-words">{contact}</p> : null}
+        <div className="mt-3 h-px bg-slate-900" />
       </div>
       <CVSections cv={cv} />
     </div>
@@ -374,15 +381,15 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
 
-      {/* ── Header with inline contact editing ── */}
-      <div className="relative px-6 sm:px-10 py-8 text-center" style={{ backgroundColor: "#0d1f3c" }}>
+      {/* ── Harvard-style header with inline contact editing ── */}
+      <div className="relative px-6 sm:px-10 pt-8 pb-5 text-center bg-white">
         {isEditing("contact") ? (
           <div className="space-y-3 max-w-sm mx-auto text-left">
             <input
               value={cv.name}
               onChange={e => updateContact("name", e.target.value)}
               placeholder="Full name"
-              className="text-lg font-bold text-center w-full bg-white/10 text-white border border-white/30 rounded-xl px-3 py-2 outline-none focus:bg-white/20 placeholder-white/30"
+              className="text-lg font-bold uppercase text-center w-full bg-white text-slate-900 border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-slate-200 placeholder-slate-300"
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {(["email", "phone", "location", "linkedin"] as const).map(f => (
@@ -391,24 +398,29 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
                   value={cv[f] || ""}
                   onChange={e => updateContact(f, e.target.value)}
                   placeholder={f.charAt(0).toUpperCase() + f.slice(1)}
-                  className="text-xs bg-white/10 text-white border border-white/30 rounded-lg px-2 py-1.5 outline-none focus:bg-white/20 placeholder-white/30 w-full"
+                  className="text-xs bg-white text-slate-700 border border-slate-300 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-slate-200 placeholder-slate-300 w-full"
                 />
               ))}
             </div>
           </div>
         ) : (
           <>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-white mb-2 tracking-tight">{cv.name}</h1>
-            <p className="text-xs sm:text-sm text-blue-200 break-words">{[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ")}</p>
+            <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-wide text-slate-900 font-serif">{cv.name}</h1>
+            {[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).length > 0 ? (
+              <p className="text-[10px] sm:text-xs text-slate-700 mt-2 break-words">
+                {[cv.email, cv.phone, cv.location, cv.linkedin].filter(Boolean).join("  ·  ")}
+              </p>
+            ) : null}
           </>
         )}
+        <div className="mt-3 h-px bg-slate-900" />
         <button
           onClick={() => toggle("contact")}
           className="absolute top-3 right-3 text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all"
           style={{
-            backgroundColor: isEditing("contact") ? "white" : "rgba(255,255,255,0.12)",
-            color: isEditing("contact") ? "#0d1f3c" : "rgba(255,255,255,0.75)",
-            borderColor: isEditing("contact") ? "white" : "rgba(255,255,255,0.25)",
+            backgroundColor: isEditing("contact") ? "#0d1f3c" : "white",
+            color: isEditing("contact") ? "white" : "#334155",
+            borderColor: isEditing("contact") ? "#0d1f3c" : "#cbd5e1",
           }}
         >
           {isEditing("contact") ? "Done" : "Edit"}
@@ -428,22 +440,22 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
         {/* ── Summary ── */}
         <div className="mb-7">
           <div className="flex items-center mb-2">
-            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Summary</h2>
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900">Summary</h2>
             <EditBtn active={isEditing("summary")} onClick={() => toggle("summary")} />
           </div>
-          <div className="h-px bg-slate-200 mb-3" />
+          <div className="h-px bg-slate-900 mb-3" />
           <EditableTextarea value={cv.summary || ""} onChange={updateSummary} editing={isEditing("summary")} className="text-sm text-slate-700 leading-relaxed" />
         </div>
 
         {/* ── Skills ── */}
         <div className="mb-7">
           <div className="flex items-center mb-2">
-            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Key Skills</h2>
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900">Key Skills</h2>
             <EditBtn active={isEditing("skills")} onClick={() => toggle("skills")} />
           </div>
-          <div className="h-px bg-slate-200 mb-3" />
+          <div className="h-px bg-slate-900 mb-3" />
           <div className="space-y-3">
-            {(cv.skills || []).map((group, gi) => (
+            {(isEditing("skills") ? (cv.skills || []) : visibleSkillGroups(cv.skills)).map((group, gi) => (
               <div key={gi} className="text-sm">
                 {isEditing("skills") ? (
                   <div className="border border-slate-200 rounded-xl p-3 bg-slate-50/60">
@@ -489,8 +501,8 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
                   </div>
                 ) : (
                   <div className="flex gap-2 flex-wrap">
-                    <span className="font-bold text-slate-800 shrink-0 min-w-[80px] sm:min-w-[100px]">{group.category}:</span>
-                    <span className="text-slate-600">{group.skills.join(", ")}</span>
+                    <span className="font-bold text-slate-800 shrink-0">{group.category}:</span>
+                    <span className="text-slate-600 font-normal">{group.skills.join(", ")}</span>
                   </div>
                 )}
               </div>
@@ -508,7 +520,7 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
 
         {/* ── Experience ── */}
         <div className="mb-7">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Experience</h2>
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 mb-2">Experience</h2>
           <div className="h-px bg-slate-200 mb-3" />
           <div className="space-y-6">
             {(cv.experience || []).map((job, ji) => {
@@ -539,7 +551,7 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
                     {job.bullets.map((b, bi) => (
                       <li key={bi} className="text-sm text-slate-600 flex gap-2 items-start">
                         <span className="shrink-0 text-slate-300 mt-1 leading-none">•</span>
-                        <EditableTextarea value={b} onChange={v => updateBullet(ji, bi, v)} editing={editing} className="text-sm text-slate-600 leading-relaxed flex-1" />
+                        <EditableTextarea value={editing ? b : stripBulletPrefix(b)} onChange={v => updateBullet(ji, bi, v)} editing={editing} className="text-sm text-slate-600 leading-relaxed flex-1" />
                         {editing && (
                           <button onClick={() => deleteBullet(ji, bi)} className="shrink-0 text-slate-300 hover:text-red-400 transition-colors text-xl leading-none mt-0.5">×</button>
                         )}
@@ -563,7 +575,7 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
 
         {/* ── Education ── */}
         <div className="mb-7">
-          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Education</h2>
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 mb-2">Education</h2>
           <div className="h-px bg-slate-200 mb-3" />
           <div className="space-y-4">
             {(cv.education || []).map((edu, ei) => {
@@ -590,7 +602,7 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
                     )}
                   </div>
                   <EditableText value={edu.institution} onChange={v => updateEduField(ei, "institution", v)} editing={editing} className="text-sm italic text-slate-500 mb-1 block" />
-                  {(edu.coursework && edu.coursework.length > 0 || editing) && (
+                  {(courseworkDisplay(edu.coursework) || editing) && (
                     <div className="text-xs text-slate-500 mt-1.5">
                       <span className="font-semibold not-italic text-slate-600">Relevant coursework: </span>
                       {editing ? (
@@ -613,7 +625,7 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
                             + course
                           </button>
                         </div>
-                      ) : edu.coursework?.join(", ")}
+                      ) : courseworkDisplay(edu.coursework)}
                     </div>
                   )}
                 </div>
@@ -623,72 +635,12 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
           {addBtn("+ Add education", addEducation)}
         </div>
 
-        {/* ── Certifications ── */}
-        <div className="mb-7">
-          {certs.length > 0 && (
-            <>
-              <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Professional Development</h2>
-              <div className="h-px bg-slate-200 mb-3" />
-              <div className="space-y-3">
-                {certs.map((cert, ci) => {
-                  const key = `cert-${ci}`;
-                  const editing = isEditing(key);
-                  return (
-                    <div key={ci}>
-                      {editing ? (
-                        <div className="border border-indigo-200 rounded-xl p-4 -mx-1 bg-slate-50/50 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <input
-                              value={cert.name}
-                              onChange={e => updateCertField(ci, "name", e.target.value)}
-                              placeholder="Certification name"
-                              className="flex-1 text-sm font-bold text-slate-900 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white min-w-0"
-                            />
-                            <input
-                              value={cert.date}
-                              onChange={e => updateCertField(ci, "date", e.target.value)}
-                              placeholder="Year"
-                              className="w-20 text-xs text-slate-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white shrink-0"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <input
-                              value={cert.issuer}
-                              onChange={e => updateCertField(ci, "issuer", e.target.value)}
-                              placeholder="Issuer / Organisation"
-                              className="flex-1 text-xs italic text-slate-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white min-w-0"
-                            />
-                            <EditBtn active={true} onClick={() => closeEdit()} />
-                            <DangerBtn onClick={() => { closeEdit(); deleteCertification(ci); }} label="Delete" />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5">
-                          <div>
-                            <div className="flex items-center gap-1">
-                              <p className="text-sm font-bold text-slate-900">{cert.name}</p>
-                              <EditBtn active={false} onClick={() => toggle(key)} />
-                            </div>
-                            <p className="text-xs italic text-slate-500">{cert.issuer}</p>
-                          </div>
-                          <p className="text-xs italic text-slate-400 sm:whitespace-nowrap sm:ml-4">{cert.date}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-          {addBtn("+ Add certification", addCertification)}
-        </div>
-
         {/* ── Projects ── */}
         <div className="mb-7">
           {projects.length > 0 && (
             <>
               <div className="flex items-center mb-2">
-                <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Projects</h2>
+                <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900">Projects</h2>
                 <EditBtn active={isEditing("projects")} onClick={() => toggle("projects")} />
               </div>
               <div className="h-px bg-slate-200 mb-3" />
@@ -760,6 +712,66 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
             </>
           )}
           {addBtn("+ Add project", addProject)}
+        </div>
+
+        {/* ── Certifications ── */}
+        <div className="mb-7">
+          {certs.length > 0 && (
+            <>
+              <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-900 mb-2">Certifications</h2>
+              <div className="h-px bg-slate-900 mb-3" />
+              <div className="space-y-3">
+                {certs.map((cert, ci) => {
+                  const key = `cert-${ci}`;
+                  const editing = isEditing(key);
+                  return (
+                    <div key={ci}>
+                      {editing ? (
+                        <div className="border border-indigo-200 rounded-xl p-4 -mx-1 bg-slate-50/50 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <input
+                              value={cert.name}
+                              onChange={e => updateCertField(ci, "name", e.target.value)}
+                              placeholder="Certification name"
+                              className="flex-1 text-sm font-bold text-slate-900 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white min-w-0"
+                            />
+                            <input
+                              value={cert.date}
+                              onChange={e => updateCertField(ci, "date", e.target.value)}
+                              placeholder="Year"
+                              className="w-20 text-xs text-slate-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white shrink-0"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              value={cert.issuer}
+                              onChange={e => updateCertField(ci, "issuer", e.target.value)}
+                              placeholder="Issuer / Organisation"
+                              className="flex-1 text-xs italic text-slate-500 border border-indigo-300 rounded-lg px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-200 bg-white min-w-0"
+                            />
+                            <EditBtn active={true} onClick={() => closeEdit()} />
+                            <DangerBtn onClick={() => { closeEdit(); deleteCertification(ci); }} label="Delete" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-0.5">
+                          <div>
+                            <div className="flex items-center gap-1">
+                              <p className="text-sm font-bold text-slate-900">{cert.name}</p>
+                              <EditBtn active={false} onClick={() => toggle(key)} />
+                            </div>
+                            <p className="text-xs italic text-slate-500">{cert.issuer}</p>
+                          </div>
+                          <p className="text-xs italic text-slate-400 sm:whitespace-nowrap sm:ml-4">{cert.date}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {addBtn("+ Add certification", addCertification)}
         </div>
 
         {(cv.customSections || []).map((section) => (
@@ -1141,7 +1153,7 @@ export default function ResultsPage() {
                 <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
                   <p className="text-xs text-slate-600">Showing a focused subset of bullets and projects. The full source is kept.</p>
                   <button type="button" onClick={restoreOmittedSource} className="shrink-0 text-[11px] font-semibold text-slate-700 underline">
-                    Show all source items
+                    Show additional original bullets
                   </button>
                 </div>
               ) : null}

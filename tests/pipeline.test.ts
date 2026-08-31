@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { runTailorPipeline } from "../src/lib/cv/pipeline";
-import { ExtractionReviewRequiredError, IncompleteModelOutputError } from "../src/lib/cv/types";
+import { IncompleteModelOutputError } from "../src/lib/cv/types";
+import { ExtractionIntegrityError } from "../src/lib/cv/sectionIntegrity";
 import { parseModelJson } from "../src/lib/cv/json";
 import {
   INJECTION_JD,
@@ -238,7 +239,7 @@ describe("runTailorPipeline", () => {
     assert.equal(reloaded.education[0].id, "education-1");
   });
 
-  it("requires review when coursework heading is present but extraction is empty", async () => {
+  it("continues automatically when coursework heading is present but extraction is empty", async () => {
     const completeJson: CompleteJsonFn = async (req) => {
       if (req.purpose === "extract") {
         return ok({
@@ -252,13 +253,41 @@ describe("runTailorPipeline", () => {
       }
       return ok({ summary: "", experience: [], projects: [], skillOrder: [], keywordClassifications: [], missingKeywords: [], assumptions: [], conflicts: [] });
     };
+    const result = await runTailorPipeline({
+      cvText: "Education\nBachelor of Commerce\nUniversity of the Western Cape\nRelevant Coursework\nListed on an attached transcript page that was not parsed.",
+      jobDescription: "Retail",
+      completeJson,
+    });
+    assert.equal(result.tailored.contact.name, "Alex Rivera");
+    assert.equal(result.tailored.education[0].degree, "BCom");
+  });
+
+  it("blocks extraction when section integrity fails", async () => {
+    const completeJson: CompleteJsonFn = async (req) => {
+      if (req.purpose === "extract") {
+        return ok({
+          name: "Jordan Mokoena",
+          education: [{
+            degree: "Diploma in Software Engineering",
+            institution: "Cape Peninsula University of Technology",
+            dates: "Completed May 2026",
+            coursework: ["Data Structures", "PROJECTS", "HackerRank Orchestrate 2026"],
+          }],
+          experience: [],
+          certifications: [],
+          projects: [{ name: "HackerRank Orchestrate 2026", description: "Ranked #26 out of 1,349 participants." }],
+          skills: [],
+        }, "extract");
+      }
+      return ok({ summary: "", experience: [], projects: [], skillOrder: [], keywordClassifications: [], missingKeywords: [], assumptions: [], conflicts: [] });
+    };
     await assert.rejects(
       () => runTailorPipeline({
-        cvText: "Education\nBachelor of Commerce\nUniversity of the Western Cape\nRelevant Coursework\nListed on an attached transcript page that was not parsed.",
-        jobDescription: "Retail",
+        cvText: "Education\nDiploma\nRelevant coursework: Data Structures\nPROJECTS\nHackerRank Orchestrate 2026",
+        jobDescription: "Software intern",
         completeJson,
       }),
-      ExtractionReviewRequiredError,
+      ExtractionIntegrityError,
     );
   });
 

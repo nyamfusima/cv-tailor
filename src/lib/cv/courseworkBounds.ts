@@ -34,10 +34,14 @@ export function looksLikeCourseworkBleed(text: string): boolean {
   return BLEED_PATTERNS.some((pattern) => pattern.test(trimmed));
 }
 
+export function isEmptyCourseworkLabel(text: string): boolean {
+  return IGNORE_LABEL.test(text.trim());
+}
+
 export function isPlausibleCourseTitle(text: string): boolean {
   const trimmed = text.trim();
   if (trimmed.length < 2 || trimmed.length > COURSEWORK_LENGTH_LIMIT) return false;
-  if (IGNORE_LABEL.test(trimmed)) return false;
+  if (isEmptyCourseworkLabel(trimmed)) return false;
   if (looksLikeCourseworkBleed(trimmed)) return false;
   if (/^https?:/i.test(trimmed)) return false;
   if (/^\d{1,2}$/.test(trimmed)) return false;

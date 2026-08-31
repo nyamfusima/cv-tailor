@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AFTER_UPLOAD_ROUTE, createPendingTailorPayload } from "@/lib/cv/directFlow";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
@@ -161,13 +162,13 @@ export default function UploadForm() {
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = (reader.result as string).split(",")[1];
-      sessionStorage.setItem("pendingTailor", JSON.stringify({
+      sessionStorage.setItem("pendingTailor", JSON.stringify(createPendingTailorPayload({
         cvBase64: base64,
         cvName: cvFile.name,
         cvType: cvFile.type,
         jobDescription: jobDesc,
-      }));
-      router.push("/review");
+      })));
+      router.push(AFTER_UPLOAD_ROUTE);
     };
     reader.readAsDataURL(cvFile);
   };
@@ -513,8 +514,8 @@ export default function UploadForm() {
     {!user
       ? "Sign in to find matching jobs"
       : loading
-      ? "Scanning your CV..."
-      : "Tailoring your CV"}
+      ? "Preparing your CV..."
+      : "Tailor your CV"}
   </button>
 )}
 

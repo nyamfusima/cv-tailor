@@ -3,7 +3,11 @@ export { assessRewrite, assessUnsupportedScope } from "./claimStrength";
 export { recoverCourseworkBounded } from "./courseworkBounds";
 export { recommendDisplaySelection } from "./displaySelection";
 export { analyzeHardRequirements } from "./hardRequirements";
-export { SectionIntegrityError, validatePresentation, validateSectionIntegrity } from "./sectionIntegrity";
+export { AFTER_FAILURE_ROUTE, AFTER_UPLOAD_ROUTE, createPendingTailorPayload } from "./directFlow";
+export { ExtractionIntegrityError, SectionIntegrityError, validatePresentation, validateSectionIntegrity } from "./sectionIntegrity";
+export { courseworkDisplay, derivePrimaryRole, toOriginalWire, toTailoredWire } from "./wire";
+export { filterCourseworkLabels, skillCategoryLabel, stripBulletPrefix, visibleSkillGroups } from "./displayText";
+export { RESUME_SECTION_ORDER, sectionOrderIndexes } from "./harvardResume";
 export { RENDER_COVERAGE } from "./coverage";
 export { createMemoryCreditStore, createSupabaseCreditStore } from "./credits";
 export { evaluatePreservation } from "./evaluation";
@@ -31,7 +35,6 @@ export {
 export { EXTRACT_JSON_SCHEMA, TAILOR_DELTA_JSON_SCHEMA } from "./schema";
 export { executeExtractRequest, executeTailorRequest } from "./tailorRequest";
 export { missingItemCounts, validatePreservation } from "./validatePreservation";
-export { courseworkDisplay, derivePrimaryRole, toOriginalWire, toTailoredWire } from "./wire";
 export type {
   AlignmentScore,
   CanonicalCV,

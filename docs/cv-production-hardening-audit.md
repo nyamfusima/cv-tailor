@@ -34,7 +34,7 @@
 | PDF tests do not generate a PDF or extract its text. | Medium | `tests/pdf-coursework.test.ts` checks `courseworkDisplay` + source string |
 | No route/integration tests of `POST /api/tailor` | Medium | `tests/` has unit tests only |
 | `/api/parse-cv` is still a separate unconstrained extract (job-match). No IDs, no completeness, no `finish_reason`. | Medium | `src/app/api/parse-cv/route.ts` 38–87. Token cap is now 8192 (line 40), so the old 2048 risk is **removed on this route**, but the path is still unprotected. |
-| No source-review step. Upload → loading → tailor. | High | `UploadForm.tsx` 164–170; `loading-screen/page.tsx` 48 |
+| ~~No source-review step.~~ Validation is automatic. High-severity extraction errors return the user to upload; no credit is used. | Resolved | `pipeline.ts` extract integrity gate; `directFlow.ts` |
 | Telemetry omits extraction warnings, credit status, claim-strength, custom-section count, primary/fallback flag | Low | `openai.ts` 33–47 |
 
 ## Likely risks
@@ -87,7 +87,7 @@ Existing migrations (`supabase/migrations/20260801_*.sql`) cover purchases and p
 
 1. Extraction report + parse-file emptiness check.  
 2. Custom sections through extract → merge → UI → PDF.  
-3. Source-review step before tailor.  
+3. Automatic extraction + section-integrity validation (no mandatory review page).  
 4. Claim-strength rules in merge.  
 5. Postgres reserve/consume/refund RPCs + request ID.  
 6. Real PDF text round-trip + route tests.  

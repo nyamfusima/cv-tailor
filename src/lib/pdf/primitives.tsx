@@ -56,7 +56,7 @@ function buildStyles(theme: PdfTheme) {
     },
     sectionTitle: {
       fontFamily: PDF_FONTS.bold,
-      fontSize: profile.fontSize,
+      fontSize: profile.headingFontSize,
       textTransform: "uppercase",
       letterSpacing: 0.8,
       marginBottom: space.heading,

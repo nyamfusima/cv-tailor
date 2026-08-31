@@ -3,7 +3,7 @@ import type { CreditStore } from "./credits";
 import { logTailorTelemetry } from "./openai";
 import { extractSourceCv, runTailorPipeline } from "./pipeline";
 import { toOriginalWire, toTailoredWire } from "./wire";
-import { SectionIntegrityError } from "./sectionIntegrity";
+import { ExtractionIntegrityError, SectionIntegrityError } from "./sectionIntegrity";
 import {
   ExtractionFailedError,
   ExtractionReviewRequiredError,
@@ -13,6 +13,12 @@ import {
   TAILOR_PROMPT_VERSION,
   type CompleteJsonFn,
 } from "./types";
+import {
+  USER_ERROR_EXTRACTION,
+  USER_ERROR_GENERIC,
+  USER_ERROR_IMAGE_ONLY,
+  userMessageForIntegrityIssues,
+} from "./userFacingErrors";
 import type { UserCredits } from "../types";
 
 export async function executeExtractRequest(input: {
@@ -92,7 +98,6 @@ export async function executeTailorRequest(input: {
       source,
       jobDescription: input.jobDescription,
       completeJson: input.completeJson,
-      extractionConfirmed: input.extractionConfirmed || Boolean(input.reviewedSource),
       isLikelyImageOnly: input.isLikelyImageOnly,
     });
 
@@ -154,14 +159,24 @@ export async function executeTailorRequest(input: {
   } catch (err) {
     await refund();
     if (err instanceof SectionIntegrityError) {
+      const userMessage = userMessageForIntegrityIssues(err.report.issues);
       return {
         status: 422,
         body: {
           error: "SECTION_INTEGRITY_FAILED",
-          message: err.message,
+          userMessage,
           issues: err.report.issues,
-          source: toOriginalWire(err.source),
           affectedSections: [...new Set(err.report.issues.map((issue) => issue.section))],
+        },
+      };
+    }
+    if (err instanceof ExtractionIntegrityError) {
+      return {
+        status: 422,
+        body: {
+          error: "EXTRACTION_INTEGRITY_FAILED",
+          userMessage: userMessageForIntegrityIssues(err.report.issues),
+          issues: err.report.issues,
         },
       };
     }
@@ -169,23 +184,26 @@ export async function executeTailorRequest(input: {
       return {
         status: 422,
         body: {
-          error: "EXTRACTION_REVIEW_REQUIRED",
-          message: err.message,
-          extractionReport: err.report,
-          source: toOriginalWire(err.source),
+          error: "EXTRACTION_INTEGRITY_FAILED",
+          userMessage: USER_ERROR_EXTRACTION,
         },
       };
     }
     if (err instanceof ExtractionFailedError) {
-      return { status: 422, body: { error: "EXTRACTION_FAILED", message: err.message, extractionReport: err.report } };
+      return {
+        status: 422,
+        body: {
+          error: "EXTRACTION_FAILED",
+          userMessage: USER_ERROR_IMAGE_ONLY,
+        },
+      };
     }
     if (err instanceof PreservationFailureError) {
-      return { status: 422, body: { error: err.message, preservation: err.report } };
+      return { status: 422, body: { error: "PRESERVATION_FAILED", userMessage: USER_ERROR_GENERIC } };
     }
     if (err instanceof IncompleteModelOutputError || err instanceof ModelJsonParseError) {
-      return { status: 502, body: { error: err.message } };
+      return { status: 502, body: { error: "INCOMPLETE_MODEL_OUTPUT", userMessage: USER_ERROR_GENERIC } };
     }
-    const message = err instanceof Error ? err.message : "Failed to tailor CV. Please try again.";
-    return { status: 500, body: { error: message } };
+    return { status: 500, body: { error: "TAILOR_FAILED", userMessage: USER_ERROR_GENERIC } };
   }
 }

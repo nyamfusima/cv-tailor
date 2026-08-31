@@ -12,8 +12,8 @@ export const RENDER_COVERAGE: RenderCoverageRow[] = [
   { field: "experience", ui: "results/TailoredCVCard + CVSections", pdf: "ResumeDocument/Experience", test: "tests/pdf-coursework.test.ts" },
   { field: "education", ui: "results/TailoredCVCard + CVSections", pdf: "ResumeDocument/Education", test: "tests/pdf-coursework.test.ts" },
   { field: "education.coursework", ui: "results/TailoredCVCard + CVSections", pdf: "ResumeDocument/Note coursework", test: "tests/pdf-coursework.test.ts" },
-  { field: "certifications", ui: "results/TailoredCVCard + CVSections", pdf: "ResumeDocument/Professional Development", test: "tests/pdf-coursework.test.ts" },
+  { field: "certifications", ui: "results/TailoredCVCard + CVSections", pdf: "ResumeDocument/Certifications", test: "tests/pdf-coursework.test.ts" },
   { field: "projects", ui: "results/TailoredCVCard + CVSections", pdf: "ResumeDocument/Projects", test: "tests/pdf-roundtrip.test.ts" },
-  { field: "customSections", ui: "results/TailoredCVCard + CVSections + /review", pdf: "ResumeDocument custom Section", test: "tests/pdf-roundtrip.test.ts" },
+  { field: "customSections", ui: "results/TailoredCVCard + CVSections", pdf: "ResumeDocument custom Section", test: "tests/pdf-roundtrip.test.ts" },
   { field: "references", ui: "results/TailoredCVCard editor", pdf: "ResumeDocument/References", test: "tests/pdf-coursework.test.ts" },
 ];

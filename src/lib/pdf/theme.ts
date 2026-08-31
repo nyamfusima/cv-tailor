@@ -76,6 +76,8 @@ export interface DocumentProfile {
   readonly fontSize: number;
   /** Supporting text (contact line, coursework, technologies). */
   readonly metaFontSize: number;
+  /** Uppercase section headings. */
+  readonly headingFontSize: number;
   /** The document title (candidate name, letter subject). */
   readonly titleFontSize: number;
   readonly lineHeight: number;
@@ -92,8 +94,9 @@ export interface DocumentProfile {
 export const DOCUMENT_PROFILES = {
   resume: {
     fontSize: 10,
-    metaFontSize: 9,
-    titleFontSize: 16,
+    metaFontSize: 9.5,
+    headingFontSize: 11,
+    titleFontSize: 18,
     lineHeight: 1.4,
     color: "#000000",
     linkColor: "#1d4ed8",
@@ -103,6 +106,7 @@ export const DOCUMENT_PROFILES = {
   letter: {
     fontSize: 11,
     metaFontSize: 10,
+    headingFontSize: 11,
     titleFontSize: 12,
     lineHeight: 1.6,
     color: "#0f172a",

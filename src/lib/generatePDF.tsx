@@ -1,5 +1,6 @@
 import { type DocumentProps, Document, Page, pdf } from "@react-pdf/renderer";
 import { canonicalizeCv } from "./cv/canonical";
+import { skillCategoryLabel, stripBulletPrefix, visibleSkillGroups } from "./cv/displayText";
 import { SectionIntegrityError, validatePresentation } from "./cv/sectionIntegrity";
 import { courseworkDisplay } from "./cv/wire";
 import { createTheme } from "./pdf/theme";
@@ -45,14 +46,14 @@ export function ResumeDocument({
           </Section>
         ) : null}
 
-        {cv.skills?.length ? (
+        {visibleSkillGroups(cv.skills).length ? (
           <Section theme={theme} title="Key Skills">
-            {cv.skills.map((group, i) => (
+            {visibleSkillGroups(cv.skills).map((group, i) => (
               <LabelledRow
                 key={i}
                 theme={theme}
                 first={i === 0}
-                label={/^(key\s+)?skills$/i.test(group.category) ? undefined : `${group.category}:`}
+                label={skillCategoryLabel(group.category)}
               >
                 {group.skills.join(", ")}
               </LabelledRow>
@@ -72,7 +73,7 @@ export function ResumeDocument({
               >
                 {job.bullets.map((bullet, j) => (
                   <Bullet key={j} theme={theme}>
-                    {bullet}
+                    {stripBulletPrefix(bullet)}
                   </Bullet>
                 ))}
               </Entry>
@@ -103,20 +104,6 @@ export function ResumeDocument({
           </Section>
         ) : null}
 
-        {cv.certifications?.length ? (
-          <Section theme={theme} title="Professional Development">
-            {cv.certifications.map((cert, i) => (
-              <Entry
-                key={i}
-                theme={theme}
-                first={i === 0}
-                heading={{ primary: cert.name, secondary: cert.date }}
-                subheading={cert.issuer}
-              />
-            ))}
-          </Section>
-        ) : null}
-
         {cv.projects?.length ? (
           <Section theme={theme} title="Projects">
             {cv.projects.map((project, i) => (
@@ -142,12 +129,26 @@ export function ResumeDocument({
           </Section>
         ) : null}
 
+        {cv.certifications?.length ? (
+          <Section theme={theme} title="Certifications">
+            {cv.certifications.map((cert, i) => (
+              <Entry
+                key={i}
+                theme={theme}
+                first={i === 0}
+                heading={{ primary: cert.name, secondary: cert.date }}
+                subheading={cert.issuer}
+              />
+            ))}
+          </Section>
+        ) : null}
+
         {cv.customSections?.length
           ? cv.customSections.map((section, si) => (
               <Section key={section.id || si} theme={theme} title={section.title}>
                 {section.items.map((item, ii) => (
                   <Bullet key={item.id || ii} theme={theme}>
-                    {item.text}
+                    {stripBulletPrefix(item.text)}
                   </Bullet>
                 ))}
               </Section>
