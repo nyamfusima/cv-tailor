@@ -214,6 +214,22 @@ function CVSections({ cv }: { cv: OriginalCV }) {
           </div>
         </div>
       )}
+      {cv.customSections && cv.customSections.length > 0 && (
+        cv.customSections.map((section) => (
+          <div key={section.id} className="mb-7">
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">{section.title}</h2>
+            <div className="h-px bg-slate-200 mb-3" />
+            <ul className="space-y-1.5">
+              {section.items.map((item) => (
+                <li key={item.id} className="text-sm text-slate-600 flex gap-2">
+                  <span className="shrink-0 text-slate-300 mt-0.5">•</span>
+                  <span>{item.text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      )}
       {cv.projects && cv.projects.length > 0 && (
         <div className="mb-2">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Projects</h2>
@@ -746,6 +762,21 @@ function TailoredCVCard({ cv, onChange }: { cv: TailoredCV; onChange: (updated: 
           {addBtn("+ Add project", addProject)}
         </div>
 
+        {(cv.customSections || []).map((section) => (
+          <div key={section.id} className="mb-7">
+            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">{section.title}</h2>
+            <div className="h-px bg-slate-200 mb-3" />
+            <ul className="space-y-1.5">
+              {section.items.map((item) => (
+                <li key={item.id} className="text-sm text-slate-600 flex gap-2">
+                  <span className="shrink-0 text-slate-300 mt-0.5">•</span>
+                  <span>{item.text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+
         {/* ── References ── */}
         {refs.length > 0 && (
           <div className="mb-7">
@@ -1013,7 +1044,7 @@ export default function ResultsPage() {
 
         <div className="lg:hidden mb-6">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-4">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">ATS Match Score</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Estimated job alignment</p>
             <div className="flex items-center gap-4">
               <div className="relative flex items-center justify-center w-20 h-20 shrink-0">
                 <svg width="80" height="80" className="-rotate-90">
@@ -1098,7 +1129,7 @@ export default function ResultsPage() {
             {/* Score panel — desktop only, sticky */}
             <div className="hidden lg:block w-80 shrink-0 sticky top-24">
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-4">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">ATS Match Score</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Estimated job alignment</p>
                 <div className="flex items-center gap-4 mb-2">
                   <div className="relative flex items-center justify-center w-20 h-20 shrink-0">
                     <svg width="80" height="80" className="-rotate-90">

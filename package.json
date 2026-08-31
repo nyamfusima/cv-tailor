@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test tests/canonical.test.ts tests/validate-and-merge.test.ts tests/pipeline.test.ts tests/match-score.test.ts tests/credits.test.ts tests/pdf-coursework.test.ts tests/evaluation.test.ts tests/extraction-report.test.ts tests/claim-strength.test.ts tests/custom-sections.test.ts tests/credits-atomic.test.ts tests/openai-handling.test.ts tests/pdf-roundtrip.test.ts tests/route-integration.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
@@ -42,6 +44,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.20.5",
     "typescript": "^5"
   }
 }

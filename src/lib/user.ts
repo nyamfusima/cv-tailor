@@ -63,32 +63,47 @@ export async function getUserCredits(userId: string): Promise<UserCredits | null
   };
 }
 
+export type TailorUsageDecision =
+  | { action: "skip_pro" }
+  | { action: "deny" }
+  | { action: "increment"; tailor_count: number; tailor_reset_date?: string };
+
+export function computeNextTailorUsage(user: UserCredits, now = new Date()): TailorUsageDecision {
+  if (user.plan === "pro") return { action: "skip_pro" };
+  if (user.plan === "expired") return { action: "deny" };
+  const resetDate = new Date(user.tailor_reset_date);
+  if (now >= resetDate) {
+    const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return { action: "increment", tailor_count: 1, tailor_reset_date: nextReset.toISOString() };
+  }
+  if (user.tailor_count >= 3) return { action: "deny" };
+  return { action: "increment", tailor_count: user.tailor_count + 1 };
+}
+
+export function creditActionForOutcome(
+  isAdmin: boolean,
+  outcome: "success" | "failed",
+): "deduct" | "none" {
+  return !isAdmin && outcome === "success" ? "deduct" : "none";
+}
+
 export async function deductTailorCredit(userId: string): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
   const user = await getUserCredits(userId);
   if (!user) return false;
 
-  if (user.plan === "pro") return true;
-  if (user.plan === "expired") return false;
+  const decision = computeNextTailorUsage(user);
+  if (decision.action === "skip_pro") return true;
+  if (decision.action === "deny") return false;
 
-  const now = new Date();
-  const resetDate = new Date(user.tailor_reset_date);
-
-  if (now >= resetDate) {
-    // Monthly reset: count this use as 1 and advance the reset date to start of next month
-    const nextReset = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const { error } = await supabase
-      .from("users")
-      .update({ tailor_count: 1, tailor_reset_date: nextReset.toISOString() })
-      .eq("id", userId);
-    return !error;
-  }
-
-  if (user.tailor_count >= 3) return false;
+  const update: { tailor_count: number; tailor_reset_date?: string } = {
+    tailor_count: decision.tailor_count,
+  };
+  if (decision.tailor_reset_date) update.tailor_reset_date = decision.tailor_reset_date;
 
   const { error } = await supabase
     .from("users")
-    .update({ tailor_count: user.tailor_count + 1 })
+    .update(update)
     .eq("id", userId);
   return !error;
 }

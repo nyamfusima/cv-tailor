@@ -455,6 +455,54 @@ export default function AdminPage() {
                           ))}
                         </div>
                       )}
+
+                      {selected.tailored_cv.education?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Education</p>
+                          {selected.tailored_cv.education.map((edu: { degree: string; institution: string; dates: string; coursework?: string[] }, i: number) => (
+                            <div key={i} className="mb-3">
+                              <div className="flex justify-between">
+                                <p className="font-bold text-slate-900">{edu.degree}</p>
+                                <p className="text-xs text-slate-400">{edu.dates}</p>
+                              </div>
+                              <p className="text-xs italic text-slate-500">{edu.institution}</p>
+                              {edu.coursework?.length ? (
+                                <p className="text-xs text-slate-600 mt-1">
+                                  <span className="font-semibold">Relevant coursework: </span>
+                                  {edu.coursework.join(", ")}
+                                </p>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {selected.tailored_cv.certifications?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Professional Development</p>
+                          {selected.tailored_cv.certifications.map((cert: { name: string; issuer: string; date: string }, i: number) => (
+                            <div key={i} className="mb-2">
+                              <p className="font-bold text-slate-900">{cert.name}</p>
+                              <p className="text-xs italic text-slate-500">{cert.issuer} · {cert.date}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {selected.tailored_cv.projects?.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Projects</p>
+                          {selected.tailored_cv.projects.map((project: { name: string; description: string; technologies?: string[] }, i: number) => (
+                            <div key={i} className="mb-3">
+                              <p className="font-bold text-slate-900">{project.name}</p>
+                              <p className="text-xs text-slate-600">{project.description}</p>
+                              {project.technologies?.length ? (
+                                <p className="text-xs text-slate-500 mt-1">{project.technologies.join(", ")}</p>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 

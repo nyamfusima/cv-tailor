@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 const steps = [
   { id: 1, label: "Parsing your CV", detail: "Extracting text from your uploaded file..." },
   { id: 2, label: "Analysing job description", detail: "Identifying key requirements, skills and keywords..." },
-  { id: 3, label: "Tailoring your CV", detail: "Rewriting and optimising for ATS..." },
+  { id: 3, label: "Tailoring your CV", detail: "Aligning evidenced experience to the role..." },
   { id: 4, label: "Scoring your match", detail: "Calculating keyword alignment and relevance..." },
 ];
 
@@ -25,7 +25,17 @@ export default function LoadingScreen() {
     const stored = sessionStorage.getItem("pendingTailor");
     if (!stored) { router.push("/"); return; }
 
-    const { cvBase64, cvName, cvType, jobDescription } = JSON.parse(stored);
+    const pending = JSON.parse(stored) as {
+      cvBase64?: string;
+      cvName?: string;
+      cvType?: string;
+      jobDescription?: string;
+      reviewedSource?: unknown;
+      requestId?: string;
+      extractionConfirmed?: boolean;
+    };
+    const { cvBase64, cvName, cvType, jobDescription, reviewedSource, requestId, extractionConfirmed } = pending;
+    if (!jobDescription) { router.push("/upload"); return; }
 
     const stepTimings = [1000, 3000, 8000];
     const timers: NodeJS.Timeout[] = [];
@@ -34,16 +44,24 @@ export default function LoadingScreen() {
     });
 
     try {
-      const byteString = atob(cvBase64);
-      const ab = new ArrayBuffer(byteString.length);
-      const ia = new Uint8Array(ab);
-      for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
-      const blob = new Blob([ab], { type: cvType });
-      const file = new File([blob], cvName, { type: cvType });
-
+      const stableRequestId = requestId || crypto.randomUUID();
+      sessionStorage.setItem("pendingTailor", JSON.stringify({ ...pending, requestId: stableRequestId }));
       const fd = new FormData();
-      fd.append("cv", file);
       fd.append("jobDescription", jobDescription);
+      fd.append("requestId", stableRequestId);
+      fd.append("extractionConfirmed", extractionConfirmed ? "true" : "false");
+      if (reviewedSource) {
+        fd.append("reviewedSource", JSON.stringify(reviewedSource));
+      }
+      if (cvBase64 && cvName) {
+        const byteString = atob(cvBase64);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+        const blob = new Blob([ab], { type: cvType });
+        const file = new File([blob], cvName, { type: cvType });
+        fd.append("cv", file);
+      }
 
       const res = await fetch("/api/tailor", { method: "POST", body: fd });
       const data = await res.json();
@@ -70,7 +88,19 @@ if (data.error === "LIMIT_REACHED") {
   return;
 }
 
-if (!res.ok) throw new Error(data.error || "Something went wrong");
+if (data.error === "EXTRACTION_REVIEW_REQUIRED") {
+  timers.forEach(clearTimeout);
+  const next = JSON.parse(sessionStorage.getItem("pendingTailor") || "{}");
+  sessionStorage.setItem("pendingTailor", JSON.stringify({
+    ...next,
+    reviewedSource: data.source,
+    extractionReport: data.extractionReport,
+  }));
+  router.push("/review");
+  return;
+}
+
+if (!res.ok) throw new Error(data.error || data.message || "Something went wrong");
 
       // Validate the response has the expected shape
       if (!Array.isArray(data.experience) || !Array.isArray(data.skills)) {

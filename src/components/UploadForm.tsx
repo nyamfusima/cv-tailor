@@ -167,7 +167,7 @@ export default function UploadForm() {
         cvType: cvFile.type,
         jobDescription: jobDesc,
       }));
-      router.push("/loading-screen");
+      router.push("/review");
     };
     reader.readAsDataURL(cvFile);
   };
@@ -286,7 +286,7 @@ export default function UploadForm() {
             Land more<br />interviews.
           </h1>
           <p className="text-slate-500 text-sm sm:text-base leading-relaxed">
-            Upload your CV and add the job description. Our AI rewrites your CV to mirror the role's keywords and pass ATS filters.
+            Upload your CV and add the job description. Our AI rewrites your CV to mirror the role's keywords and improve job alignment.
           </p>
         </div>
 

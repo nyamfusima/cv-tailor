@@ -1,5 +1,7 @@
-import { type DocumentProps, Document, Page } from "@react-pdf/renderer";
+import { type DocumentProps, Document, Page, pdf } from "@react-pdf/renderer";
+import { createTheme } from "./pdf/theme";
 import { TailoredCV } from "./types";
+import { courseworkDisplay } from "./cv/wire";
 import {
   Body,
   Bullet,
@@ -73,21 +75,24 @@ export function ResumeDocument({
 
         {cv.education?.length ? (
           <Section theme={theme} title="Education">
-            {cv.education.map((edu, i) => (
-              <Entry
-                key={i}
-                theme={theme}
-                first={i === 0}
-                heading={{ primary: edu.degree, secondary: edu.dates }}
-                subheading={edu.institution}
-              >
-                {edu.coursework?.length ? (
-                  <Note theme={theme} label="Relevant coursework:">
-                    {edu.coursework.join(", ")}
-                  </Note>
-                ) : null}
-              </Entry>
-            ))}
+            {cv.education.map((edu, i) => {
+              const coursework = courseworkDisplay(edu.coursework);
+              return (
+                <Entry
+                  key={i}
+                  theme={theme}
+                  first={i === 0}
+                  heading={{ primary: edu.degree, secondary: edu.dates }}
+                  subheading={edu.institution}
+                >
+                  {coursework ? (
+                    <Note theme={theme} label="Relevant coursework:">
+                      {coursework}
+                    </Note>
+                  ) : null}
+                </Entry>
+              );
+            })}
           </Section>
         ) : null}
 
@@ -130,6 +135,18 @@ export function ResumeDocument({
           </Section>
         ) : null}
 
+        {cv.customSections?.length
+          ? cv.customSections.map((section, si) => (
+              <Section key={section.id || si} theme={theme} title={section.title}>
+                {section.items.map((item, ii) => (
+                  <Bullet key={item.id || ii} theme={theme}>
+                    {item.text}
+                  </Bullet>
+                ))}
+              </Section>
+            ))
+          : null}
+
         {cv.references?.length ? (
           <Section theme={theme} title="References">
             {cv.references.map((ref, i) => (
@@ -157,4 +174,11 @@ export async function downloadPDF(cv: TailoredCV) {
     "resume",
     `${cv.name.replace(/\s+/g, "_")}_CV.pdf`,
   );
+}
+
+/** Renders the resume PDF without the browser download step. Used by tests. */
+export async function renderResumePdfBytes(cv: TailoredCV): Promise<Uint8Array> {
+  const theme = createTheme("resume");
+  const blob = await pdf(<ResumeDocument cv={cv} theme={theme} />).toBlob();
+  return new Uint8Array(await blob.arrayBuffer());
 }

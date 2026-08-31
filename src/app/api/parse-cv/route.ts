@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     const completion = await client.chat.completions.create({
       model: "gpt-5.1",
-      max_completion_tokens: 2048,
+      max_completion_tokens: 8192,
       messages: [
         {
           role: "user",
@@ -59,7 +59,7 @@ Return ONLY a JSON object, no markdown:
     { "title": "Job title", "company": "Company", "dates": "Start – End", "bullets": ["bullet 1"] }
   ],
   "education": [
-    { "degree": "Degree", "institution": "Institution", "dates": "Year", "coursework": [] }
+    { "degree": "Degree", "institution": "Institution", "dates": "Year", "coursework": ["course 1", "course 2"] }
   ],
   "certifications": [
     { "name": "Cert name", "issuer": "Issuer", "date": "Year" }
