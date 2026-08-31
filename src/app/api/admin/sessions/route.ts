@@ -1,6 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  ADMIN_SESSION_LIST_LIMIT,
+  aggregateSessionStats,
+  fetchAllPaged,
+  startOfTodayJohannesburg,
+} from "@/lib/admin/sessionStats";
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "nyamfusima@gmail.com";
 
@@ -22,7 +28,7 @@ function monthlyExpiry(purchasedAt: string | null): string | null {
   return expiry.toISOString();
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   try {
     // Validate the requester using the session cookies (anon key)
     const supabase = await createSupabaseServerClient();
@@ -40,29 +46,57 @@ export async function GET(_req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    const { count: totalCount, error: countError } = await supabaseAdmin
+      .from("tailor_sessions")
+      .select("id", { count: "exact", head: true });
+
+    if (countError) {
+      console.error("Failed to count sessions", countError);
+      return NextResponse.json({ error: "FETCH_FAILED" }, { status: 500 });
+    }
+
+    const { count: todayCount, error: todayError } = await supabaseAdmin
+      .from("tailor_sessions")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", startOfTodayJohannesburg());
+
+    if (todayError) {
+      console.error("Failed to count today's sessions", todayError);
+      return NextResponse.json({ error: "FETCH_FAILED" }, { status: 500 });
+    }
+
+    let statRows: { user_email: string | null; match_score: number | null }[] = [];
+    try {
+      statRows = await fetchAllPaged(async (from, to) => {
+        const { data: page, error: pageError } = await supabaseAdmin
+          .from("tailor_sessions")
+          .select("user_email, match_score")
+          .range(from, to);
+        if (pageError) throw pageError;
+        return page ?? [];
+      });
+    } catch (pageError) {
+      console.error("Failed to page session stats", pageError);
+      return NextResponse.json({ error: "FETCH_FAILED" }, { status: 500 });
+    }
+
     const { data, error } = await supabaseAdmin
       .from("tailor_sessions")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(0, ADMIN_SESSION_LIST_LIMIT - 1);
 
     if (error) {
       console.error("Failed to fetch sessions", error);
       return NextResponse.json({ error: "FETCH_FAILED" }, { status: 500 });
     }
 
-    const totalSessions = data.length;
-    const uniqueUsers = new Set(data.map((s) => s.user_email)).size;
-    const avgScore =
-      data.length > 0
-        ? Math.round(
-            data.reduce((sum, s) => sum + (s.match_score || 0), 0) /
-              data.length
-          )
-        : 0;
-    const today = new Date().toISOString().split("T")[0];
-    const todaySessions = data.filter((s) =>
-      (s as any).created_at?.startsWith(today)
-    ).length;
+    const stats = aggregateSessionStats({
+      totalSessions: totalCount ?? 0,
+      todaySessions: todayCount ?? 0,
+      listedSessions: data?.length ?? 0,
+      rows: statRows,
+    });
 
     const { data: confirmedPurchases, error: confirmedPurchasesError } = await supabaseAdmin
       .from("confirmed_purchases")
@@ -114,14 +148,9 @@ export async function GET(_req: NextRequest) {
     });
 
     return NextResponse.json({
-      sessions: data,
+      sessions: data ?? [],
       proUsers: adminProUsers,
-      stats: {
-        totalSessions,
-        totalUsers: uniqueUsers,
-        avgScore,
-        todaySessions,
-      },
+      stats,
     });
   } catch (err) {
     console.error("Admin sessions API error", err);

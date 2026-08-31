@@ -21,6 +21,7 @@ interface Stats {
   totalUsers: number;
   avgScore: number;
   todaySessions: number;
+  listedSessions?: number;
 }
 
 interface ProUser {
@@ -284,7 +285,9 @@ export default function AdminPage() {
           {/* Sessions list */}
           <div className="w-96 shrink-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">
-              All sessions ({sessions.length})
+              {stats && stats.totalSessions > sessions.length
+                ? `Recent sessions (${sessions.length} of ${stats.totalSessions})`
+                : `All sessions (${sessions.length})`}
             </p>
             <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
               {sessions.length === 0 && (
