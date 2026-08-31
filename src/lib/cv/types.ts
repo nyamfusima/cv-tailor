@@ -215,6 +215,9 @@ export interface TailorPipelineResult {
   score: AlignmentScore;
   delta: TailorDelta;
   extractionReport?: ExtractionReport;
+  hardRequirements?: import("./hardRequirements").HardRequirements;
+  displaySelection?: import("./displaySelection").DisplaySelection;
+  sectionIntegrity?: import("./sectionIntegrity").SectionIntegrityReport;
   meta: {
     extract?: ModelCallMeta;
     tailor: ModelCallMeta;

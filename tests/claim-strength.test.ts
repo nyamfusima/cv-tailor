@@ -56,6 +56,16 @@ describe("claim-strength validation", () => {
     assert.equal(warning!.riskType, "causality_inflation");
   });
 
+  it("rejects cloud project → cloud-native architecture", () => {
+    const warning = assessRewrite(
+      "Helped deploy a cloud prototype to a shared server",
+      "Delivered cloud-native architecture on a shared server",
+      "b1",
+    );
+    assert.ok(warning);
+    assert.equal(warning!.riskType, "scale_inflation");
+  });
+
   it("allows neutral rephrasing", () => {
     const warning = assessRewrite(
       "Coordinated weekly stock counts across 6 stores and reduced shrinkage by 12%",

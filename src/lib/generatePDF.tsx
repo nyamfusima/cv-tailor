@@ -1,7 +1,9 @@
 import { type DocumentProps, Document, Page, pdf } from "@react-pdf/renderer";
+import { canonicalizeCv } from "./cv/canonical";
+import { SectionIntegrityError, validatePresentation } from "./cv/sectionIntegrity";
+import { courseworkDisplay } from "./cv/wire";
 import { createTheme } from "./pdf/theme";
 import { TailoredCV } from "./types";
-import { courseworkDisplay } from "./cv/wire";
 import {
   Body,
   Bullet,
@@ -46,7 +48,12 @@ export function ResumeDocument({
         {cv.skills?.length ? (
           <Section theme={theme} title="Key Skills">
             {cv.skills.map((group, i) => (
-              <LabelledRow key={i} theme={theme} first={i === 0} label={`${group.category}:`}>
+              <LabelledRow
+                key={i}
+                theme={theme}
+                first={i === 0}
+                label={/^(key\s+)?skills$/i.test(group.category) ? undefined : `${group.category}:`}
+              >
                 {group.skills.join(", ")}
               </LabelledRow>
             ))}
@@ -168,7 +175,24 @@ export function ResumeDocument({
   );
 }
 
+export function assertRenderableCv(cv: TailoredCV) {
+  const canonical = canonicalizeCv({
+    ...cv,
+    education: cv.education,
+    projects: [...(cv.originalCV?.projects ?? []), ...(cv.projects ?? [])],
+  });
+  const report = validatePresentation(canonical);
+  if (!report.valid) {
+    throw new SectionIntegrityError(
+      "This CV cannot be exported until section integrity issues are fixed.",
+      report,
+      canonical,
+    );
+  }
+}
+
 export async function downloadPDF(cv: TailoredCV) {
+  assertRenderableCv(cv);
   await downloadFittedDocument(
     (theme, documentProps) => <ResumeDocument cv={cv} theme={theme} {...documentProps} />,
     "resume",
@@ -178,6 +202,7 @@ export async function downloadPDF(cv: TailoredCV) {
 
 /** Renders the resume PDF without the browser download step. Used by tests. */
 export async function renderResumePdfBytes(cv: TailoredCV): Promise<Uint8Array> {
+  assertRenderableCv(cv);
   const theme = createTheme("resume");
   const blob = await pdf(<ResumeDocument cv={cv} theme={theme} />).toBlob();
   return new Uint8Array(await blob.arrayBuffer());

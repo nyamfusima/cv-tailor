@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { OriginalCV } from "@/lib/types";
+import { canonicalizeCv } from "@/lib/cv/canonical";
+import { analyzeHardRequirements } from "@/lib/cv/hardRequirements";
 import type { ExtractionReport } from "@/lib/cv/types";
+import type { OriginalCV } from "@/lib/types";
 
 function fileFromBase64(base64: string, name: string, type: string) {
   const binary = atob(base64);
@@ -87,6 +89,22 @@ export default function ReviewSourcePage() {
     setSource({ ...source, [field]: value });
   };
 
+  const removeCoursework = (educationIndex: number, courseIndex: number) => {
+    if (!source) return;
+    setSource({
+      ...source,
+      education: source.education.map((edu, i) =>
+        i === educationIndex
+          ? { ...edu, coursework: (edu.coursework || []).filter((_, j) => j !== courseIndex) }
+          : edu,
+      ),
+    });
+  };
+
+  const hardRequirements = source && jobDescription
+    ? analyzeHardRequirements(canonicalizeCv(source), jobDescription)
+    : null;
+
   const continueToTailor = () => {
     if (!source) return;
     if (report?.requiresUserReview && !confirmed) return;
@@ -149,6 +167,16 @@ export default function ReviewSourcePage() {
           </div>
         ) : null}
 
+        {hardRequirements?.education.status === "needs_verification" ? (
+          <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-sm font-semibold text-slate-800 mb-1">Hard requirement needs verification</p>
+            <p className="text-xs text-slate-600">
+              Job requires {hardRequirements.education.requirement}. Source evidence: {hardRequirements.education.candidateEvidence}.
+              This is not changed to look eligible.
+            </p>
+          </div>
+        ) : null}
+
         <section className="mb-6 space-y-2">
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Contact</h2>
           {(["name", "email", "phone", "location", "linkedin"] as const).map((field) => (
@@ -182,9 +210,20 @@ export default function ReviewSourcePage() {
               <p className="font-bold text-slate-900">{edu.degree}</p>
               <p className="text-xs italic text-slate-500">{edu.institution} · {edu.dates}</p>
               {edu.coursework?.length ? (
-                <p className="text-xs text-slate-600 mt-1">
-                  <span className="font-semibold">Coursework: </span>{edu.coursework.join(", ")}
-                </p>
+                <ul className="mt-1 space-y-1">
+                  {edu.coursework.map((course, ci) => (
+                    <li key={`${edu.id || edu.degree}-${ci}`} className="flex items-start justify-between gap-2 text-xs text-slate-600">
+                      <span>{course}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeCoursework(source.education.indexOf(edu), ci)}
+                        className="shrink-0 text-[10px] font-semibold text-slate-500 underline"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               ) : null}
             </div>
           ))}

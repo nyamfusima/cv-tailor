@@ -59,7 +59,7 @@ describe("canonicalizeCv", () => {
     assert.ok(cv.education[0].coursework.some((c) => c.text === "Financial Accounting"));
   });
 
-  it("does not drop extracted coursework when merging recovered items", () => {
+  it("does not append recovered items when extraction already returned a credible list", () => {
     const cv = canonicalizeCv(
       {
         education: [
@@ -73,7 +73,9 @@ describe("canonicalizeCv", () => {
       },
       RAW_CV_WITH_COURSEWORK,
     );
-    assert.equal(cv.education[0].coursework[0].text, "Business Statistics");
-    assert.ok(cv.education[0].coursework.some((c) => c.text === "Retail Operations"));
+    assert.deepEqual(
+      cv.education[0].coursework.map((c) => c.text),
+      ["Business Statistics", "Supply Chain Management"],
+    );
   });
 });

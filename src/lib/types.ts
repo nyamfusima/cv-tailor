@@ -153,6 +153,9 @@ export interface TailoredCV {
   customSections?: CustomSection[];
   modelUsed?: string;
   promptVersion?: string;
+  hardRequirements?: import("./cv/hardRequirements").HardRequirements;
+  displaySelection?: import("./cv/displaySelection").DisplaySelection;
+  sectionIntegrity?: import("./cv/sectionIntegrity").SectionIntegrityReport;
 }
 
 export interface JobListing {

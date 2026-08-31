@@ -3,6 +3,7 @@ import type { CreditStore } from "./credits";
 import { logTailorTelemetry } from "./openai";
 import { extractSourceCv, runTailorPipeline } from "./pipeline";
 import { toOriginalWire, toTailoredWire } from "./wire";
+import { SectionIntegrityError } from "./sectionIntegrity";
 import {
   ExtractionFailedError,
   ExtractionReviewRequiredError,
@@ -102,6 +103,10 @@ export async function executeTailorRequest(input: {
       promptVersion: TAILOR_PROMPT_VERSION,
       fileName: input.fileName || "upload",
       jobDescriptionPreview: input.jobDescription.slice(0, 200),
+      hardRequirements: result.hardRequirements,
+      displaySelection: result.displaySelection,
+      sectionIntegrity: result.sectionIntegrity,
+      jobDescription: input.jobDescription,
     });
 
     const persist = await input.persist({
@@ -148,6 +153,18 @@ export async function executeTailorRequest(input: {
     return { status: 200, body: tailored as unknown as Record<string, unknown> };
   } catch (err) {
     await refund();
+    if (err instanceof SectionIntegrityError) {
+      return {
+        status: 422,
+        body: {
+          error: "SECTION_INTEGRITY_FAILED",
+          message: err.message,
+          issues: err.report.issues,
+          source: toOriginalWire(err.source),
+          affectedSections: [...new Set(err.report.issues.map((issue) => issue.section))],
+        },
+      };
+    }
     if (err instanceof ExtractionReviewRequiredError) {
       return {
         status: 422,

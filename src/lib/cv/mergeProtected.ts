@@ -1,4 +1,4 @@
-import { assessRewrite } from "./claimStrength";
+import { assessRewrite, assessUnsupportedScope } from "./claimStrength";
 import { asArray, asRecord, asString, asStringArray } from "./json";
 import { introducesNewNumbers } from "./numbers";
 import type {
@@ -95,7 +95,9 @@ function rewriteExperience(
       .join(" ");
     const proposed = item.tailoredText.trim();
     let text = !proposed || introducesNewNumbers(proposed, originalText) ? originalText : proposed;
-    const inflation = assessRewrite(originalText, text, validIds[0] ?? job.id);
+    const inflation =
+      assessRewrite(originalText, text, validIds[0] ?? job.id) ??
+      assessUnsupportedScope(originalText, text, validIds[0] ?? job.id);
     if (inflation && inflation.severity === "high") {
       warnings.push(inflation);
       text = originalText;
@@ -133,11 +135,20 @@ function rewriteExperience(
   };
 }
 
-function rewriteProject(project: CanonicalProject, delta?: TailorDeltaProject): CanonicalProject {
-  const description =
+function rewriteProject(
+  project: CanonicalProject,
+  delta: TailorDeltaProject | undefined,
+  warnings: ClaimStrengthWarning[],
+): CanonicalProject {
+  let description =
     delta?.description.trim() && !introducesNewNumbers(delta.description, project.description)
       ? delta.description.trim()
       : project.description;
+  const scope = assessUnsupportedScope(project.description, description, project.id);
+  if (scope && scope.severity === "high") {
+    warnings.push(scope);
+    description = project.description;
+  }
   return {
     ...project,
     name: project.name,
@@ -219,7 +230,12 @@ export function mergeProtectedFromSource(source: CanonicalCV, rawDelta: unknown)
     coursework: edu.coursework.map((c) => ({ ...c })),
   }));
   tailored.certifications = source.certifications.map((c) => ({ ...c }));
-  tailored.projects = source.projects.map((project) => rewriteProject(project, projectDelta.get(project.id)));
+  tailored.projects = source.projects.map((project) => rewriteProject(project, projectDelta.get(project.id), claimStrengthWarnings));
+  const summaryScope = assessUnsupportedScope(source.summary, tailored.summary, "summary");
+  if (summaryScope) {
+    claimStrengthWarnings.push(summaryScope);
+    tailored.summary = source.summary;
+  }
   tailored.skills = applySkillOrder(source.skills, delta.skillOrder);
   tailored.customSections = source.customSections.map((section) => ({
     ...section,

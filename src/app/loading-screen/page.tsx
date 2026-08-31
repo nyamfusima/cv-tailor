@@ -88,6 +88,22 @@ if (data.error === "LIMIT_REACHED") {
   return;
 }
 
+if (data.error === "SECTION_INTEGRITY_FAILED") {
+  timers.forEach(clearTimeout);
+  const next = JSON.parse(sessionStorage.getItem("pendingTailor") || "{}");
+  sessionStorage.setItem("pendingTailor", JSON.stringify({
+    ...next,
+    reviewedSource: data.source,
+    extractionReport: {
+      warnings: (data.issues ?? []).map((issue: { code: string; message: string }) => `${issue.code}: ${issue.message}`),
+      requiresUserReview: true,
+    },
+    integrityIssues: data.issues,
+  }));
+  router.push("/review");
+  return;
+}
+
 if (data.error === "EXTRACTION_REVIEW_REQUIRED") {
   timers.forEach(clearTimeout);
   const next = JSON.parse(sessionStorage.getItem("pendingTailor") || "{}");

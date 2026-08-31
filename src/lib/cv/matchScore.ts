@@ -10,6 +10,29 @@ const STOPWORDS = new Set([
   "they", "them", "been", "also", "more", "than", "over", "under",
 ]);
 
+export const UNSUPPORTED_JD_KEYWORDS = [
+  "aws",
+  "ci/cd",
+  "cicd",
+  "on-call",
+  "on call",
+  "monitoring",
+  "fault tolerance",
+  "fault-tolerant",
+  "fault-tolerance",
+];
+
+function forceUnsupportedMissing(jobDescription: string, sourceCorpus: string, missing: string[]): string[] {
+  const jd = jobDescription.toLowerCase();
+  const extra: string[] = [];
+  for (const term of UNSUPPORTED_JD_KEYWORDS) {
+    if (jd.includes(term) && !sourceCorpus.includes(term)) {
+      extra.push(term === "cicd" ? "CI/CD" : term);
+    }
+  }
+  return [...new Set([...missing, ...extra])];
+}
+
 export function extractKeywords(jobDescription: string): string[] {
   const phrases = jobDescription
     .toLowerCase()
@@ -141,6 +164,8 @@ export function scoreJobAlignment(
       ? missingKeywords
       : keywords.filter((k) => !tailoredCorpus.includes(k)).slice(0, 12);
 
+  const forcedMissing = forceUnsupportedMissing(jobDescription, sourceCorpus, inferredMissing);
+
   return {
     matchScore,
     scoreBreakdown: {
@@ -151,7 +176,7 @@ export function scoreJobAlignment(
       experienceRelevance,
       experienceBefore,
     },
-    missingKeywords: inferredMissing,
+    missingKeywords: forcedMissing,
     addedKeywords: evidencedUsed,
     explanation:
       "Estimated job alignment from evidenced keyword coverage, skill overlap, title fit, and section completeness. This is not an ATS-pass guarantee.",

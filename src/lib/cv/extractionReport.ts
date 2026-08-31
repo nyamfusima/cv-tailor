@@ -1,3 +1,4 @@
+import { recoverCourseworkBounded } from "./courseworkBounds";
 import { normalizeKey } from "./json";
 import type { CanonicalCV, ExtractionReport } from "./types";
 
@@ -107,9 +108,11 @@ export function buildExtractionReport(input: {
   if (input.extractIncomplete) {
     warnings.push("The extraction model response was incomplete or output-limited.");
   }
+  const recovery = recoverCourseworkBounded(input.cvText);
+  if (recovery.warning) warnings.push(recovery.warning);
 
   const highConfidence = warnings.some((w) =>
-    /coursework heading|certifications heading|education heading|image-only|suspiciously short|incomplete|unexpectedly small/i.test(w),
+    /coursework heading|certifications heading|education heading|image-only|suspiciously short|incomplete|unexpectedly small|boundaries were uncertain|overlapped a later section/i.test(w),
   );
 
   return {

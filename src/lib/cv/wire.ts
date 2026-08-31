@@ -1,4 +1,8 @@
 import type { OriginalCV, TailoredCV } from "../types";
+import type { DisplaySelection } from "./displaySelection";
+import { applyDisplaySelection } from "./displaySelection";
+import type { HardRequirements } from "./hardRequirements";
+import type { SectionIntegrityReport } from "./sectionIntegrity";
 import type { AlignmentScore, CanonicalCV, PreservationReport, TailorDelta } from "./types";
 
 export function toOriginalWire(cv: CanonicalCV): OriginalCV {
@@ -61,8 +65,27 @@ export function toTailoredWire(
     fileName?: string;
     primaryRole?: string;
     jobDescriptionPreview?: string;
+    hardRequirements?: HardRequirements;
+    displaySelection?: DisplaySelection;
+    sectionIntegrity?: SectionIntegrityReport;
+    jobDescription?: string;
   } = {},
 ): TailoredCV {
+  const displayJobs = extras.displaySelection
+    ? applyDisplaySelection(
+        tailored.experience.map((job) => ({
+          id: job.id,
+          bullets: job.bullets,
+          sourceBullets: job.sourceBullets,
+        })),
+        extras.displaySelection,
+      )
+    : tailored.experience;
+  const displayJobById = new Map(displayJobs.map((job) => [job.id, job]));
+  const displayedProjects = extras.displaySelection?.projectIds.length
+    ? tailored.projects.filter((project) => extras.displaySelection!.projectIds.includes(project.id))
+    : tailored.projects;
+
   return {
     name: tailored.contact.name,
     email: tailored.contact.email,
@@ -75,7 +98,7 @@ export function toTailoredWire(
       title: job.title,
       company: job.company,
       dates: job.dates,
-      bullets: job.bullets,
+      bullets: displayJobById.get(job.id)?.bullets ?? job.bullets,
       sourceBullets: job.sourceBullets,
       bulletEvidence: job.bulletEvidence,
     })),
@@ -93,7 +116,7 @@ export function toTailoredWire(
       issuer: cert.issuer,
       date: cert.date,
     })),
-    projects: tailored.projects.map((project) => ({
+    projects: displayedProjects.map((project) => ({
       id: project.id,
       name: project.name,
       description: project.description,
@@ -120,6 +143,9 @@ export function toTailoredWire(
     originalCV: toOriginalWire(source),
     modelUsed: extras.modelUsed,
     promptVersion: extras.promptVersion,
+    hardRequirements: extras.hardRequirements,
+    displaySelection: extras.displaySelection,
+    sectionIntegrity: extras.sectionIntegrity,
     meta: {
       fileName: extras.fileName || "upload",
       primaryRole: extras.primaryRole || derivePrimaryRole(tailored, source),

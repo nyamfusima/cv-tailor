@@ -1,5 +1,9 @@
 export { canonicalizeCv, recoverCourseworkFromText } from "./canonical";
-export { assessRewrite } from "./claimStrength";
+export { assessRewrite, assessUnsupportedScope } from "./claimStrength";
+export { recoverCourseworkBounded } from "./courseworkBounds";
+export { recommendDisplaySelection } from "./displaySelection";
+export { analyzeHardRequirements } from "./hardRequirements";
+export { SectionIntegrityError, validatePresentation, validateSectionIntegrity } from "./sectionIntegrity";
 export { RENDER_COVERAGE } from "./coverage";
 export { createMemoryCreditStore, createSupabaseCreditStore } from "./credits";
 export { evaluatePreservation } from "./evaluation";

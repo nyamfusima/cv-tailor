@@ -941,8 +941,30 @@ export default function ResultsPage() {
 
   const handleDownload = async () => {
     setDownloading(true);
-    await downloadPDF(cv);
+    try {
+      await downloadPDF(cv);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "This CV cannot be exported until section issues are fixed.");
+    }
     setDownloading(false);
+  };
+
+  const restoreOmittedSource = () => {
+    if (!cv.originalCV) return;
+    handleCVChange({
+      ...cv,
+      experience: cv.experience.map((job) => {
+        const original = cv.originalCV?.experience.find((entry) => entry.id === job.id);
+        return {
+          ...job,
+          bullets: original?.sourceBullets?.map((b) => b.text) ?? original?.bullets ?? job.bullets,
+        };
+      }),
+      projects: cv.originalCV.projects ?? cv.projects,
+      displaySelection: cv.displaySelection
+        ? { ...cv.displaySelection, approved: true }
+        : cv.displaySelection,
+    });
   };
 
   const tabs = [
@@ -1075,6 +1097,11 @@ export default function ResultsPage() {
                 </p>
               </div>
             </div>
+            {cv.hardRequirements?.education.status === "needs_verification" ? (
+              <p className="text-xs text-amber-800 mt-3">
+                Hard requirement: {cv.hardRequirements.education.requirement}. Evidence: {cv.hardRequirements.education.candidateEvidence}.
+              </p>
+            ) : null}
           </div>
           {bd && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
@@ -1110,6 +1137,14 @@ export default function ResultsPage() {
 
             {/* CV */}
             <div className="flex-1 min-w-0 w-full">
+              {view === "tailored" && cv.displaySelection && !cv.displaySelection.approved ? (
+                <div className="mb-3 flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <p className="text-xs text-slate-600">Showing a focused subset of bullets and projects. The full source is kept.</p>
+                  <button type="button" onClick={restoreOmittedSource} className="shrink-0 text-[11px] font-semibold text-slate-700 underline">
+                    Show all source items
+                  </button>
+                </div>
+              ) : null}
               {view === "tailored" && <TailoredCVCard cv={cv} onChange={handleCVChange} />}
               {view === "original" && (
                 cv.originalCV
@@ -1160,6 +1195,11 @@ export default function ResultsPage() {
                     </p>
                   </div>
                 </div>
+                {cv.hardRequirements?.education.status === "needs_verification" ? (
+                  <p className="text-xs text-amber-800 mt-3">
+                    Hard requirement: {cv.hardRequirements.education.requirement}. Evidence: {cv.hardRequirements.education.candidateEvidence}.
+                  </p>
+                ) : null}
               </div>
               {bd && (
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">

@@ -1,7 +1,10 @@
 import { canonicalizeCv } from "./canonical";
+import { recommendDisplaySelection } from "./displaySelection";
 import { buildExtractionReport } from "./extractionReport";
+import { analyzeHardRequirements } from "./hardRequirements";
 import { scoreJobAlignment } from "./matchScore";
 import { coerceDelta, emptyDelta, mergeProtectedFromSource, restoreMissingFromSource } from "./mergeProtected";
+import { SectionIntegrityError, validatePresentation, validateSectionIntegrity } from "./sectionIntegrity";
 import { logTailorTelemetry } from "./openai";
 import {
   buildExtractPrompt,
@@ -74,6 +77,12 @@ export async function extractSourceCv(input: {
     isLikelyImageOnly: input.isLikelyImageOnly,
     extractIncomplete: extractRes.finishReason === "length" || extractRes.finishReason === "incomplete",
   });
+  const integrity = validateSectionIntegrity(source);
+  if (!integrity.valid) {
+    report.warnings.push(...integrity.issues.map((issue) => `${issue.code}: ${issue.message}`));
+    report.requiresUserReview = true;
+    report.highConfidence = true;
+  }
 
   return { source, report, extract: toMeta(extractRes, EXTRACT_PROMPT_VERSION) };
 }
@@ -193,6 +202,15 @@ export async function runTailorPipeline(input: {
     );
   }
 
+  const integrity = validatePresentation(tailored);
+  if (!integrity.valid) {
+    throw new SectionIntegrityError(
+      "The tailored CV mixed sections or broke protected numbers. Please review the source CV.",
+      integrity,
+      source,
+    );
+  }
+
   const score = scoreJobAlignment(
     source,
     tailored,
@@ -200,6 +218,8 @@ export async function runTailorPipeline(input: {
     delta.keywordClassifications,
     report.unsupportedClaims.length,
   );
+  const hardRequirements = analyzeHardRequirements(source, input.jobDescription);
+  const displaySelection = recommendDisplaySelection(source, input.jobDescription);
 
   logTailorTelemetry({
     promptVersion: TAILOR_PROMPT_VERSION,
@@ -227,6 +247,9 @@ export async function runTailorPipeline(input: {
     score,
     delta,
     extractionReport,
+    hardRequirements,
+    displaySelection,
+    sectionIntegrity: integrity,
     meta: {
       extract: extractMeta,
       tailor: toMeta(tailorRes, TAILOR_PROMPT_VERSION),

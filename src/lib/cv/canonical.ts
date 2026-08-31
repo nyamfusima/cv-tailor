@@ -1,4 +1,5 @@
 import { asArray, asRecord, asString, asStringArray, normalizeKey } from "./json";
+import { isCredibleCourseList, recoverCourseworkBounded } from "./courseworkBounds";
 import { isDedicatedSectionTitle } from "./extractionReport";
 import type {
   CanonicalCV,
@@ -53,18 +54,11 @@ function uniqueByText(items: CanonicalCoursework[]): CanonicalCoursework[] {
 }
 
 /**
- * Recover coursework lists that PDF/DOCX extraction often leaves as a heading
- * plus a comma-separated line. Used only to fill empty or shorter extracted lists.
+ * Recover coursework only from a bounded Education/Coursework block.
+ * Never comma-splits the remainder of the CV or thousands separators.
  */
 export function recoverCourseworkFromText(cvText: string): string[] {
-  if (!cvText) return [];
-  const heading = /(?:relevant\s+)?(?:coursework|modules?|subjects?|courses? taken)\s*[:\-–]\s*([^\n]+(?:\n(?![A-Z][A-Za-z /&]{2,40}:)[^\n]+)*)/i;
-  const match = cvText.match(heading);
-  if (!match?.[1]) return [];
-  return match[1]
-    .split(/[,;•·|\n]/)
-    .map((part) => part.replace(/^[-–—*]\s*/, "").trim())
-    .filter((part) => part.length > 1 && part.length < 80 && !/^https?:/i.test(part));
+  return recoverCourseworkBounded(cvText).items;
 }
 
 function mergeCoursework(extracted: CanonicalCoursework[], recovered: string[], educationId: string): CanonicalCoursework[] {
@@ -112,7 +106,7 @@ function parseEducation(raw: unknown, recovered: string[]): CanonicalEducation[]
     const rec = asRecord(item) ?? {};
     const id = asString(rec.id) || nextId("education", i);
     const extracted = parseCoursework(rec.coursework, id);
-    const attachRecovered = rows.length === 1 || i === 0;
+    const attachRecovered = (rows.length === 1 || i === 0) && !isCredibleCourseList(extracted);
     const coursework = attachRecovered ? mergeCoursework(extracted, recovered, id) : extracted;
     return {
       id,
