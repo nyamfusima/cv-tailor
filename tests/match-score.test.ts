@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { scoreJobAlignment } from "../src/lib/cv/matchScore";
 import { promoteEvidencedJobSkills } from "../src/lib/cv/skillPromotion";
-import { fixtureSourceCv, technicalSourceCv } from "./fixtures/source-cv";
+import { fixtureSourceCv, officeAdminSourceCv, TECH_JD, technicalSourceCv } from "./fixtures/source-cv";
 import { mergeProtectedFromSource } from "../src/lib/cv/mergeProtected";
 import { canonicalizeCv } from "../src/lib/cv/canonical";
 
@@ -51,6 +51,28 @@ describe("scoreJobAlignment", () => {
     assert.ok(!names.includes("Kubernetes"));
     assert.ok(after.scoreBreakdown.skillsAlignment >= before.scoreBreakdown.skillsAlignment);
     assert.ok(after.matchScore >= before.matchScore);
+  });
+
+  it("scores a technical CV against a matching JD in a usable ATS range", () => {
+    const source = technicalSourceCv();
+    const { tailored } = mergeProtectedFromSource(source, { summary: source.summary });
+    const promoted = promoteEvidencedJobSkills(source, tailored, TECH_JD);
+    const score = scoreJobAlignment(source, promoted, TECH_JD);
+    assert.ok(score.matchScore >= 72, `expected >= 72, got ${score.matchScore}`);
+    assert.ok(score.scoreBreakdown.skillsAlignment >= 70);
+    assert.ok(score.missingKeywords.some((keyword) => /kubernetes/i.test(keyword)));
+    assert.ok(score.missingKeywords.some((keyword) => /terraform/i.test(keyword)));
+  });
+
+  it("keeps a weak cross-domain match below a strong technical match", () => {
+    const tech = technicalSourceCv();
+    const admin = officeAdminSourceCv();
+    const { tailored: techTailored } = mergeProtectedFromSource(tech, { summary: tech.summary });
+    const { tailored: adminTailored } = mergeProtectedFromSource(admin, { summary: admin.summary });
+    const strong = scoreJobAlignment(tech, techTailored, TECH_JD);
+    const weak = scoreJobAlignment(admin, adminTailored, TECH_JD);
+    assert.ok(strong.matchScore > weak.matchScore);
+    assert.ok(weak.matchScore < 55);
   });
 
   it("does not drop source skills when the model skillOrder lists one id per group", () => {

@@ -36,6 +36,8 @@ const SKILL_CATALOG: SkillCatalogEntry[] = [
   { name: "Microsoft Azure", category: "Cloud", aliases: ["microsoft azure", "azure"] },
   { name: "AWS", category: "Cloud", aliases: ["aws", "amazon web services"] },
   { name: "Google Cloud", category: "Cloud", aliases: ["gcp", "google cloud"] },
+  { name: "Kubernetes", category: "Cloud", aliases: ["kubernetes", "k8s"] },
+  { name: "Terraform", category: "Cloud", aliases: ["terraform"] },
   { name: "Docker", category: "Developer Tools", aliases: ["docker"] },
   { name: "Git", category: "Developer Tools", aliases: ["git"] },
   { name: "Linux", category: "Developer Tools", aliases: ["linux"] },

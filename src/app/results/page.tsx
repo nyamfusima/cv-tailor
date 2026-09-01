@@ -1120,7 +1120,7 @@ export default function ResultsPage() {
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Score Breakdown</p>
               <div className="space-y-4">
                 <ScoreBar label="Keywords Match" before={bd.keywordsBefore} after={bd.keywordsMatch} weight={30} />
-                <ScoreBar label="Skills Alignment" before={bd.skillsBefore} after={bd.skillsAlignment} weight={25} />
+                <ScoreBar label="Skills Alignment" before={bd.skillsBefore} after={bd.skillsAlignment} weight={40} />
                 <ScoreBar label="Experience Relevance" before={bd.experienceBefore} after={bd.experienceRelevance} weight={10} />
               </div>
             </div>
@@ -1218,7 +1218,7 @@ export default function ResultsPage() {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-5">Score Breakdown</p>
                   <div className="space-y-5">
                     <ScoreBar label="Keywords Match" before={bd.keywordsBefore} after={bd.keywordsMatch} weight={30} />
-                    <ScoreBar label="Skills Alignment" before={bd.skillsBefore} after={bd.skillsAlignment} weight={25} />
+                    <ScoreBar label="Skills Alignment" before={bd.skillsBefore} after={bd.skillsAlignment} weight={40} />
                     <ScoreBar label="Experience Relevance" before={bd.experienceBefore} after={bd.experienceRelevance} weight={10} />
                   </div>
                 </div>
