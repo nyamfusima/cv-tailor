@@ -65,7 +65,7 @@ Return ONLY a JSON object, no markdown:
     { "name": "Cert name", "issuer": "Issuer", "date": "Year" }
   ],
   "skills": [
-    { "category": "Category name", "skills": ["skill1", "skill2"] }
+    { "category": "Category name", "skills": ["every", "skill", "in", "that", "category"] }
   ]
 }`,
         },

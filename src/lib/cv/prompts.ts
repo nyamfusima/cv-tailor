@@ -13,6 +13,7 @@ ${cvText}
 
 Rules:
 - Return every experience, education, certification, project, skill, and coursework item that appears in the source.
+- Skills: copy every KEY SKILLS / Skills category and every item in that category. Never return only the first skill or a short sample. A line "Programming Languages: Python, Java, TypeScript, JavaScript" must become four skills, not one.
 - Coursework is required structured data. If the CV lists courses, modules, or subjects, put every item in education[].coursework as separate array entries (never one comma-separated string). Never return an empty coursework array when the source lists courses.
 - Never copy project titles, project descriptions, Technologies labels, or later-section headings into coursework.
 - Put Languages, Volunteer Experience, Awards, Publications, and any other heading that is not Experience, Education, Skills, Projects, or Certifications into customSections: [{ "title": "Languages", "items": [{ "text": "..." }] }].

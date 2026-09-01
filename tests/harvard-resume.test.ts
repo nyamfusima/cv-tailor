@@ -13,6 +13,7 @@ import { renderResumePdfBytes } from "../src/lib/generatePDF";
 import { flattenExtractedText } from "../src/lib/parseFile";
 import { DOCUMENT_PROFILES, PDF_FONTS } from "../src/lib/pdf/theme";
 import { representativeTailoredCv } from "./fixtures/pdf-cv";
+import { canonicalizeCv } from "../src/lib/cv/canonical";
 import { harvardSourceCv } from "./fixtures/harvard-cv";
 
 function wireFrom(source = harvardSourceCv()) {
@@ -154,6 +155,28 @@ describe("Harvard-style resume format", () => {
     assert.match(blob, /Generative AI/);
     assert.match(blob, /AI Academy Intern/);
     assert.match(blob, /Example Labs/);
+  });
+
+  it("recovers every KEY SKILLS item from extracted Harvard PDF text", async () => {
+    const bytes = await renderResumePdfBytes(wireFrom());
+    const { text } = await extractText(bytes, { mergePages: true });
+    const raw = flattenExtractedText(text);
+    const cv = canonicalizeCv(
+      {
+        name: "Alex Candidate",
+        skills: [
+          { category: "AI", skills: ["Retrieval-augmented generation"] },
+          { category: "Programming Languages", skills: ["Python"] },
+          { category: "Backend", skills: ["FastAPI"] },
+          { category: "Developer Tools", skills: ["Git"] },
+        ],
+      },
+      raw,
+    );
+    const names = cv.skills.flatMap((group) => group.skills.map((skill) => skill.name));
+    for (const skill of ["Java", "TypeScript", "JavaScript", "PostgreSQL", "Supabase", "Docker", "Cursor", "Next.js"]) {
+      assert.ok(names.includes(skill), `missing ${skill} from ${names.join(", ")} in:\n${raw}`);
+    }
   });
 
   it("uses Times fonts at readable Harvard sizes", () => {

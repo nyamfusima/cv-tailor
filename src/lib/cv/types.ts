@@ -1,4 +1,4 @@
-export const EXTRACT_PROMPT_VERSION = "extract-v3";
+export const EXTRACT_PROMPT_VERSION = "extract-v4";
 export const TAILOR_PROMPT_VERSION = "tailor-v2";
 export const PRIMARY_TAILOR_MODEL = "gpt-5.1";
 export const FALLBACK_TAILOR_MODEL = "gpt-5-mini";

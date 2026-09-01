@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { canonicalizeCv, recoverCourseworkFromText } from "../src/lib/cv/canonical";
+import { HARVARD_RAW_CV } from "./fixtures/harvard-cv";
 import { fixtureSourceCv, RAW_CV_WITH_COURSEWORK } from "./fixtures/source-cv";
 
 describe("canonicalizeCv", () => {
@@ -108,6 +109,96 @@ AI Academy Intern
     assert.ok(byCategory.Backend.includes("Supabase"));
     assert.deepEqual(byCategory["Developer Tools"], ["Git", "Docker", "VS Code", "Cursor"]);
     assert.ok(byCategory.Frontend.includes("React"));
+  });
+
+  it("recovers KEY SKILLS when PDF text splits bold category labels onto their own lines", () => {
+    const raw = `
+Alex Candidate
+KEY SKILLS
+Programming Languages
+Python, Java, TypeScript, JavaScript
+Developer Tools
+Git, Docker, VS Code, Cursor
+Backend
+FastAPI, REST APIs, PostgreSQL, Supabase
+EXPERIENCE
+AI Academy Intern
+`;
+    const cv = canonicalizeCv(
+      {
+        name: "Alex Candidate",
+        skills: [
+          { category: "Programming Languages", skills: ["Python"] },
+          { category: "Developer Tools", skills: ["Git"] },
+          { category: "Backend", skills: ["FastAPI"] },
+        ],
+      },
+      raw,
+    );
+    const byCategory = Object.fromEntries(
+      cv.skills.map((group) => [group.category, group.skills.map((skill) => skill.name)]),
+    );
+    assert.deepEqual(byCategory["Programming Languages"], ["Python", "Java", "TypeScript", "JavaScript"]);
+    assert.deepEqual(byCategory["Developer Tools"], ["Git", "Docker", "VS Code", "Cursor"]);
+    assert.ok(byCategory.Backend.includes("PostgreSQL"));
+    assert.ok(byCategory.Backend.includes("Supabase"));
+  });
+
+  it("recovers KEY SKILLS from flattened PDF text without newlines", () => {
+    const raw = "Alex Candidate KEY SKILLS Programming Languages: Python, Java, TypeScript, JavaScript Developer Tools: Git, Docker, VS Code, Cursor Backend: FastAPI, REST APIs, PostgreSQL, Supabase EXPERIENCE AI Academy Intern";
+    const cv = canonicalizeCv(
+      {
+        name: "Alex Candidate",
+        skills: [
+          { category: "Programming Languages", skills: ["Python"] },
+          { category: "Developer Tools", skills: ["Git"] },
+        ],
+      },
+      raw,
+    );
+    const byCategory = Object.fromEntries(
+      cv.skills.map((group) => [group.category, group.skills.map((skill) => skill.name)]),
+    );
+    assert.deepEqual(byCategory["Programming Languages"], ["Python", "Java", "TypeScript", "JavaScript"]);
+    assert.ok(byCategory["Developer Tools"].includes("Cursor"));
+    assert.ok(byCategory.Backend.includes("Supabase"));
+  });
+
+  it("restores a Harvard KEY SKILLS block when extract kept one skill per category", () => {
+    const cv = canonicalizeCv(
+      {
+        name: "Alex Candidate",
+        skills: [
+          { category: "AI", skills: ["Retrieval-augmented generation"] },
+          { category: "Programming Languages", skills: ["Python"] },
+          { category: "Backend", skills: ["FastAPI"] },
+          { category: "Developer Tools", skills: ["Git"] },
+        ],
+      },
+      HARVARD_RAW_CV,
+    );
+    const byCategory = Object.fromEntries(
+      cv.skills.map((group) => [group.category, group.skills.map((skill) => skill.name)]),
+    );
+    assert.ok(byCategory.AI.includes("speech recognition"));
+    assert.deepEqual(byCategory["Programming Languages"], ["Python", "Java", "TypeScript", "JavaScript"]);
+    assert.ok(byCategory.Backend.includes("Supabase"));
+    assert.ok(byCategory["Developer Tools"].includes("Cursor"));
+    assert.ok(byCategory.Frontend.includes("Next.js"));
+    assert.ok(byCategory.Cloud.includes("Microsoft Azure"));
+  });
+
+  it("splits a comma-separated extract skill string into individual skills", () => {
+    const cv = canonicalizeCv({
+      name: "Alex Candidate",
+      skills: [
+        { category: "Programming Languages", skills: ["Python, Java, TypeScript, JavaScript"] },
+      ],
+    });
+    assert.deepEqual(
+      cv.skills[0].skills.map((skill) => skill.name),
+      ["Python", "Java", "TypeScript", "JavaScript"],
+    );
   });
 
   it("splits a comma-separated coursework string into individual titles", () => {

@@ -36,5 +36,6 @@ describe("prompts", () => {
   it("requires extracted coursework to be complete", () => {
     const prompt = buildExtractPrompt("Relevant coursework: A, B, C");
     assert.match(prompt, /never return an empty coursework array/i);
+    assert.match(prompt, /every KEY SKILLS \/ Skills category/i);
   });
 });

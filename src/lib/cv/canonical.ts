@@ -5,7 +5,7 @@ import {
   recoverCourseworkBounded,
 } from "./courseworkBounds";
 import { isDedicatedSectionTitle } from "./extractionReport";
-import { mergeSkillGroups, recoverSkillsBounded } from "./skillsBounds";
+import { mergeSkillGroups, recoverSkillsBounded, splitSkills } from "./skillsBounds";
 import { stripFlaggedCoursework } from "./sectionIntegrity";
 import type {
   CanonicalCV,
@@ -173,7 +173,9 @@ function parseSkills(raw: unknown): CanonicalSkillGroup[] {
   return asArray(raw).map((item, i) => {
     const rec = asRecord(item) ?? {};
     const id = asString(rec.id) || nextId("skill-group", i);
-    const names = asStringArray(rec.skills);
+    const names = asStringArray(rec.skills).flatMap((name) => (
+      name.includes(",") || name.includes(";") ? splitSkills(name) : [name]
+    ));
     const skillIds = asStringArray(rec.skillIds);
     return {
       id,
