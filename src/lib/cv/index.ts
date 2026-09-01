@@ -14,7 +14,7 @@ export { RENDER_COVERAGE } from "./coverage";
 export { createMemoryCreditStore, createSupabaseCreditStore } from "./credits";
 export { evaluatePreservation } from "./evaluation";
 export { buildExtractionReport, detectSectionHeadings } from "./extractionReport";
-export { extractJSON, isIncompleteFinishReason, parseModelJson } from "./json";
+export { extractJSON, isIncompleteFinishReason, parseModelJson, repairJsonText } from "./json";
 export { scoreJobAlignment, extractKeywords } from "./matchScore";
 export {
   coerceDelta,
@@ -34,7 +34,7 @@ export {
   buildTailorPrompt,
   tailorSystemPrompt,
 } from "./prompts";
-export { EXTRACT_JSON_SCHEMA, TAILOR_DELTA_JSON_SCHEMA } from "./schema";
+export { COVER_LETTER_JSON_SCHEMA, EXTRACT_JSON_SCHEMA, TAILOR_DELTA_JSON_SCHEMA } from "./schema";
 export { executeExtractRequest, executeTailorRequest } from "./tailorRequest";
 export { missingItemCounts, validatePreservation } from "./validatePreservation";
 export type {

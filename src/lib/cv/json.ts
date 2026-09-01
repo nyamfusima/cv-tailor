@@ -32,6 +32,38 @@ export function extractJSON(raw: string): string {
   return cleaned;
 }
 
+/** Drop trailing commas before } or ], ignoring commas inside strings. */
+export function repairJsonText(raw: string): string {
+  let out = "";
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i];
+    if (escaped) {
+      out += ch;
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      out += ch;
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      out += ch;
+      continue;
+    }
+    if (!inString && ch === ",") {
+      let next = i + 1;
+      while (next < raw.length && /\s/.test(raw[next])) next++;
+      if (raw[next] === "}" || raw[next] === "]") continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
 export function isIncompleteFinishReason(finishReason?: string): boolean {
   return finishReason === "length" || finishReason === "incomplete" || finishReason === "content_filter";
 }
@@ -43,7 +75,7 @@ export function parseModelJson(raw: string, finishReason?: string): unknown {
   if (!raw || !raw.trim()) {
     throw new ModelJsonParseError("Model returned an empty response.");
   }
-  const extracted = extractJSON(raw);
+  const extracted = repairJsonText(extractJSON(raw));
   try {
     return JSON.parse(extracted);
   } catch {

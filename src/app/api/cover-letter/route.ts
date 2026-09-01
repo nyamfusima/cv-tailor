@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { asRecord, asString, asStringArray, parseModelJson } from "@/lib/cv/json";
+import { COVER_LETTER_JSON_SCHEMA } from "@/lib/cv/schema";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 const client = new OpenAI();
+
+function toCoverLetter(parsed: unknown, fallbackName: string) {
+  const rec = asRecord(parsed) ?? {};
+  return {
+    subject: asString(rec.subject),
+    greeting: asString(rec.greeting) || "Dear Hiring Manager,",
+    paragraphs: asStringArray(rec.paragraphs),
+    sign_off: asString(rec.sign_off) || asString(rec.signOff) || "Kind regards,",
+    name: asString(rec.name) || fallbackName,
+  };
+}
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -21,12 +34,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const completion = await client.chat.completions.create({
-      model: "gpt-5.1",
-      max_completion_tokens: 2048,
-      messages: [
+    const messages = [
         {
-          role: "user",
+          role: "user" as const,
           content: `You are an expert cover letter writer. Write a compelling, professional cover letter based on the tailored CV and job description below.
 
 The cover letter must:
@@ -43,9 +53,9 @@ Here is the tailored CV:
 <cv>
 Name: ${cv.name}
 Summary: ${cv.summary}
-Experience: ${cv.experience.map((j: any) => `${j.title} at ${j.company} (${j.dates}): ${j.bullets.join(", ")}`).join(" | ")}
-Skills: ${cv.skills.map((g: any) => `${g.category}: ${g.skills.join(", ")}`).join(" | ")}
-Education: ${cv.education.map((e: any) => `${e.degree} at ${e.institution}`).join(", ")}
+Experience: ${cv.experience.map((j: { title: string; company: string; dates: string; bullets: string[] }) => `${j.title} at ${j.company} (${j.dates}): ${j.bullets.join(", ")}`).join(" | ")}
+Skills: ${cv.skills.map((g: { category: string; skills: string[] }) => `${g.category}: ${g.skills.join(", ")}`).join(" | ")}
+Education: ${cv.education.map((e: { degree: string; institution: string }) => `${e.degree} at ${e.institution}`).join(", ")}
 </cv>
 
 Here is the job description:
@@ -53,32 +63,47 @@ Here is the job description:
 ${jobDescription}
 </job_description>
 
-Return ONLY a JSON object in this exact format, no extra text, no markdown fences:
-{
-  "subject": "Application for [Job Title] — [Candidate Name]",
-  "greeting": "Dear Hiring Manager,",
-  "paragraphs": [
-    "Opening paragraph...",
-    "Achievements paragraph...",
-    "Company fit paragraph...",
-    "Closing paragraph..."
-  ],
-  "sign_off": "Kind regards,",
-  "name": "${cv.name}"
-}`,
+Return ONLY JSON matching the required schema. Do not include trailing commas.`,
         },
-      ],
-    });
+    ];
+
+    const schemaFormat = {
+      type: "json_schema" as const,
+      json_schema: {
+        name: COVER_LETTER_JSON_SCHEMA.name,
+        strict: true,
+        schema: COVER_LETTER_JSON_SCHEMA.schema,
+      },
+    };
+    let completion;
+    try {
+      completion = await client.chat.completions.create({
+        model: "gpt-5.1",
+        max_completion_tokens: 4096,
+        response_format: schemaFormat,
+        messages,
+      });
+    } catch {
+      completion = await client.chat.completions.create({
+        model: "gpt-5.1",
+        max_completion_tokens: 4096,
+        response_format: { type: "json_object" },
+        messages,
+      });
+    }
 
     const raw = completion.choices[0]?.message?.content ?? "";
-    const cleaned = raw.replace(/```json|```/g, "").trim();
-    const letter = JSON.parse(cleaned);
+    const letter = toCoverLetter(parseModelJson(raw, completion.choices[0]?.finish_reason), cv.name);
+    if (!letter.paragraphs.length) {
+      throw new Error("Cover letter was empty. Please try again.");
+    }
 
     return NextResponse.json(letter);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to generate cover letter.";
     console.error("Cover letter error:", err);
     return NextResponse.json(
-      { error: err.message || "Failed to generate cover letter." },
+      { error: message === "Failed to parse model JSON." ? "Cover letter response was invalid. Please try again." : message },
       { status: 500 }
     );
   }

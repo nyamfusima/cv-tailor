@@ -214,3 +214,20 @@ export const TAILOR_DELTA_JSON_SCHEMA = {
 } as const;
 
 export const REPAIR_DELTA_JSON_SCHEMA = TAILOR_DELTA_JSON_SCHEMA;
+
+export const COVER_LETTER_JSON_SCHEMA = {
+  name: "cover_letter",
+  strict: true,
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["subject", "greeting", "paragraphs", "sign_off", "name"],
+    properties: {
+      subject: STRING,
+      greeting: STRING,
+      paragraphs: STRING_ARRAY,
+      sign_off: STRING,
+      name: STRING,
+    },
+  },
+} as const;

@@ -56,6 +56,19 @@ describe("OpenAI response handling", () => {
     assert.throws(() => parseModelJson('{"name":"Alex"}', "content_filter"));
   });
 
+  it("accepts model JSON with trailing commas before ] or }", () => {
+    const parsed = parseModelJson(`{
+      "paragraphs": ["Built APIs for school headers.", ],
+      "sign_off": "Kind regards,",
+      "name": "Alex"
+    }`);
+    assert.deepEqual(parsed, {
+      paragraphs: ["Built APIs for school headers."],
+      sign_off: "Kind regards,",
+      name: "Alex",
+    });
+  });
+
   it("rejects malformed fallback JSON", async () => {
     const completeJson = createOpenAICompleteJson({
       chat: {
