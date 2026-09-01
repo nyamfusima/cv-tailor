@@ -2,6 +2,7 @@ import { type DocumentProps, Document, Page, pdf } from "@react-pdf/renderer";
 import { canonicalizeCv } from "./cv/canonical";
 import { skillCategoryLabel, stripBulletPrefix, visibleSkillGroups } from "./cv/displayText";
 import { SectionIntegrityError, validatePresentation } from "./cv/sectionIntegrity";
+import { tailoredDownloadFileName } from "./cv/downloadName";
 import { courseworkDisplay } from "./cv/wire";
 import { createTheme } from "./pdf/theme";
 import { TailoredCV } from "./types";
@@ -197,7 +198,7 @@ export async function downloadPDF(cv: TailoredCV) {
   await downloadFittedDocument(
     (theme, documentProps) => <ResumeDocument cv={cv} theme={theme} {...documentProps} />,
     "resume",
-    `${cv.name.replace(/\s+/g, "_")}_CV.pdf`,
+    tailoredDownloadFileName(cv),
   );
 }
 

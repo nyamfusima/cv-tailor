@@ -6,6 +6,7 @@ export { promoteEvidencedJobSkills, extractJobSkillTerms } from "./skillPromotio
 export { analyzeHardRequirements } from "./hardRequirements";
 export { AFTER_FAILURE_ROUTE, AFTER_UPLOAD_ROUTE, createPendingTailorPayload } from "./directFlow";
 export { ExtractionIntegrityError, SectionIntegrityError, stripFlaggedCoursework, validatePresentation, validateSectionIntegrity } from "./sectionIntegrity";
+export { jobTitleFromDescription, tailoredDownloadFileName } from "./downloadName";
 export { courseworkDisplay, derivePrimaryRole, toOriginalWire, toTailoredWire } from "./wire";
 export { filterCourseworkLabels, skillCategoryLabel, stripBulletPrefix, visibleSkillGroups } from "./displayText";
 export { RESUME_SECTION_ORDER, sectionOrderIndexes } from "./harvardResume";

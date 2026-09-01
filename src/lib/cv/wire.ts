@@ -1,4 +1,5 @@
 import type { OriginalCV, TailoredCV } from "../types";
+import { jobTitleFromDescription } from "./downloadName";
 import type { DisplaySelection } from "./displaySelection";
 import { applyDisplaySelection } from "./displaySelection";
 import { filterCourseworkLabels } from "./displayText";
@@ -149,7 +150,9 @@ export function toTailoredWire(
     sectionIntegrity: extras.sectionIntegrity,
     meta: {
       fileName: extras.fileName || "upload",
-      primaryRole: extras.primaryRole || derivePrimaryRole(tailored, source),
+      primaryRole: extras.primaryRole
+        || jobTitleFromDescription(extras.jobDescription)
+        || derivePrimaryRole(tailored, source),
       jobDescriptionPreview: extras.jobDescriptionPreview || "",
     },
   };

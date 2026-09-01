@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test tests/canonical.test.ts tests/validate-and-merge.test.ts tests/pipeline.test.ts tests/match-score.test.ts tests/credits.test.ts tests/pdf-coursework.test.ts tests/evaluation.test.ts tests/extraction-report.test.ts tests/claim-strength.test.ts tests/custom-sections.test.ts tests/credits-atomic.test.ts tests/openai-handling.test.ts tests/pdf-roundtrip.test.ts tests/route-integration.test.ts tests/admin-session-stats.test.ts tests/section-integrity.test.ts tests/direct-flow.test.ts tests/harvard-resume.test.ts",
+    "test": "tsx --test tests/canonical.test.ts tests/validate-and-merge.test.ts tests/pipeline.test.ts tests/match-score.test.ts tests/credits.test.ts tests/pdf-coursework.test.ts tests/evaluation.test.ts tests/extraction-report.test.ts tests/claim-strength.test.ts tests/custom-sections.test.ts tests/credits-atomic.test.ts tests/openai-handling.test.ts tests/pdf-roundtrip.test.ts tests/route-integration.test.ts tests/admin-session-stats.test.ts tests/section-integrity.test.ts tests/direct-flow.test.ts tests/harvard-resume.test.ts tests/download-name.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
