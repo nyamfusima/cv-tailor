@@ -1,5 +1,6 @@
 import { canonicalizeCv } from "./canonical";
 import { recommendDisplaySelection } from "./displaySelection";
+import { promoteEvidencedJobSkills } from "./skillPromotion";
 import { buildExtractionReport } from "./extractionReport";
 import { analyzeHardRequirements } from "./hardRequirements";
 import { scoreJobAlignment } from "./matchScore";
@@ -169,6 +170,11 @@ export async function runTailorPipeline(input: {
   }
 
   const usedFallback = tailorRes.model !== (process.env.OPENAI_TAILOR_MODEL || "gpt-5.1");
+
+  if (report.valid) {
+    tailored = promoteEvidencedJobSkills(source, tailored, input.jobDescription);
+    report = { ...validatePreservation(source, tailored), claimStrengthWarnings };
+  }
 
   if (!report.valid) {
     logTailorTelemetry({

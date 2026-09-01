@@ -167,6 +167,50 @@ describe("runTailorPipeline", () => {
     assert.ok(result.delta.missingKeywords.includes("Kubernetes"));
   });
 
+  it("adds JD tools already evidenced in projects and keeps every project on the wire", async () => {
+    const source = canonicalizeCv({
+      name: "Alex Candidate",
+      email: "alex.candidate@example.com",
+      experience: [{
+        title: "Software Intern",
+        company: "Example Labs",
+        dates: "2026 – Present",
+        bullets: ["Built an internal API with FastAPI and wrote Docker compose files"],
+      }],
+      education: [{ degree: "Diploma in Software Engineering", institution: "Example Code School", dates: "2026" }],
+      projects: [
+        { name: "Campus Scheduler", description: "Event scheduling platform.", technologies: ["Python", "Docker"] },
+        { name: "Campus Connect", description: "Campus event discovery.", technologies: ["React"] },
+        { name: "Notes CLI", description: "Local study notes search.", technologies: ["Git"] },
+      ],
+      skills: [{ category: "Programming Languages", skills: ["Python"] }],
+    });
+    const result = await runTailorPipeline({
+      source,
+      jobDescription: "Software intern. Required: Python, Docker, React, Kubernetes, FastAPI.",
+      completeJson: async () => ok({
+        summary: source.summary,
+        experience: [],
+        projects: [],
+        skillOrder: [],
+        keywordClassifications: [],
+        missingKeywords: ["Kubernetes"],
+        assumptions: [],
+        conflicts: [],
+      }),
+    });
+    const skillNames = result.tailored.skills.flatMap((group) => group.skills.map((skill) => skill.name));
+    assert.ok(skillNames.includes("Docker"));
+    assert.ok(skillNames.includes("React"));
+    assert.ok(skillNames.includes("FastAPI"));
+    assert.ok(!skillNames.includes("Kubernetes"));
+    assert.equal(result.tailored.projects.length, 3);
+    const wire = toTailoredWire(result.tailored, result.source, result.score, {
+      displaySelection: result.displaySelection,
+    });
+    assert.equal((wire.projects ?? []).map((project) => project.name).sort().join(","), "Campus Connect,Campus Scheduler,Notes CLI");
+  });
+
   it("does not inject architecture jargon into a non-technical CV", async () => {
     const source = officeAdminSourceCv();
     const completeJson: CompleteJsonFn = async (req) => {

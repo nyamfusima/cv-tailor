@@ -2,6 +2,7 @@ export { canonicalizeCv, recoverCourseworkFromText } from "./canonical";
 export { assessRewrite, assessUnsupportedScope } from "./claimStrength";
 export { recoverCourseworkBounded } from "./courseworkBounds";
 export { recommendDisplaySelection } from "./displaySelection";
+export { promoteEvidencedJobSkills, extractJobSkillTerms } from "./skillPromotion";
 export { analyzeHardRequirements } from "./hardRequirements";
 export { AFTER_FAILURE_ROUTE, AFTER_UPLOAD_ROUTE, createPendingTailorPayload } from "./directFlow";
 export { ExtractionIntegrityError, SectionIntegrityError, stripFlaggedCoursework, validatePresentation, validateSectionIntegrity } from "./sectionIntegrity";

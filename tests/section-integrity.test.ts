@@ -233,7 +233,7 @@ describe("section bleed fixture", () => {
     assert.ok(shown.length >= 2 && shown.length <= 6);
     assert.ok(shown.length < source.experience[0].sourceBullets.length);
     assert.equal(source.experience[0].sourceBullets.length, 8);
-    assert.ok(selection.projectIds.length >= 2 && selection.projectIds.length <= 3);
+    assert.equal(selection.projectIds.length, source.projects.length);
     const { tailored } = mergeProtectedFromSource(source, emptyDelta());
     const wire = toTailoredWire(source, source, {
       matchScore: 20,

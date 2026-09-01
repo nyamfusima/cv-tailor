@@ -52,6 +52,7 @@ NO-DELETION CONTRACT
 ALLOWED TRANSFORMATIONS
 - Rephrase experience and project bullets without changing meaning.
 - Reorder existing skills via skillOrder (permutation of source ids only).
+- Application code will add KEY SKILLS entries for tools already evidenced in experience bullets or project technologies when those tools appear in the job description. Do not invent a tool that is absent from the source CV.
 - Use an exact job-description term only when the source CV clearly evidences the same concept.
 - Improve grammar and readability without altering facts.
 

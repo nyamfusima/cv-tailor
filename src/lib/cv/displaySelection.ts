@@ -43,14 +43,7 @@ export function recommendDisplaySelection(
     experienceBulletIds[entry.job.id] = originalOrder.length ? originalOrder : entry.job.sourceBullets.slice(0, keep).map((b) => b.id);
   });
 
-  const projects = [...source.projects]
-    .map((project) => ({
-      project,
-      score: scoreText([project.name, project.description, ...project.technologies].join(" "), keywords),
-    }))
-    .sort((a, b) => b.score - a.score);
-  const projectKeep = Math.min(3, Math.max(2, projects.length));
-  const projectIds = projects.slice(0, projectKeep).map((row) => row.project.id);
+  const projectIds = source.projects.map((project) => project.id);
 
   return { experienceBulletIds, projectIds, approved: false };
 }

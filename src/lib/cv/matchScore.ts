@@ -1,4 +1,5 @@
 import { normalizeKey } from "./json";
+import { evidencedSkillCorpus, extractJobSkillTerms } from "./skillPromotion";
 import type { AlignmentScore, CanonicalCV, KeywordClassification } from "./types";
 
 const STOPWORDS = new Set([
@@ -48,6 +49,12 @@ export function extractKeywords(jobDescription: string): string[] {
     unique.push(word);
     if (unique.length >= 40) break;
   }
+  for (const term of extractJobSkillTerms(jobDescription)) {
+    const key = term.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(key);
+  }
   return unique;
 }
 
@@ -68,10 +75,6 @@ function coverage(keywords: string[], corpus: string): number {
   if (keywords.length === 0) return 0;
   const hits = keywords.filter((k) => corpus.includes(k)).length;
   return Math.round((hits / keywords.length) * 100);
-}
-
-function skillNames(cv: CanonicalCV): string[] {
-  return cv.skills.flatMap((g) => g.skills.map((s) => normalizeKey(s.name)));
 }
 
 function titleAlignment(cv: CanonicalCV, jobDescription: string): number {
@@ -129,11 +132,11 @@ export function scoreJobAlignment(
   const keywordsBefore = coverage(keywords, sourceCorpus);
   const keywordsMatch = coverage(keywords, tailoredCorpus);
 
-  const jdSkillHints = keywords;
-  const sourceSkills = skillNames(source);
-  const tailoredSkills = skillNames(tailored);
-  const skillsBefore = coverage(jdSkillHints, sourceSkills.join(" "));
-  const skillsAlignment = coverage(jdSkillHints, tailoredSkills.join(" "));
+  const jdSkillHints = [...new Set([...keywords, ...extractJobSkillTerms(jobDescription).map((term) => term.toLowerCase())])];
+  const sourceSkills = evidencedSkillCorpus(source).toLowerCase();
+  const tailoredSkills = evidencedSkillCorpus(tailored).toLowerCase();
+  const skillsBefore = coverage(jdSkillHints, sourceSkills);
+  const skillsAlignment = coverage(jdSkillHints, tailoredSkills);
 
   const experienceBefore = titleAlignment(source, jobDescription);
   const experienceRelevance = titleAlignment(tailored, jobDescription);
