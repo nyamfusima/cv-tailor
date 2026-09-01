@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { getUserCredits, hasJobCredits } from "@/lib/user";
+import { isAdminEmail } from "@/lib/adminEmails";
 
 export interface InterviewQuestion {
   id: number;
@@ -12,15 +13,12 @@ export interface InterviewQuestion {
 
 const client = new OpenAI({ maxRetries: 4 });
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,ngqongwaayandisa@gmail.com,zengetwasisipho@gmail.com")
-  .split(",").map(e => e.trim());
-
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
+  const isAdmin = isAdminEmail(user.email);
   if (!isAdmin) {
     const userData = await getUserCredits(user.id);
     if (!userData || !hasJobCredits(userData)) {

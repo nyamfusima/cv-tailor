@@ -1,16 +1,14 @@
 import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { getUserCredits, hasJobCredits } from "@/lib/user";
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,ngqongwaayandisa@gmail.com,zengetwasisipho@gmail.com")
-  .split(",").map(e => e.trim());
+import { isAdminEmail } from "@/lib/adminEmails";
 
 export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
 
-  const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
+  const isAdmin = isAdminEmail(user.email);
   if (!isAdmin) {
     const userData = await getUserCredits(user.id);
     if (!userData || !hasJobCredits(userData)) {

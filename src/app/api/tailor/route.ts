@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseFileWithMeta } from "@/lib/parseFile";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { getUserCredits } from "@/lib/user";
+import { isAdminEmail } from "@/lib/adminEmails";
+import { ensureAdminProPlan, getUserCredits } from "@/lib/user";
 import { createClient } from "@supabase/supabase-js";
 import { createOpenAICompleteJson } from "@/lib/cv";
 import { createSupabaseCreditStore } from "@/lib/cv/credits";
@@ -27,9 +28,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,the.real.chad.naude@gmail.com,ngqongwaayandisa@gmail.com,somilamangqu@gmail.com,moabithapelo1@gmail.com,sikhanyiselesky@gmail.com,zengetwasisipho@gmail.com")
-    .split(",").map((e) => e.trim());
-  const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
+  const isAdmin = isAdminEmail(user.email);
+  if (isAdmin && user.email) {
+    await ensureAdminProPlan({ id: user.id, email: user.email });
+  }
 
   const formData = await req.formData();
   const cvFile = formData.get("cv") as File | null;

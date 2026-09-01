@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { isAdminEmail } from "../src/lib/adminEmails";
 import { computeNextTailorUsage, creditActionForOutcome } from "../src/lib/user";
 import type { UserCredits } from "../src/lib/types";
 
@@ -49,5 +50,19 @@ describe("credit handling", () => {
     const b = computeNextTailorUsage(user, now);
     assert.deepEqual(a, b);
     if (a.action === "increment") assert.equal(a.tailor_count, 2);
+  });
+
+  it("always treats nyamfusima@gmail.com as admin even if ADMIN_EMAILS omits them", () => {
+    const previous = process.env.ADMIN_EMAILS;
+    process.env.ADMIN_EMAILS = "someone-else@example.com";
+    try {
+      assert.equal(isAdminEmail("nyamfusima@gmail.com"), true);
+      assert.equal(isAdminEmail("NYAMFUSIMA@gmail.com"), true);
+      assert.equal(isAdminEmail("someone-else@example.com"), true);
+      assert.equal(isAdminEmail("random@example.com"), false);
+    } finally {
+      if (previous === undefined) delete process.env.ADMIN_EMAILS;
+      else process.env.ADMIN_EMAILS = previous;
+    }
   });
 });

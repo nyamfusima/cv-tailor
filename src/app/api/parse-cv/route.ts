@@ -3,11 +3,9 @@ import { parseFile } from "@/lib/parseFile";
 import OpenAI from "openai";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { getUserCredits, hasJobCredits } from "@/lib/user";
+import { isAdminEmail } from "@/lib/adminEmails";
 
 const client = new OpenAI();
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,ngqongwaayandisa@gmail.com,zengetwasisipho@gmail.com")
-  .split(",").map(e => e.trim());
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,7 +16,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "SIGN_IN_REQUIRED" }, { status: 401 });
     }
 
-    const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
+    const isAdmin = isAdminEmail(user.email);
     if (!isAdmin) {
       const userData = await getUserCredits(user.id);
       if (!userData || !hasJobCredits(userData)) {

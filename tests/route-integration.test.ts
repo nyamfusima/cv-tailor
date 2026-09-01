@@ -230,6 +230,30 @@ describe("executeTailorRequest", () => {
     assert.equal(store.users.get("user-1")?.tailor_count, 0);
   });
 
+  it("lets an admin tailor without consuming credits", async () => {
+    const store = createMemoryCreditStore(new Map([["user-1", {
+      ...credits(),
+      plan: "expired",
+      tailor_count: 3,
+    }]]));
+    const result = await executeTailorRequest({
+      user,
+      isAdmin: true,
+      jobDescription: "Retail operations lead. Stock counts, training, Excel.",
+      requestId: "dddddddd-dddd-dddd-dddd-dddddddddddd",
+      reviewedSource: extracted(),
+      cvText: RAW_CV_WITH_COURSEWORK,
+      extractionConfirmed: true,
+      completeJson: async () => ok(emptyDelta()),
+      creditStore: store,
+      persist: async () => ({ error: null }),
+      loadCredits: async () => store.users.get("user-1") ?? credits(),
+    });
+    assert.equal(result.status, 200);
+    assert.equal(result.body.name, "Alex Rivera");
+    assert.equal(store.users.get("user-1")?.tailor_count, 3);
+  });
+
   it("does not charge twice for a repeated request ID after consume", async () => {
     const store = createMemoryCreditStore(new Map([["user-1", credits()]]));
     const first = await run({

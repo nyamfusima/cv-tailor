@@ -219,8 +219,10 @@ export async function executeTailorRequest(input: {
       return { status: 422, body: { error: "PRESERVATION_FAILED", userMessage: USER_ERROR_GENERIC } };
     }
     if (err instanceof IncompleteModelOutputError || err instanceof ModelJsonParseError) {
+      console.error("Tailor model output failed", err);
       return { status: 502, body: { error: "INCOMPLETE_MODEL_OUTPUT", userMessage: USER_ERROR_GENERIC } };
     }
+    console.error("Tailor request failed", err);
     return { status: 500, body: { error: "TAILOR_FAILED", userMessage: USER_ERROR_GENERIC } };
   }
 }

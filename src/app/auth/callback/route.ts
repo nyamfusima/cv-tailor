@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { isAdminEmail } from "@/lib/adminEmails";
+import { ensureAdminProPlan } from "@/lib/user";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -22,6 +24,11 @@ export async function GET(request: NextRequest) {
 
   if (type === "recovery") {
     return NextResponse.redirect(`${origin}/reset-password`);
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user?.email && isAdminEmail(user.email)) {
+    await ensureAdminProPlan({ id: user.id, email: user.email });
   }
 
   return NextResponse.redirect(`${origin}/dashboard`);

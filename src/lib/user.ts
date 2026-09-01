@@ -1,6 +1,16 @@
 import { createSupabaseServerClient } from "./supabase-server";
 import { createClient } from "@supabase/supabase-js";
+import { isAdminEmail } from "./adminEmails";
 import { UserCredits } from "./types";
+
+const ADMIN_PRO_EXPIRES_AT = "2099-12-31T00:00:00.000Z";
+
+function supabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+}
 
 type ConfirmedPurchase = {
   plan_type: "pro_monthly" | "pro_yearly";
@@ -21,12 +31,43 @@ function purchaseExpiry(purchase: ConfirmedPurchase): Date | null {
   return expiry;
 }
 
+export async function ensureAdminProPlan(user: { id: string; email: string }): Promise<void> {
+  if (!isAdminEmail(user.email)) return;
+  const admin = supabaseAdmin();
+  const { error: planError } = await admin
+    .from("users")
+    .update({
+      plan: "pro",
+      plan_type: "pro_yearly",
+      plan_expires_at: ADMIN_PRO_EXPIRES_AT,
+    })
+    .eq("id", user.id);
+  if (planError) {
+    console.error("Failed to keep admin on Pro plan", planError);
+  }
+
+  const { error: purchaseError } = await admin
+    .from("confirmed_purchases")
+    .upsert({
+      purchase_id: `admin-${user.email.trim().toLowerCase()}`,
+      plan_type: "pro_yearly",
+      item_name: "Admin Pro",
+      purchase_email: user.email,
+      user_email: user.email,
+      purchased_at: new Date().toISOString(),
+      subscription_end_date: ADMIN_PRO_EXPIRES_AT,
+      refunded: false,
+      fully_refunded: false,
+      disputed: false,
+      access_revoked: false,
+    }, { onConflict: "purchase_id" });
+  if (purchaseError) {
+    console.error("Failed to record admin Pro purchase", purchaseError);
+  }
+}
+
 async function hasActiveConfirmedProPurchase(email: string): Promise<boolean> {
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin()
     .from("confirmed_purchases")
     .select("plan_type, purchased_at, subscription_end_date, refunded, fully_refunded, disputed, access_revoked")
     .or(`purchase_email.eq.${email},buyer_email.eq.${email},user_email.eq.${email}`);
@@ -55,6 +96,15 @@ export async function getUserCredits(userId: string): Promise<UserCredits | null
   if (error || !data) return null;
 
   const credits = data as UserCredits;
+  if (isAdminEmail(credits.email)) {
+    const expiresAt = (data as { plan_expires_at?: string | null }).plan_expires_at;
+    const alreadyPro = credits.plan === "pro" && expiresAt && new Date(expiresAt).getTime() > Date.now();
+    if (!alreadyPro) {
+      await ensureAdminProPlan({ id: credits.id, email: credits.email });
+    }
+    return { ...credits, plan: "pro" };
+  }
+
   if (credits.plan !== "pro") return credits;
 
   if (await hasActiveConfirmedProPurchase(credits.email)) return credits;
