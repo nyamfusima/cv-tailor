@@ -79,6 +79,7 @@ describe("atomic credit reservations", () => {
     assert.match(sql, /request_id uuid primary key/);
     assert.match(sql, /for update/i);
     assert.match(sql, /reuse_refunded/);
+    assert.match(sql, /plan_expires_at/);
     assert.match(sql, /reserve_tailor_credit/);
     assert.match(sql, /refund_tailor_credit/);
     assert.match(sql, /greatest\(coalesce\(tailor_count, 0\) - 1, 0\)/);

@@ -48,7 +48,7 @@ export async function getUserCredits(userId: string): Promise<UserCredits | null
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("users")
-    .select("id, email, plan, tailor_count, tailor_reset_date")
+    .select("id, email, plan, tailor_count, tailor_reset_date, plan_expires_at")
     .eq("id", userId)
     .single();
 
@@ -57,9 +57,14 @@ export async function getUserCredits(userId: string): Promise<UserCredits | null
   const credits = data as UserCredits;
   if (credits.plan !== "pro") return credits;
 
+  if (await hasActiveConfirmedProPurchase(credits.email)) return credits;
+
+  const expiresAt = (data as { plan_expires_at?: string | null }).plan_expires_at;
+  if (expiresAt && new Date(expiresAt).getTime() > Date.now()) return credits;
+
   return {
     ...credits,
-    plan: (await hasActiveConfirmedProPurchase(credits.email)) ? "pro" : "expired",
+    plan: "expired",
   };
 }
 

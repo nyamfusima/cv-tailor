@@ -50,7 +50,7 @@ begin
     return jsonb_build_object('ok', false, 'error', 'user_not_found');
   end if;
 
-  if u.plan = 'pro' then
+  if u.plan = 'pro' and (u.plan_expires_at is null or u.plan_expires_at > now_ts) then
     if reuse_refunded then
       update public.tailor_credit_reservations
       set status = 'reserved', updated_at = now_ts
@@ -60,6 +60,10 @@ begin
       values (p_request_id, p_user_id, 'reserved');
     end if;
     return jsonb_build_object('ok', true, 'status', 'reserved', 'plan', 'pro');
+  end if;
+
+  if u.plan = 'pro' then
+    return jsonb_build_object('ok', false, 'error', 'no_credits');
   end if;
 
   if u.tailor_reset_date is null or now_ts >= u.tailor_reset_date then

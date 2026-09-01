@@ -31,6 +31,17 @@ describe("credit handling", () => {
     if (decision.action === "increment") assert.equal(decision.tailor_count, 1);
   });
 
+  it("denies expired Pro instead of treating it as unlimited", () => {
+    const expired: UserCredits = {
+      id: "user-1",
+      email: "alex@example.com",
+      plan: "expired",
+      tailor_count: 0,
+      tailor_reset_date: "2026-10-01T00:00:00Z",
+    };
+    assert.equal(computeNextTailorUsage(expired).action, "deny");
+  });
+
   it("is deterministic for the same user snapshot (no double increment in one decision)", () => {
     const now = new Date("2026-08-15T10:00:00Z");
     const user = freeUser(1, "2026-09-01T00:00:00Z");

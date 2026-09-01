@@ -215,6 +215,21 @@ describe("executeTailorRequest", () => {
     assert.equal(store.users.get("user-1")?.tailor_count, 0);
   });
 
+  it("denies expired Pro before reserving a credit", async () => {
+    const store = createMemoryCreditStore(new Map([["user-1", {
+      ...credits(),
+      plan: "expired",
+    }]]));
+    const result = await run({
+      store,
+      reviewedSource: extracted(),
+      completeJson: async () => ok(emptyDelta()),
+    });
+    assert.equal(result.status, 403);
+    assert.equal(result.body.error, "NO_CREDITS");
+    assert.equal(store.users.get("user-1")?.tailor_count, 0);
+  });
+
   it("does not charge twice for a repeated request ID after consume", async () => {
     const store = createMemoryCreditStore(new Map([["user-1", credits()]]));
     const first = await run({
@@ -232,6 +247,38 @@ describe("executeTailorRequest", () => {
     assert.equal(first.status, 200);
     assert.equal(second.status, 409);
     assert.equal(store.users.get("user-1")?.tailor_count, 1);
+  });
+
+  it("does not return success when consume fails after persist", async () => {
+    const inner = createMemoryCreditStore(new Map([["user-1", credits()]]));
+    const store = {
+      users: inner.users,
+      reserve: inner.reserve.bind(inner),
+      refund: inner.refund.bind(inner),
+      consume: async () => ({ ok: false as const, error: "db_down" }),
+    };
+    const result = await executeTailorRequest({
+      user,
+      isAdmin: false,
+      jobDescription: "Retail operations lead. Stock counts, training, Excel.",
+      requestId: "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      reviewedSource: extracted(),
+      cvText: RAW_CV_WITH_COURSEWORK,
+      extractionConfirmed: true,
+      completeJson: async () => ok(emptyDelta()),
+      creditStore: store,
+      persist: async () => ({ error: null }),
+      loadCredits: async () => store.users.get("user-1") ?? credits(),
+    });
+    assert.equal(result.status, 500);
+    assert.equal(result.body.error, "CREDIT_CONSUME_FAILED");
+    const retry = await inner.reserve(
+      "user-1",
+      "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      store.users.get("user-1") ?? credits(),
+    );
+    assert.equal(retry.status, "reserved");
+    assert.notEqual(retry.status, "consumed");
   });
 
   it("save/load and PDF text retain coursework and custom sections", async () => {

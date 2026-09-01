@@ -1,4 +1,9 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { getUserCredits, hasJobCredits } from "@/lib/user";
+
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nyamfusima@gmail.com,hamza26mohamud@gmail.com,ngqongwaayandisa@gmail.com,zengetwasisipho@gmail.com")
+  .split(",").map((e) => e.trim());
 
 type TrendDirection = "up" | "down" | "flat" | "unknown";
 
@@ -238,6 +243,20 @@ async function tryEndpoint(
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const isAdmin = ADMIN_EMAILS.includes(user.email ?? "");
+    if (!isAdmin) {
+      const userData = await getUserCredits(user.id);
+      if (!userData || !hasJobCredits(userData)) {
+        return NextResponse.json({ error: "PRO_REQUIRED" }, { status: 403 });
+      }
+    }
+
     const body = await req.json();
     const title = typeof body?.title === "string" ? body.title.trim() : "";
     const location = typeof body?.location === "string" ? body.location.trim() : "";

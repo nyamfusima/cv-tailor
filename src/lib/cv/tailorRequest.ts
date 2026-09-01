@@ -78,7 +78,7 @@ export async function executeTailorRequest(input: {
 
     if (!input.isAdmin) {
       const credits = await input.loadCredits();
-      if (!credits) {
+      if (!credits || credits.plan === "expired") {
         return { status: 403, body: { error: "NO_CREDITS", message: "You have no tailor credits left. Buy more to continue." } };
       }
       const reservation = await input.creditStore.reserve(input.user.id, input.requestId, credits);
@@ -137,7 +137,24 @@ export async function executeTailorRequest(input: {
     }
 
     if (!input.isAdmin) {
-      await input.creditStore.consume(input.requestId);
+      let consumed = await input.creditStore.consume(input.requestId);
+      if (!consumed.ok) {
+        consumed = await input.creditStore.consume(input.requestId);
+      }
+      if (!consumed.ok) {
+        logTailorTelemetry({
+          promptVersion: TAILOR_PROMPT_VERSION,
+          model: result.meta.tailor.model,
+          purpose: "tailor",
+          validationValid: true,
+          creditStatus: "consume_failed",
+          usedFallback: result.meta.usedFallback,
+        });
+        return {
+          status: 500,
+          body: { error: "CREDIT_CONSUME_FAILED", userMessage: USER_ERROR_GENERIC },
+        };
+      }
     }
 
     logTailorTelemetry({
