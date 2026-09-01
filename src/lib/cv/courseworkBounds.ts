@@ -5,7 +5,6 @@ const COURSEWORK_START = /^(relevant\s+)?(coursework|modules?|subjects?|courses?
 const IGNORE_LABEL = /^(relevant\s+)?(areas?|coursework|modules?|subjects?|technologies)\s*:?\s*$/i;
 
 const BLEED_PATTERNS: RegExp[] = [
-  /\bprojects?\b/i,
   /\btechnologies\s*:/i,
   /\bparticipants\b/i,
   /\bactive users\b/i,
@@ -47,6 +46,20 @@ export function isPlausibleCourseTitle(text: string): boolean {
   if (/^\d{1,2}$/.test(trimmed)) return false;
   if (/^0+\d*\+?$/.test(trimmed)) return false;
   return true;
+}
+
+/** Split a genuine course list; drop later-section lines instead of turning them into fake titles. */
+export function courseworkItemsFromExtractedText(text: string): string[] {
+  const trimmed = text.trim();
+  if (!trimmed || isEmptyCourseworkLabel(trimmed) || isSectionStopHeading(trimmed)) return [];
+  if (/\btechnologies\s*:/i.test(trimmed)) return [];
+
+  const parts = splitCourseList(trimmed);
+  if (looksLikeCourseworkBleed(trimmed)) {
+    if (parts.length > 1 && parts.every(isPlausibleCourseTitle)) return parts;
+    return [];
+  }
+  return parts.filter(isPlausibleCourseTitle);
 }
 
 export function isCredibleCourseList(items: Array<{ text: string }>): boolean {

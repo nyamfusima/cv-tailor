@@ -1,6 +1,11 @@
 import { asArray, asRecord, asString, asStringArray, normalizeKey } from "./json";
-import { isCredibleCourseList, isEmptyCourseworkLabel, recoverCourseworkBounded } from "./courseworkBounds";
+import {
+  courseworkItemsFromExtractedText,
+  isCredibleCourseList,
+  recoverCourseworkBounded,
+} from "./courseworkBounds";
 import { isDedicatedSectionTitle } from "./extractionReport";
+import { stripFlaggedCoursework } from "./sectionIntegrity";
 import type {
   CanonicalCV,
   CanonicalCertification,
@@ -25,20 +30,20 @@ function parseCoursework(raw: unknown, educationId: string): CanonicalCoursework
   const items = asArray(raw);
   const out: CanonicalCoursework[] = [];
   items.forEach((item) => {
+    const chunks: string[] = [];
     if (typeof item === "string") {
-      const text = item.trim();
-      if (!text || isEmptyCourseworkLabel(text)) return;
-      out.push({ id: `${educationId}-coursework-${out.length + 1}`, text });
-      return;
+      chunks.push(...courseworkItemsFromExtractedText(item));
+    } else {
+      const rec = asRecord(item);
+      if (!rec) return;
+      const text = asString(rec.text || rec.name).trim();
+      if (text) chunks.push(...courseworkItemsFromExtractedText(text));
     }
-    const rec = asRecord(item);
-    if (!rec) return;
-    const text = asString(rec.text || rec.name).trim();
-    if (!text || isEmptyCourseworkLabel(text)) return;
-    const id = asString(rec.id) || `${educationId}-coursework-${out.length + 1}`;
-    out.push({ id, text });
+    for (const text of chunks) {
+      out.push({ id: `${educationId}-coursework-${out.length + 1}`, text });
+    }
   });
-  return out;
+  return uniqueByText(out);
 }
 
 function uniqueByText(items: CanonicalCoursework[]): CanonicalCoursework[] {
@@ -100,12 +105,18 @@ function parseExperience(raw: unknown): CanonicalExperience[] {
   });
 }
 
-function parseEducation(raw: unknown, recovered: string[]): CanonicalEducation[] {
+function parseEducation(
+  raw: unknown,
+  recovered: string[],
+  projectNameKeys: Set<string>,
+): CanonicalEducation[] {
   const rows = asArray(raw);
   return rows.map((item, i) => {
     const rec = asRecord(item) ?? {};
     const id = asString(rec.id) || nextId("education", i);
-    const extracted = parseCoursework(rec.coursework, id);
+    const extracted = parseCoursework(rec.coursework, id).filter(
+      (course) => !projectNameKeys.has(normalizeKey(course.text)),
+    );
     const attachRecovered = (rows.length === 1 || i === 0) && !isCredibleCourseList(extracted);
     const coursework = attachRecovered ? mergeCoursework(extracted, recovered, id) : extracted;
     return {
@@ -199,11 +210,33 @@ function parseCustomSections(raw: unknown): CustomSection[] {
   return out;
 }
 
+function fillEmptyCourseworkFromRecovery(cv: CanonicalCV, recovered: string[]): CanonicalCV {
+  if (recovered.length === 0) return cv;
+  if (cv.education.some((edu) => edu.coursework.length > 0) || cv.education.length === 0) return cv;
+  const firstId = cv.education[0].id;
+  return {
+    ...cv,
+    education: cv.education.map((edu, i) =>
+      i === 0
+        ? {
+            ...edu,
+            coursework: recovered.map((text, index) => ({
+              id: `${firstId}-coursework-${index + 1}`,
+              text,
+            })),
+          }
+        : edu,
+    ),
+  };
+}
+
 export function canonicalizeCv(input: unknown, cvText = ""): CanonicalCV {
   const rec = asRecord(input) ?? {};
   const recovered = recoverCourseworkFromText(cvText);
   const contactSource = asRecord(rec.contact) ?? rec;
-  return {
+  const projects = parseProjects(rec.projects);
+  const projectNameKeys = new Set(projects.map((project) => normalizeKey(project.name)).filter(Boolean));
+  const cv: CanonicalCV = {
     contact: {
       name: asString(contactSource.name ?? rec.name),
       email: asString(contactSource.email ?? rec.email),
@@ -213,12 +246,13 @@ export function canonicalizeCv(input: unknown, cvText = ""): CanonicalCV {
     },
     summary: asString(rec.summary),
     experience: parseExperience(rec.experience),
-    education: parseEducation(rec.education, recovered),
+    education: parseEducation(rec.education, recovered, projectNameKeys),
     certifications: parseCerts(rec.certifications),
-    projects: parseProjects(rec.projects),
+    projects,
     skills: parseSkills(rec.skills),
     customSections: parseCustomSections(rec.customSections),
   };
+  return fillEmptyCourseworkFromRecovery(stripFlaggedCoursework(cv), recovered);
 }
 
 export function cloneCanonical(cv: CanonicalCV): CanonicalCV {

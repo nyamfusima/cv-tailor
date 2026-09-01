@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { runTailorPipeline } from "../src/lib/cv/pipeline";
 import { IncompleteModelOutputError } from "../src/lib/cv/types";
-import { ExtractionIntegrityError } from "../src/lib/cv/sectionIntegrity";
 import { parseModelJson } from "../src/lib/cv/json";
 import {
   INJECTION_JD,
@@ -262,7 +261,7 @@ describe("runTailorPipeline", () => {
     assert.equal(result.tailored.education[0].degree, "BCom");
   });
 
-  it("blocks extraction when section integrity fails", async () => {
+  it("sanitises contaminated extraction and continues tailoring", async () => {
     const completeJson: CompleteJsonFn = async (req) => {
       if (req.purpose === "extract") {
         return ok({
@@ -281,14 +280,15 @@ describe("runTailorPipeline", () => {
       }
       return ok({ summary: "", experience: [], projects: [], skillOrder: [], keywordClassifications: [], missingKeywords: [], assumptions: [], conflicts: [] });
     };
-    await assert.rejects(
-      () => runTailorPipeline({
-        cvText: "Education\nDiploma\nRelevant coursework: Data Structures\nPROJECTS\nHackerRank Orchestrate 2026",
-        jobDescription: "Software intern",
-        completeJson,
-      }),
-      ExtractionIntegrityError,
-    );
+    const result = await runTailorPipeline({
+      cvText: "Education\nDiploma\nRelevant coursework: Data Structures\nPROJECTS\nHackerRank Orchestrate 2026",
+      jobDescription: "Software intern",
+      completeJson,
+    });
+    const courses = result.source.education[0].coursework.map((item) => item.text);
+    assert.ok(courses.includes("Data Structures"));
+    assert.ok(!courses.some((item) => /hackerrank|^projects?$/i.test(item)));
+    assert.equal(result.tailored.education[0].degree, "Diploma in Software Engineering");
   });
 
   it("keeps education and certifications that sit at the end of a long source", async () => {

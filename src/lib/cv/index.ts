@@ -4,7 +4,7 @@ export { recoverCourseworkBounded } from "./courseworkBounds";
 export { recommendDisplaySelection } from "./displaySelection";
 export { analyzeHardRequirements } from "./hardRequirements";
 export { AFTER_FAILURE_ROUTE, AFTER_UPLOAD_ROUTE, createPendingTailorPayload } from "./directFlow";
-export { ExtractionIntegrityError, SectionIntegrityError, validatePresentation, validateSectionIntegrity } from "./sectionIntegrity";
+export { ExtractionIntegrityError, SectionIntegrityError, stripFlaggedCoursework, validatePresentation, validateSectionIntegrity } from "./sectionIntegrity";
 export { courseworkDisplay, derivePrimaryRole, toOriginalWire, toTailoredWire } from "./wire";
 export { filterCourseworkLabels, skillCategoryLabel, stripBulletPrefix, visibleSkillGroups } from "./displayText";
 export { RESUME_SECTION_ORDER, sectionOrderIndexes } from "./harvardResume";

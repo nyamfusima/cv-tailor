@@ -2,6 +2,10 @@ import { COURSEWORK_LENGTH_LIMIT, looksLikeCourseworkBleed } from "./courseworkB
 import { normalizeKey } from "./json";
 import type { CanonicalCV } from "./types";
 
+/** Course titles this short are allowed to appear inside project write-ups. */
+const COPIED_DESCRIPTION_MIN = 40;
+const PROJECT_TITLE_SUBSTRING_MIN = 12;
+
 export type SectionIntegrityCode =
   | "COURSEWORK_SECTION_BLEED"
   | "CROSS_SECTION_DUPLICATION"
@@ -76,9 +80,31 @@ function brokenNumericToken(text: string): boolean {
   );
 }
 
+function courseCopiesProjectTitle(course: string, projectName: string): boolean {
+  const courseKey = normalizeKey(course);
+  const projectKey = normalizeKey(projectName);
+  if (!courseKey || !projectKey) return false;
+  if (courseKey === projectKey) return true;
+  const projectWords = projectKey.split(" ").filter((word) => word.length > 2);
+  return (
+    projectKey.length >= PROJECT_TITLE_SUBSTRING_MIN &&
+    projectWords.length >= 2 &&
+    courseKey.includes(projectKey)
+  );
+}
+
+function courseCopiesProjectDescription(course: string, description: string): boolean {
+  const courseKey = normalizeKey(course);
+  const descriptionKey = normalizeKey(description);
+  if (courseKey.length < COPIED_DESCRIPTION_MIN || !descriptionKey) return false;
+  if (descriptionKey.length >= COPIED_DESCRIPTION_MIN && courseKey.includes(descriptionKey.slice(0, COPIED_DESCRIPTION_MIN))) {
+    return true;
+  }
+  return descriptionKey.includes(courseKey);
+}
+
 export function validateSectionIntegrity(cv: CanonicalCV): SectionIntegrityReport {
   const issues: SectionIntegrityIssue[] = [];
-  const projectNames = cv.projects.map((project) => normalizeKey(project.name)).filter(Boolean);
   const projectDescriptions = cv.projects.map((project) => project.description.trim()).filter(Boolean);
   const projectCorpus = cv.projects
     .flatMap((project) => [project.name, project.description, ...project.technologies, ...project.bullets])
@@ -115,7 +141,7 @@ export function validateSectionIntegrity(cv: CanonicalCV): SectionIntegrityRepor
         });
       }
 
-      if (looksLikeCourseworkBleed(text) || /\bprojects?\b/i.test(text)) {
+      if (looksLikeCourseworkBleed(text)) {
         issues.push({
           code: "COURSEWORK_SECTION_BLEED",
           severity: "high",
@@ -133,7 +159,7 @@ export function validateSectionIntegrity(cv: CanonicalCV): SectionIntegrityRepor
           evidence: text,
         });
       }
-      if (projectNames.includes(normalizeKey(text)) || projectNames.some((name) => name && normalizeKey(text).includes(name))) {
+      if (cv.projects.some((project) => courseCopiesProjectTitle(text, project.name))) {
         issues.push({
           code: "COURSEWORK_CONTAINS_PROJECT",
           severity: "high",
@@ -142,7 +168,7 @@ export function validateSectionIntegrity(cv: CanonicalCV): SectionIntegrityRepor
           evidence: text,
         });
       }
-      if (projectDescriptions.some((desc) => desc && (normalizeKey(text).includes(normalizeKey(desc).slice(0, 40)) || normalizeKey(desc).includes(normalizeKey(text))))) {
+      if (projectDescriptions.some((desc) => courseCopiesProjectDescription(text, desc))) {
         issues.push({
           code: "COURSEWORK_CONTAINS_DESCRIPTION",
           severity: "high",
@@ -151,7 +177,7 @@ export function validateSectionIntegrity(cv: CanonicalCV): SectionIntegrityRepor
           evidence: text,
         });
       }
-      if (overlapCount(ngrams(text), projectGrams) >= 2) {
+      if (text.length >= COPIED_DESCRIPTION_MIN && overlapCount(ngrams(text), projectGrams) >= 2) {
         issues.push({
           code: "CROSS_SECTION_DUPLICATION",
           severity: "high",
@@ -237,5 +263,26 @@ export function validatePresentation(cv: CanonicalCV): SectionIntegrityReport {
   return {
     valid: !all.some((issue) => issue.severity === "high"),
     issues: all,
+  };
+}
+
+/** Drop coursework items that look like later-section bleed, then re-check. */
+export function stripFlaggedCoursework(cv: CanonicalCV): CanonicalCV {
+  const report = validateSectionIntegrity(cv);
+  if (report.valid) return cv;
+
+  const dropKeys = new Set(
+    report.issues
+      .filter((issue) => issue.severity === "high" && issue.evidence)
+      .map((issue) => normalizeKey(issue.evidence!)),
+  );
+  if (dropKeys.size === 0) return cv;
+
+  return {
+    ...cv,
+    education: cv.education.map((edu) => ({
+      ...edu,
+      coursework: edu.coursework.filter((course) => !dropKeys.has(normalizeKey(course.text))),
+    })),
   };
 }

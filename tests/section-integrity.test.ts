@@ -7,7 +7,7 @@ import { recommendDisplaySelection } from "../src/lib/cv/displaySelection";
 import { analyzeHardRequirements } from "../src/lib/cv/hardRequirements";
 import { mergeProtectedFromSource } from "../src/lib/cv/mergeProtected";
 import { scoreJobAlignment } from "../src/lib/cv/matchScore";
-import { SectionIntegrityError, validateSectionIntegrity } from "../src/lib/cv/sectionIntegrity";
+import { SectionIntegrityError, validatePresentation, validateSectionIntegrity } from "../src/lib/cv/sectionIntegrity";
 import { executeTailorRequest } from "../src/lib/cv/tailorRequest";
 import { toTailoredWire } from "../src/lib/cv/wire";
 import type { CompleteJsonFn, CompleteJsonResponse } from "../src/lib/cv/types";
@@ -49,6 +49,22 @@ function emptyDelta() {
   };
 }
 
+function unsanitisedBleedCv() {
+  const cv = cleanBleedSourceCv();
+  cv.education[0].coursework = [
+    ...cv.education[0].coursework,
+    { id: "junk-1", text: "Relevant areas:" },
+    { id: "junk-2", text: "PROJECTS" },
+    { id: "junk-3", text: "HackerRank Orchestrate 2026" },
+    { id: "junk-4", text: "Ranked #26 out of 1,349 participants. Built an event scheduling platform." },
+    { id: "junk-5", text: "Technologies: Python, TypeScript, PostgreSQL" },
+    { id: "junk-6", text: "1" },
+    { id: "junk-7", text: "349 participants" },
+    { id: "junk-8", text: "000+ active users" },
+  ];
+  return cv;
+}
+
 describe("section bleed fixture", () => {
   it("recovers only valid course titles and keeps thousands separators intact", () => {
     const recovered = recoverCourseworkFromText(SECTION_BLEED_RAW_CV);
@@ -70,8 +86,36 @@ describe("section bleed fixture", () => {
     assert.match(cv.projects[1].description, /3,000\+/);
   });
 
-  it("rejects contaminated coursework with the required error codes", () => {
+  it("canonicalization strips section bleed and keeps real course titles", () => {
     const cv = canonicalizeCv(contaminatedReviewedSource(), SECTION_BLEED_RAW_CV);
+    const courses = cv.education[0].coursework.map((item) => item.text);
+    assert.deepEqual(courses.sort(), [...VALID_BLEED_COURSES].sort());
+    assert.equal(validateSectionIntegrity(cv).valid, true);
+  });
+
+  it("does not treat course titles that appear in a project write-up as bleed", () => {
+    const cv = canonicalizeCv({
+      name: "Alex Candidate",
+      education: [{
+        degree: "BSc Computer Science",
+        institution: "University of Cape Town",
+        dates: "2022 – 2025",
+        coursework: ["Python", "Java", "Data Structures", "Machine Learning", "Capstone Project"],
+      }],
+      projects: [{
+        name: "Campus Scheduler",
+        description: "Built a Python and Java scheduler using data structures and machine learning for campus events.",
+        technologies: ["Python", "Java"],
+      }],
+    });
+    const courses = cv.education[0].coursework.map((item) => item.text);
+    assert.ok(courses.includes("Python"));
+    assert.ok(courses.includes("Capstone Project"));
+    assert.equal(validateSectionIntegrity(cv).valid, true);
+  });
+
+  it("rejects unsanitised contaminated coursework with the required error codes", () => {
+    const cv = unsanitisedBleedCv();
     const report = validateSectionIntegrity(cv);
     assert.equal(report.valid, false);
     const codes = new Set(report.issues.map((issue) => issue.code));
@@ -119,7 +163,7 @@ describe("section bleed fixture", () => {
     assert.equal(warning!.riskType, "scale_inflation");
   });
 
-  it("blocks PDF generation when section integrity fails", async () => {
+  it("exports a sanitised CV and still detects unsanitised bleed", async () => {
     const source = canonicalizeCv(contaminatedReviewedSource(), SECTION_BLEED_RAW_CV);
     const { tailored } = mergeProtectedFromSource(source, emptyDelta());
     const wire = toTailoredWire(tailored, source, {
@@ -136,11 +180,18 @@ describe("section bleed fixture", () => {
       addedKeywords: [],
       explanation: "",
     });
-    assert.throws(() => assertRenderableCv(wire), SectionIntegrityError);
-    await assert.rejects(() => renderResumePdfBytes(wire), SectionIntegrityError);
+    assert.doesNotThrow(() => assertRenderableCv(wire));
+    await renderResumePdfBytes(wire);
+
+    const dirty = unsanitisedBleedCv();
+    assert.equal(validateSectionIntegrity(dirty).valid, false);
+    assert.throws(() => {
+      const report = validatePresentation(dirty);
+      if (!report.valid) throw new SectionIntegrityError("blocked", report, dirty);
+    }, SectionIntegrityError);
   });
 
-  it("refunds the credit and does not persist when integrity fails", async () => {
+  it("sanitises contaminated source and completes the tailor request", async () => {
     const store = createMemoryCreditStore(new Map([["user-1", {
       id: "user-1",
       email: "alex@example.com",
@@ -166,11 +217,13 @@ describe("section bleed fixture", () => {
       },
       loadCredits: async () => store.users.get("user-1") ?? null,
     });
-    assert.equal(result.status, 422);
-    assert.equal(result.body.error, "SECTION_INTEGRITY_FAILED");
-    assert.equal(persisted, false);
-    assert.equal(store.users.get("user-1")?.tailor_count, 0);
-    assert.ok(Array.isArray(result.body.affectedSections));
+    assert.equal(result.status, 200);
+    assert.ok(!result.body.error);
+    assert.equal(persisted, true);
+    assert.equal(store.users.get("user-1")?.tailor_count, 1);
+    const coursework = (result.body.education as Array<{ coursework?: string[] }>)[0]?.coursework ?? [];
+    assert.ok(coursework.includes("Data Structures"));
+    assert.ok(!coursework.some((item) => /hackerrank|projects|participants/i.test(item)));
   });
 
   it("keeps all source bullets in canonical data while displaying a subset", () => {

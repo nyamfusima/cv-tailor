@@ -138,7 +138,7 @@ describe("direct tailor flow", () => {
     assert.equal(result.body.name, "Alex Candidate");
   });
 
-  it("invalid extraction returns to upload semantics and uses no credit", async () => {
+  it("sanitises contaminated extraction and completes without blocking the user", async () => {
     const store = createMemoryCreditStore(new Map([["user-1", credits()]]));
     let persisted = false;
     const completeJson: CompleteJsonFn = async (req) => {
@@ -149,7 +149,7 @@ describe("direct tailor flow", () => {
       user: { id: "user-1", email: "alex@example.com" },
       isAdmin: false,
       jobDescription: "Software intern",
-      requestId: "req-extract-fail",
+      requestId: "req-extract-ok",
       cvText: SECTION_BLEED_RAW_CV,
       completeJson,
       creditStore: store,
@@ -159,11 +159,38 @@ describe("direct tailor flow", () => {
       },
       loadCredits: async () => store.users.get("user-1") ?? null,
     });
+    assert.equal(result.status, 200);
+    assert.equal(persisted, true);
+    assert.equal(store.users.get("user-1")?.tailor_count, 1);
+    const coursework = (result.body.education as Array<{ coursework?: string[] }>)[0]?.coursework ?? [];
+    assert.ok(coursework.includes("Data Structures"));
+    assert.ok(!coursework.some((item) => /hackerrank|projects|participants/i.test(item)));
+  });
+
+  it("image-only extraction returns to upload and uses no credit", async () => {
+    const store = createMemoryCreditStore(new Map([["user-1", credits()]]));
+    let persisted = false;
+    const completeJson: CompleteJsonFn = async () => ok(emptyDelta());
+    const result = await executeTailorRequest({
+      user: { id: "user-1", email: "alex@example.com" },
+      isAdmin: false,
+      jobDescription: "Software intern",
+      requestId: "req-extract-fail",
+      cvText: " ",
+      isLikelyImageOnly: true,
+      completeJson,
+      creditStore: store,
+      persist: async () => {
+        persisted = true;
+        return {};
+      },
+      loadCredits: async () => store.users.get("user-1") ?? null,
+    });
     assert.equal(result.status, 422);
-    assert.ok(["EXTRACTION_INTEGRITY_FAILED", "SECTION_INTEGRITY_FAILED"].includes(String(result.body.error)));
+    assert.equal(result.body.error, "EXTRACTION_FAILED");
     assert.equal(persisted, false);
     assert.equal(store.users.get("user-1")?.tailor_count, 0);
-    assert.match(String(result.body.userMessage), /No credit was used/);
+    assert.equal(String(result.body.userMessage), USER_ERROR_IMAGE_ONLY);
     assert.equal(isDirectFlowBlockingError(String(result.body.error)), true);
   });
 

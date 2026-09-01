@@ -78,4 +78,42 @@ describe("canonicalizeCv", () => {
       ["Business Statistics", "Supply Chain Management"],
     );
   });
+
+  it("splits a comma-separated coursework string into individual titles", () => {
+    const cv = canonicalizeCv({
+      education: [{
+        degree: "BSc",
+        institution: "UCT",
+        dates: "2022 – 2025",
+        coursework: ["Python, Java, Data Structures, Machine Learning"],
+      }],
+      projects: [{
+        name: "Campus App",
+        description: "Built a Python and Java campus app used by 3,000+ active users.",
+      }],
+    });
+    assert.deepEqual(
+      cv.education[0].coursework.map((item) => item.text),
+      ["Python", "Java", "Data Structures", "Machine Learning"],
+    );
+  });
+
+  it("does not turn a Technologies line into coursework titles", () => {
+    const cv = canonicalizeCv({
+      education: [{
+        degree: "Diploma",
+        institution: "CPUT",
+        dates: "2026",
+        coursework: [
+          "Data Structures",
+          "Technologies: Python, TypeScript, PostgreSQL",
+        ],
+      }],
+      projects: [{ name: "Campus Connect", description: "Campus app.", technologies: ["Python", "TypeScript", "PostgreSQL"] }],
+    });
+    assert.deepEqual(
+      cv.education[0].coursework.map((item) => item.text),
+      ["Data Structures"],
+    );
+  });
 });

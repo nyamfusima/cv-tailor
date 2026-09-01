@@ -13,7 +13,8 @@ ${cvText}
 
 Rules:
 - Return every experience, education, certification, project, skill, and coursework item that appears in the source.
-- Coursework is required structured data. If the CV lists courses, modules, or subjects, put every item in education[].coursework. Never return an empty coursework array when the source lists courses.
+- Coursework is required structured data. If the CV lists courses, modules, or subjects, put every item in education[].coursework as separate array entries (never one comma-separated string). Never return an empty coursework array when the source lists courses.
+- Never copy project titles, project descriptions, Technologies labels, or later-section headings into coursework.
 - Put Languages, Volunteer Experience, Awards, Publications, and any other heading that is not Experience, Education, Skills, Projects, or Certifications into customSections: [{ "title": "Languages", "items": [{ "text": "..." }] }].
 - Do not duplicate a dedicated field as a custom section.
 - If a field is absent in the source, use an empty string or an empty array. Do not invent values.
