@@ -5,6 +5,7 @@ import {
   recoverCourseworkBounded,
 } from "./courseworkBounds";
 import { isDedicatedSectionTitle } from "./extractionReport";
+import { mergeSkillGroups, recoverSkillsBounded } from "./skillsBounds";
 import { stripFlaggedCoursework } from "./sectionIntegrity";
 import type {
   CanonicalCV,
@@ -249,7 +250,7 @@ export function canonicalizeCv(input: unknown, cvText = ""): CanonicalCV {
     education: parseEducation(rec.education, recovered, projectNameKeys),
     certifications: parseCerts(rec.certifications),
     projects,
-    skills: parseSkills(rec.skills),
+    skills: mergeSkillGroups(parseSkills(rec.skills), recoverSkillsBounded(cvText)),
     customSections: parseCustomSections(rec.customSections),
   };
   return fillEmptyCourseworkFromRecovery(stripFlaggedCoursework(cv), recovered);

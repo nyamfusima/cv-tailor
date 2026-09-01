@@ -1,4 +1,5 @@
 import { normalizeKey } from "./json";
+import { unionSkillGroups } from "./skillsBounds";
 import type { CanonicalCV, CanonicalSkillGroup } from "./types";
 
 interface SkillCatalogEntry {
@@ -148,7 +149,7 @@ export function promoteEvidencedJobSkills(source: CanonicalCV, tailored: Canonic
     group.skills.sort((a, b) => Number(hasTerm(jd, b.name)) - Number(hasTerm(jd, a.name)));
   }
 
-  return { ...tailored, skills: rankedGroups };
+  return { ...tailored, skills: unionSkillGroups(source.skills, rankedGroups) };
 }
 
 function groupScore(group: CanonicalSkillGroup, jd: string): number {

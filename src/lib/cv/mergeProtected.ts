@@ -13,6 +13,7 @@ import type {
   TailorDeltaProject,
 } from "./types";
 import { cloneCanonical } from "./canonical";
+import { unionSkillGroups } from "./skillsBounds";
 
 function parseDelta(raw: unknown): TailorDelta {
   const rec = asRecord(raw) ?? {};
@@ -186,7 +187,7 @@ function applySkillOrder(source: CanonicalSkillGroup[], order: TailorDelta["skil
   for (const group of source) {
     if (!used.has(group.id)) result.push({ ...group, skills: [...group.skills] });
   }
-  return result;
+  return unionSkillGroups(source, result);
 }
 
 export function parseTailorDelta(raw: unknown): TailorDelta {

@@ -79,6 +79,37 @@ describe("canonicalizeCv", () => {
     );
   });
 
+  it("recovers every KEY SKILLS category when extraction kept one skill per group", () => {
+    const raw = `
+Alex Candidate
+KEY SKILLS
+Programming Languages: Python, Java, TypeScript, JavaScript
+Backend: FastAPI, REST APIs, PostgreSQL, Supabase
+Developer Tools: Git, Docker, VS Code, Cursor
+Frontend: React, Next.js
+EXPERIENCE
+AI Academy Intern
+`;
+    const cv = canonicalizeCv(
+      {
+        name: "Alex Candidate",
+        skills: [
+          { category: "Programming Languages", skills: ["Python"] },
+          { category: "Backend", skills: ["REST APIs"] },
+        ],
+      },
+      raw,
+    );
+    const byCategory = Object.fromEntries(
+      cv.skills.map((group) => [group.category, group.skills.map((skill) => skill.name)]),
+    );
+    assert.deepEqual(byCategory["Programming Languages"], ["Python", "Java", "TypeScript", "JavaScript"]);
+    assert.ok(byCategory.Backend.includes("FastAPI"));
+    assert.ok(byCategory.Backend.includes("Supabase"));
+    assert.deepEqual(byCategory["Developer Tools"], ["Git", "Docker", "VS Code", "Cursor"]);
+    assert.ok(byCategory.Frontend.includes("React"));
+  });
+
   it("splits a comma-separated coursework string into individual titles", () => {
     const cv = canonicalizeCv({
       education: [{

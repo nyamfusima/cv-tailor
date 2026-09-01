@@ -204,6 +204,7 @@ describe("runTailorPipeline", () => {
     assert.ok(skillNames.includes("React"));
     assert.ok(skillNames.includes("FastAPI"));
     assert.ok(!skillNames.includes("Kubernetes"));
+    assert.ok(skillNames.includes("Python"));
     assert.equal(result.tailored.projects.length, 3);
     const wire = toTailoredWire(result.tailored, result.source, result.score, {
       displaySelection: result.displaySelection,

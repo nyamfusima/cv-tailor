@@ -52,4 +52,25 @@ describe("scoreJobAlignment", () => {
     assert.ok(after.scoreBreakdown.skillsAlignment >= before.scoreBreakdown.skillsAlignment);
     assert.ok(after.matchScore >= before.matchScore);
   });
+
+  it("does not drop source skills when the model skillOrder lists one id per group", () => {
+    const source = canonicalizeCv({
+      name: "Alex Candidate",
+      skills: [
+        { category: "Programming Languages", skills: ["Python", "Java", "TypeScript", "JavaScript"] },
+        { category: "Developer Tools", skills: ["Git", "Docker", "VS Code", "Cursor"] },
+      ],
+    });
+    const { tailored } = mergeProtectedFromSource(source, {
+      summary: source.summary,
+      skillOrder: [
+        { categoryId: "skill-group-1", skillIds: ["skill-group-1-item-1"] },
+        { categoryId: "skill-group-2", skillIds: ["skill-group-2-item-1"] },
+      ],
+    });
+    const languages = tailored.skills.find((group) => group.category === "Programming Languages")?.skills.map((skill) => skill.name);
+    const tools = tailored.skills.find((group) => group.category === "Developer Tools")?.skills.map((skill) => skill.name);
+    assert.deepEqual(languages, ["Python", "Java", "TypeScript", "JavaScript"]);
+    assert.deepEqual(tools, ["Git", "Docker", "VS Code", "Cursor"]);
+  });
 });

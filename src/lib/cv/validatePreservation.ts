@@ -170,6 +170,16 @@ export function validatePreservation(source: CanonicalCV, tailored: CanonicalCV)
 
   const allowedSkills = sourceSkillNames(source);
   const sourceBlob = sourceTextBlob(source);
+  const tailoredSkillNames = new Set(
+    tailored.skills.flatMap((group) => group.skills.map((skill) => normalizeKey(skill.name))),
+  );
+  for (const group of source.skills) {
+    for (const skill of group.skills) {
+      if (!tailoredSkillNames.has(normalizeKey(skill.name))) {
+        missingIds.push(skill.id);
+      }
+    }
+  }
   for (const group of tailored.skills) {
     for (const skill of group.skills) {
       if (!allowedSkills.has(normalizeKey(skill.name)) && !sourceBlob.toLowerCase().includes(normalizeKey(skill.name))) {
