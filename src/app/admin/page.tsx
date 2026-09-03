@@ -46,6 +46,10 @@ export default function AdminPage() {
   const [fetching, setFetching] = useState(true);
   const [selected, setSelected] = useState<Session | null>(null);
   const [activeTab, setActiveTab] = useState<"cv" | "job" | "tailored">("tailored");
+  const [grantEmail, setGrantEmail] = useState("");
+  const [grantPlan, setGrantPlan] = useState<"pro_monthly" | "pro_yearly">("pro_monthly");
+  const [grantStatus, setGrantStatus] = useState("");
+  const [granting, setGranting] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -68,6 +72,31 @@ export default function AdminPage() {
       console.error(err);
     }
     setFetching(false);
+  };
+
+  const grantPro = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const email = grantEmail.trim();
+    if (!email) return;
+    setGranting(true);
+    setGrantStatus("");
+    try {
+      const res = await fetch("/api/admin/grant-pro", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, plan_type: grantPlan }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to apply Pro");
+      setGrantStatus(`Pro applied for ${data.email || email}`);
+      setGrantEmail("");
+      await fetchData();
+    } catch (err) {
+      setGrantStatus(err instanceof Error ? err.message : "Failed to apply Pro");
+    } finally {
+      setGranting(false);
+    }
   };
 
   const downloadCV = (session: Session) => {
@@ -244,6 +273,32 @@ export default function AdminPage() {
           <div className="p-5 border-b border-slate-100">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Confirmed Pro purchases</p>
             <p className="text-sm text-slate-600 mt-1">{proUsers.length} confirmed Pro {proUsers.length === 1 ? "purchase" : "purchases"}</p>
+            <form onSubmit={grantPro} className="mt-4 flex flex-col sm:flex-row gap-2">
+              <input
+                type="email"
+                required
+                value={grantEmail}
+                onChange={(event) => setGrantEmail(event.target.value)}
+                placeholder="buyer@email.com"
+                className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              />
+              <select
+                value={grantPlan}
+                onChange={(event) => setGrantPlan(event.target.value as "pro_monthly" | "pro_yearly")}
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              >
+                <option value="pro_monthly">Monthly</option>
+                <option value="pro_yearly">Yearly</option>
+              </select>
+              <button
+                type="submit"
+                disabled={granting}
+                className="rounded-xl bg-slate-900 text-white px-4 py-2 text-sm font-semibold disabled:opacity-60"
+              >
+                {granting ? "Applying…" : "Apply Pro"}
+              </button>
+            </form>
+            {grantStatus ? <p className="text-sm text-slate-600 mt-2">{grantStatus}</p> : null}
           </div>
           {proUsers.length === 0 ? (
             <p className="p-5 text-sm text-slate-400">No confirmed Pro purchases yet.</p>

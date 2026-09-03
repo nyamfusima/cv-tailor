@@ -68,6 +68,7 @@ export default function JobMatchPage() {
   const checkMasterCV = async () => {
     if (!user) return;
     console.log("[job-match] Checking user record for:", user.id);
+    await fetch("/api/account/plan", { credentials: "include" }).catch(() => null);
     const { data, error } = await supabase
       .from("users")
       .select("master_cv_path, master_cv_name, plan")

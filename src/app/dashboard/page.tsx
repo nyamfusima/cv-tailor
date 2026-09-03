@@ -302,7 +302,11 @@ export default function DashboardPage() {
     if (!user) return;
     setFetching(true);
     const [{ data: ud }, { data: sess }] = await Promise.all([
-      supabase.from("users").select("*").eq("id", user.id).single(),
+      fetch("/api/account/plan", { credentials: "include" })
+        .then(async (res) => {
+          if (res.ok) await res.json().catch(() => null);
+          return supabase.from("users").select("*").eq("id", user.id).single();
+        }),
       supabase
         .from("tailor_sessions")
         .select("*")

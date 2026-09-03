@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
     );
 
     await supabaseAdmin.from("pending_purchases").upsert({
-      email: user.email,
+      email: user.email?.trim().toLowerCase(),
       user_id: user.id,
       plan_type: type,
       created_at: new Date().toISOString(),

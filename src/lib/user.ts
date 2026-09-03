@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "./supabase-server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "./adminEmails";
+import { MANUAL_PRO_GRANTS, normalizeEmail, planExpiresAt, type PaidPlanType } from "./purchases";
 import { UserCredits } from "./types";
 
 const ADMIN_PRO_EXPIRES_AT = "2099-12-31T00:00:00.000Z";
@@ -66,6 +67,65 @@ export async function ensureAdminProPlan(user: { id: string; email: string }): P
   }
 }
 
+export async function grantProPlan(input: {
+  userId: string;
+  email: string;
+  planType: PaidPlanType;
+  purchaseId: string;
+  purchasedAt?: string;
+  itemName?: string | null;
+  buyerName?: string | null;
+  buyerEmail?: string | null;
+  salePrice?: number;
+}): Promise<{ ok: boolean; error?: string }> {
+  const admin = supabaseAdmin();
+  const purchasedAt = input.purchasedAt || new Date().toISOString();
+  const expiresAt = planExpiresAt(input.planType, new Date(purchasedAt));
+
+  const { data: updated, error: planError } = await admin
+    .from("users")
+    .update({
+      plan: "pro",
+      plan_type: input.planType,
+      plan_expires_at: expiresAt,
+    })
+    .eq("id", input.userId)
+    .select("id")
+    .maybeSingle();
+
+  if (planError) {
+    console.error("Failed to apply Pro plan", planError);
+    return { ok: false, error: planError.message };
+  }
+  if (!updated) return { ok: false, error: "user_not_found" };
+
+  const { error: purchaseError } = await admin
+    .from("confirmed_purchases")
+    .upsert({
+      purchase_id: input.purchaseId,
+      plan_type: input.planType,
+      item_name: input.itemName ?? null,
+      buyer_name: input.buyerName ?? null,
+      purchase_email: input.email,
+      buyer_email: input.buyerEmail ?? null,
+      user_email: input.email,
+      purchased_at: purchasedAt,
+      subscription_end_date: expiresAt,
+      sale_price: input.salePrice ?? 0,
+      refunded: false,
+      fully_refunded: false,
+      disputed: false,
+      access_revoked: false,
+    }, { onConflict: "purchase_id" });
+
+  if (purchaseError) {
+    console.error("Failed to record confirmed purchase", purchaseError);
+    return { ok: false, error: purchaseError.message };
+  }
+
+  return { ok: true };
+}
+
 async function hasActiveConfirmedProPurchase(email: string): Promise<boolean> {
   const { data, error } = await supabaseAdmin()
     .from("confirmed_purchases")
@@ -105,9 +165,35 @@ export async function getUserCredits(userId: string): Promise<UserCredits | null
     return { ...credits, plan: "pro" };
   }
 
-  if (credits.plan !== "pro") return credits;
+  const manualGrant = MANUAL_PRO_GRANTS[normalizeEmail(credits.email)];
+  if (manualGrant) {
+    const expiresAt = (data as { plan_expires_at?: string | null }).plan_expires_at;
+    const alreadyPro = credits.plan === "pro" && expiresAt && new Date(expiresAt).getTime() > Date.now();
+    if (!alreadyPro) {
+      await grantProPlan({
+        userId: credits.id,
+        email: credits.email,
+        planType: manualGrant.planType,
+        purchaseId: `manual-${normalizeEmail(credits.email)}`,
+        itemName: "Pro Monthly",
+        buyerName: manualGrant.buyerName,
+        buyerEmail: credits.email,
+      });
+    }
+    return { ...credits, plan: "pro" };
+  }
 
-  if (await hasActiveConfirmedProPurchase(credits.email)) return credits;
+  if (await hasActiveConfirmedProPurchase(credits.email)) {
+    if (credits.plan !== "pro") {
+      await supabaseAdmin()
+        .from("users")
+        .update({ plan: "pro" })
+        .eq("id", credits.id);
+    }
+    return { ...credits, plan: "pro" };
+  }
+
+  if (credits.plan !== "pro") return credits;
 
   const expiresAt = (data as { plan_expires_at?: string | null }).plan_expires_at;
   if (expiresAt && new Date(expiresAt).getTime() > Date.now()) return credits;

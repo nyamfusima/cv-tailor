@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AFTER_UPLOAD_ROUTE, createPendingTailorPayload } from "@/lib/cv/directFlow";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
 
 export default function UploadForm() {
   const router = useRouter();
@@ -44,18 +43,17 @@ export default function UploadForm() {
 
   useEffect(() => {
     if (!user) { setTailorCredits(null); return; }
-    supabase
-      .from("users")
-      .select("plan, tailor_count")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          if (data.plan === "pro") {
-            setTailorCredits(null); // Pro: unlimited, hide counter
-          } else {
-            setTailorCredits(Math.max(0, 3 - (data.tailor_count ?? 0)));
-          }
+    fetch("/api/account/plan", { credentials: "include" })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        return res.json() as Promise<{ plan?: string; tailor_count?: number }>;
+      })
+      .then((data) => {
+        if (!data) return;
+        if (data.plan === "pro") {
+          setTailorCredits(null);
+        } else {
+          setTailorCredits(Math.max(0, 3 - (data.tailor_count ?? 0)));
         }
       });
   }, [user]);

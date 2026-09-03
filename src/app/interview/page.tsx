@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
 import {
   MicrophoneIcon,
   CheckCircleIcon,
@@ -685,8 +684,9 @@ export default function InterviewPage() {
     if (!user) { router.push("/"); return; }
     async function checkPro() {
       if (!user) return;
-      const { data } = await supabase.from("users").select("plan").eq("id", user.id).single();
-      if (data?.plan !== "pro") { router.push("/pricing"); return; }
+      const planRes = await fetch("/api/account/plan", { credentials: "include" });
+      const planData = planRes.ok ? await planRes.json().catch(() => null) : null;
+      if (planData?.plan !== "pro") { router.push("/pricing"); return; }
       setIsPro(true);
     }
     void checkPro();
