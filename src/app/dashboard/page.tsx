@@ -21,9 +21,11 @@ import {
 
 /* ---------------- TYPES ---------------- */
 interface UserData {
-  plan: "free" | "pro";
+  plan: "free" | "pro" | "expired";
   tailor_count: number;
   tailor_reset_date: string;
+  remaining_credits: number | null;
+  credits_unlimited: boolean;
   master_cv_path: string | null;
   master_cv_name: string | null;
 }
@@ -301,20 +303,38 @@ export default function DashboardPage() {
   const fetchAll = useCallback(async () => {
     if (!user) return;
     setFetching(true);
-    const [{ data: ud }, { data: sess }] = await Promise.all([
-      fetch("/api/account/plan", { credentials: "include" })
-        .then(async (res) => {
-          if (res.ok) await res.json().catch(() => null);
-          return supabase.from("users").select("*").eq("id", user.id).single();
-        }),
+    const [planRes, profileRes, sessionRes] = await Promise.all([
+      fetch("/api/account/plan", { credentials: "include" }).then(async (res) =>
+        res.ok ? (await res.json().catch(() => null)) : null,
+      ),
+      supabase
+        .from("users")
+        .select("master_cv_path, master_cv_name")
+        .eq("id", user.id)
+        .single(),
       supabase
         .from("tailor_sessions")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false }),
     ]);
-    setUserData(ud);
-    setSessions(sess || []);
+    const plan = planRes as {
+      plan?: "free" | "pro" | "expired";
+      tailor_count?: number;
+      tailor_reset_date?: string;
+      remaining_credits?: number | null;
+      credits_unlimited?: boolean;
+    } | null;
+    setUserData({
+      plan: plan?.plan === "pro" ? "pro" : plan?.plan === "expired" ? "expired" : "free",
+      tailor_count: plan?.tailor_count ?? 0,
+      tailor_reset_date: plan?.tailor_reset_date ?? "",
+      remaining_credits: plan?.credits_unlimited ? null : (plan?.remaining_credits ?? null),
+      credits_unlimited: Boolean(plan?.credits_unlimited || plan?.plan === "pro"),
+      master_cv_path: profileRes.data?.master_cv_path ?? null,
+      master_cv_name: profileRes.data?.master_cv_name ?? null,
+    });
+    setSessions(sessionRes.data || []);
     setFetching(false);
   }, [user]);
 
@@ -354,8 +374,8 @@ export default function DashboardPage() {
     }
   };
 
-  const isPro = userData?.plan === "pro";
-  const tailorsLeft = isPro ? null : Math.max(0, 3 - (userData?.tailor_count ?? 0));
+  const isPro = userData?.plan === "pro" || Boolean(userData?.credits_unlimited);
+  const tailorsLeft = isPro ? null : (userData?.remaining_credits ?? Math.max(0, 3 - (userData?.tailor_count ?? 0)));
   const canUseJobMatch = isPro;
 
   if (loading || fetching) {

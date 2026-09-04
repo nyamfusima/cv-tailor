@@ -6,9 +6,54 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-export const MANUAL_PRO_GRANTS: Record<string, { planType: PaidPlanType; buyerName: string }> = {
-  "3810895@myuwc.ac.za": { planType: "pro_monthly", buyerName: "Monique" },
+/** Free-tier tailor allowance used by the dashboard remaining-credit calculation. */
+export const FREE_TAILOR_CREDITS = 3;
+
+/**
+ * Paid-plan credit allocation. Pro is an unlimited entitlement for the billing
+ * period — the dashboard shows a Pro badge, not a remaining count.
+ */
+export const PAID_PLAN_CONFIG = {
+  pro_monthly: { durationMonths: 1, tailorCredits: "unlimited" as const },
+  pro_yearly: { durationMonths: 12, tailorCredits: "unlimited" as const },
 };
+
+export function remainingDashboardCredits(user: {
+  plan: string;
+  tailor_count: number;
+}): number | null {
+  if (user.plan === "pro") return null;
+  if (user.plan === "expired") return 0;
+  return Math.max(0, FREE_TAILOR_CREDITS - user.tailor_count);
+}
+
+export function toAccountPlanResponse(user: {
+  plan: string;
+  tailor_count: number;
+  tailor_reset_date: string;
+  plan_expires_at?: string | null;
+  plan_type?: string | null;
+}) {
+  const remaining = remainingDashboardCredits(user);
+  return {
+    plan: user.plan,
+    tailor_count: user.tailor_count,
+    tailor_reset_date: user.tailor_reset_date,
+    plan_expires_at: user.plan_expires_at ?? null,
+    plan_type: user.plan_type ?? null,
+    remaining_credits: remaining,
+    credits_unlimited: user.plan === "pro",
+  };
+}
+
+export function postgrestEq(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+export function postgrestOrExact(columns: string[], value: string): string {
+  const quoted = postgrestEq(value);
+  return columns.map((column) => `${column}.eq.${quoted}`).join(",");
+}
 
 export function gumroadPermalinkFromUrl(raw?: string | null): string {
   if (!raw) return "";
@@ -23,7 +68,7 @@ export function gumroadPermalinkFromUrl(raw?: string | null): string {
 
 export function planExpiresAt(planType: PaidPlanType, from = new Date()): string {
   const expiresAt = new Date(from);
-  expiresAt.setMonth(expiresAt.getMonth() + (planType === "pro_yearly" ? 12 : 1));
+  expiresAt.setMonth(expiresAt.getMonth() + PAID_PLAN_CONFIG[planType].durationMonths);
   return expiresAt.toISOString();
 }
 

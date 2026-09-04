@@ -1,7 +1,13 @@
 import { createSupabaseServerClient } from "./supabase-server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "./adminEmails";
-import { MANUAL_PRO_GRANTS, normalizeEmail, planExpiresAt, type PaidPlanType } from "./purchases";
+import {
+  normalizeEmail,
+  planExpiresAt,
+  postgrestOrExact,
+  type PaidPlanType,
+} from "./purchases";
+import { createSupabasePurchaseStore } from "./gumroadPurchase";
 import { UserCredits } from "./types";
 
 const ADMIN_PRO_EXPIRES_AT = "2099-12-31T00:00:00.000Z";
@@ -14,6 +20,7 @@ function supabaseAdmin() {
 }
 
 type ConfirmedPurchase = {
+  user_id?: string | null;
   plan_type: "pro_monthly" | "pro_yearly";
   purchased_at: string;
   subscription_end_date: string | null;
@@ -51,6 +58,7 @@ export async function ensureAdminProPlan(user: { id: string; email: string }): P
     .from("confirmed_purchases")
     .upsert({
       purchase_id: `admin-${user.email.trim().toLowerCase()}`,
+      user_id: user.id,
       plan_type: "pro_yearly",
       item_name: "Admin Pro",
       purchase_email: user.email,
@@ -77,79 +85,72 @@ export async function grantProPlan(input: {
   buyerName?: string | null;
   buyerEmail?: string | null;
   salePrice?: number;
-}): Promise<{ ok: boolean; error?: string }> {
-  const admin = supabaseAdmin();
+  auditReason?: string | null;
+}): Promise<{ ok: boolean; error?: string; alreadyProcessed?: boolean }> {
   const purchasedAt = input.purchasedAt || new Date().toISOString();
   const expiresAt = planExpiresAt(input.planType, new Date(purchasedAt));
-
-  const { data: updated, error: planError } = await admin
-    .from("users")
-    .update({
-      plan: "pro",
-      plan_type: input.planType,
-      plan_expires_at: expiresAt,
-    })
-    .eq("id", input.userId)
-    .select("id")
-    .maybeSingle();
-
-  if (planError) {
-    console.error("Failed to apply Pro plan", planError);
-    return { ok: false, error: planError.message };
-  }
-  if (!updated) return { ok: false, error: "user_not_found" };
-
-  const { error: purchaseError } = await admin
-    .from("confirmed_purchases")
-    .upsert({
-      purchase_id: input.purchaseId,
-      plan_type: input.planType,
-      item_name: input.itemName ?? null,
-      buyer_name: input.buyerName ?? null,
-      purchase_email: input.email,
-      buyer_email: input.buyerEmail ?? null,
-      user_email: input.email,
-      purchased_at: purchasedAt,
-      subscription_end_date: expiresAt,
-      sale_price: input.salePrice ?? 0,
-      refunded: false,
-      fully_refunded: false,
-      disputed: false,
-      access_revoked: false,
-    }, { onConflict: "purchase_id" });
-
-  if (purchaseError) {
-    console.error("Failed to record confirmed purchase", purchaseError);
-    return { ok: false, error: purchaseError.message };
-  }
-
-  return { ok: true };
+  const store = createSupabasePurchaseStore(supabaseAdmin());
+  const granted = await store.applyGrant({
+    saleId: input.purchaseId,
+    userId: input.userId,
+    accountEmail: normalizeEmail(input.email),
+    planType: input.planType,
+    purchasedAt,
+    expiresAt,
+    itemName: input.itemName ?? null,
+    buyerName: input.buyerName ?? null,
+    buyerEmail: input.buyerEmail ?? null,
+    salePrice: input.salePrice ?? 0,
+    auditReason: input.auditReason ?? null,
+  });
+  if (!granted.ok) return { ok: false, error: granted.error };
+  return { ok: true, alreadyProcessed: granted.alreadyProcessed };
 }
 
-async function hasActiveConfirmedProPurchase(email: string): Promise<boolean> {
-  const { data, error } = await supabaseAdmin()
-    .from("confirmed_purchases")
-    .select("plan_type, purchased_at, subscription_end_date, refunded, fully_refunded, disputed, access_revoked")
-    .or(`purchase_email.eq.${email},buyer_email.eq.${email},user_email.eq.${email}`);
+async function hasActiveConfirmedProPurchase(userId: string, email: string): Promise<ConfirmedPurchase | null> {
+  const admin = supabaseAdmin();
+  const normalized = normalizeEmail(email);
+  const emailOr = postgrestOrExact(
+    ["purchase_email", "buyer_email", "user_email"],
+    normalized,
+  );
 
-  if (error) {
-    // Fail closed: a paid plan must have a verifiable confirmed purchase.
-    console.error("Unable to verify Pro purchase", error);
-    return false;
+  async function query(filter: string) {
+    return admin
+      .from("confirmed_purchases")
+      .select("plan_type, purchased_at, subscription_end_date, refunded, fully_refunded, disputed, access_revoked")
+      .or(filter);
   }
 
-  return ((data ?? []) as ConfirmedPurchase[]).some((purchase) => {
+  let { data, error } = await query(`user_id.eq.${userId},${emailOr}`);
+  if (error) {
+    const retry = await query(emailOr);
+    data = retry.data;
+    error = retry.error;
+  }
+  if (error) {
+    console.error("Unable to verify Pro purchase", error);
+    return null;
+  }
+
+  const active = ((data ?? []) as unknown as ConfirmedPurchase[]).filter((purchase) => {
     if (purchase.refunded || purchase.fully_refunded || purchase.disputed || purchase.access_revoked) return false;
     const expiry = purchaseExpiry(purchase);
     return Boolean(expiry && expiry.getTime() > Date.now());
   });
+  active.sort((a, b) => {
+    const aTime = new Date(a.subscription_end_date || a.purchased_at).getTime();
+    const bTime = new Date(b.subscription_end_date || b.purchased_at).getTime();
+    return bTime - aTime;
+  });
+  return active[0] ?? null;
 }
 
 export async function getUserCredits(userId: string): Promise<UserCredits | null> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("users")
-    .select("id, email, plan, tailor_count, tailor_reset_date, plan_expires_at")
+    .select("id, email, plan, tailor_count, tailor_reset_date, plan_expires_at, plan_type")
     .eq("id", userId)
     .single();
 
@@ -157,7 +158,7 @@ export async function getUserCredits(userId: string): Promise<UserCredits | null
 
   const credits = data as UserCredits;
   if (isAdminEmail(credits.email)) {
-    const expiresAt = (data as { plan_expires_at?: string | null }).plan_expires_at;
+    const expiresAt = credits.plan_expires_at;
     const alreadyPro = credits.plan === "pro" && expiresAt && new Date(expiresAt).getTime() > Date.now();
     if (!alreadyPro) {
       await ensureAdminProPlan({ id: credits.id, email: credits.email });
@@ -165,37 +166,30 @@ export async function getUserCredits(userId: string): Promise<UserCredits | null
     return { ...credits, plan: "pro" };
   }
 
-  const manualGrant = MANUAL_PRO_GRANTS[normalizeEmail(credits.email)];
-  if (manualGrant) {
-    const expiresAt = (data as { plan_expires_at?: string | null }).plan_expires_at;
-    const alreadyPro = credits.plan === "pro" && expiresAt && new Date(expiresAt).getTime() > Date.now();
+  const confirmed = await hasActiveConfirmedProPurchase(credits.id, credits.email);
+  if (confirmed) {
+    const expiresAt = purchaseExpiry(confirmed)?.toISOString() ?? credits.plan_expires_at ?? null;
+    const alreadyPro =
+      credits.plan === "pro" &&
+      expiresAt &&
+      new Date(expiresAt).getTime() > Date.now() &&
+      credits.plan_type === confirmed.plan_type;
     if (!alreadyPro) {
-      await grantProPlan({
-        userId: credits.id,
-        email: credits.email,
-        planType: manualGrant.planType,
-        purchaseId: `manual-${normalizeEmail(credits.email)}`,
-        itemName: "Pro Monthly",
-        buyerName: manualGrant.buyerName,
-        buyerEmail: credits.email,
-      });
-    }
-    return { ...credits, plan: "pro" };
-  }
-
-  if (await hasActiveConfirmedProPurchase(credits.email)) {
-    if (credits.plan !== "pro") {
       await supabaseAdmin()
         .from("users")
-        .update({ plan: "pro" })
+        .update({
+          plan: "pro",
+          plan_type: confirmed.plan_type,
+          plan_expires_at: expiresAt,
+        })
         .eq("id", credits.id);
     }
-    return { ...credits, plan: "pro" };
+    return { ...credits, plan: "pro", plan_type: confirmed.plan_type, plan_expires_at: expiresAt };
   }
 
   if (credits.plan !== "pro") return credits;
 
-  const expiresAt = (data as { plan_expires_at?: string | null }).plan_expires_at;
+  const expiresAt = credits.plan_expires_at;
   if (expiresAt && new Date(expiresAt).getTime() > Date.now()) return credits;
 
   return {
@@ -252,7 +246,6 @@ export async function deductTailorCredit(userId: string): Promise<boolean> {
 export function hasTailorCredits(user: UserCredits): boolean {
   if (user.plan === "pro") return true;
   if (user.plan === "expired") return false;
-  // If the monthly reset date has passed the next deduct will reset the count
   if (new Date() >= new Date(user.tailor_reset_date)) return true;
   return user.tailor_count < 3;
 }

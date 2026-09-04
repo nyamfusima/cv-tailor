@@ -46,14 +46,19 @@ export default function UploadForm() {
     fetch("/api/account/plan", { credentials: "include" })
       .then(async (res) => {
         if (!res.ok) return null;
-        return res.json() as Promise<{ plan?: string; tailor_count?: number }>;
+        return res.json() as Promise<{
+          plan?: string;
+          tailor_count?: number;
+          remaining_credits?: number | null;
+          credits_unlimited?: boolean;
+        }>;
       })
       .then((data) => {
         if (!data) return;
-        if (data.plan === "pro") {
+        if (data.plan === "pro" || data.credits_unlimited) {
           setTailorCredits(null);
         } else {
-          setTailorCredits(Math.max(0, 3 - (data.tailor_count ?? 0)));
+          setTailorCredits(data.remaining_credits ?? Math.max(0, 3 - (data.tailor_count ?? 0)));
         }
       });
   }, [user]);

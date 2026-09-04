@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { gumroadPermalinkFromUrl, MANUAL_PRO_GRANTS, resolveGumroadPlanType } from "../src/lib/purchases";
+import {
+  gumroadPermalinkFromUrl,
+  normalizeEmail,
+  postgrestOrExact,
+  remainingDashboardCredits,
+  resolveGumroadPlanType,
+  toAccountPlanResponse,
+} from "../src/lib/purchases";
 
 describe("Gumroad plan resolution", () => {
   it("reads the permalink slug from a Gumroad product URL", () => {
@@ -39,8 +46,34 @@ describe("Gumroad plan resolution", () => {
     assert.equal(resolveGumroadPlanType({ productName: "Pro Monthly" }), "pro_monthly");
   });
 
-  it("keeps Monique on a manual Pro grant until the webhook is replayed", () => {
-    assert.equal(MANUAL_PRO_GRANTS["3810895@myuwc.ac.za"]?.buyerName, "Monique");
-    assert.equal(MANUAL_PRO_GRANTS["3810895@myuwc.ac.za"]?.planType, "pro_monthly");
+  it("does not treat the university email as a hardcoded application account", () => {
+    assert.equal(normalizeEmail("  JEPHTHA25@Gmail.com "), "jephtha25@gmail.com");
+  });
+
+  it("quotes emails so PostgREST does not split on @ or dots", () => {
+    assert.equal(
+      postgrestOrExact(["purchase_email", "user_email"], "jephtha25@gmail.com"),
+      'purchase_email.eq."jephtha25@gmail.com",user_email.eq."jephtha25@gmail.com"',
+    );
+  });
+
+  it("returns unlimited dashboard credits for Pro, not the free remaining count", () => {
+    assert.equal(remainingDashboardCredits({ plan: "pro", tailor_count: 1 }), null);
+    assert.equal(
+      toAccountPlanResponse({
+        plan: "pro",
+        tailor_count: 1,
+        tailor_reset_date: "2026-10-01T00:00:00Z",
+      }).remaining_credits,
+      null,
+    );
+    assert.equal(
+      toAccountPlanResponse({
+        plan: "free",
+        tailor_count: 1,
+        tailor_reset_date: "2026-10-01T00:00:00Z",
+      }).remaining_credits,
+      2,
+    );
   });
 });

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { toAccountPlanResponse } from "@/lib/purchases";
 import { getUserCredits } from "@/lib/user";
 
 export async function GET() {
@@ -15,8 +16,8 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    plan: credits.plan,
-    tailor_count: credits.tailor_count,
-    tailor_reset_date: credits.tailor_reset_date,
+    ...toAccountPlanResponse(credits),
+    user_id: credits.id,
+    email: credits.email,
   });
 }

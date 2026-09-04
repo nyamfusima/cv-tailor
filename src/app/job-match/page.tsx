@@ -68,22 +68,23 @@ export default function JobMatchPage() {
   const checkMasterCV = async () => {
     if (!user) return;
     console.log("[job-match] Checking user record for:", user.id);
-    await fetch("/api/account/plan", { credentials: "include" }).catch(() => null);
+    const planRes = await fetch("/api/account/plan", { credentials: "include" });
+    const planData = planRes.ok ? await planRes.json().catch(() => null) : null;
     const { data, error } = await supabase
       .from("users")
-      .select("master_cv_path, master_cv_name, plan")
+      .select("master_cv_path, master_cv_name")
       .eq("id", user.id)
       .single();
 
     if (error) {
       console.error("[job-match] Failed to fetch user record:", error.message);
       setHasMasterCV(false);
-      setIsPro(false);
+      setIsPro(planData?.plan === "pro");
       return;
     }
 
-    console.log("[job-match] Master CV path:", data?.master_cv_path ?? "none", "| plan:", data?.plan);
-    setIsPro(data?.plan === "pro");
+    console.log("[job-match] Master CV path:", data?.master_cv_path ?? "none", "| plan:", planData?.plan);
+    setIsPro(planData?.plan === "pro");
     setHasMasterCV(!!data?.master_cv_path);
   };
 

@@ -174,4 +174,6 @@ export interface UserCredits {
   plan: "free" | "pro" | "expired";
   tailor_count: number;
   tailor_reset_date: string;
+  plan_expires_at?: string | null;
+  plan_type?: string | null;
 }
