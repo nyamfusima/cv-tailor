@@ -41,24 +41,22 @@ function purchaseExpiry(purchase: ConfirmedPurchase): Date | null {
 
 export async function ensureAdminProPlan(user: { id: string; email: string }): Promise<void> {
   if (!isAdminEmail(user.email)) return;
-  const admin = supabaseAdmin();
-  const { error: planError } = await admin
-    .from("users")
-    .update({
-      plan: "pro",
-      plan_type: "pro_yearly",
-      plan_expires_at: ADMIN_PRO_EXPIRES_AT,
-    })
-    .eq("id", user.id);
-  if (planError) {
-    console.error("Failed to keep admin on Pro plan", planError);
-  }
+  try {
+    const admin = supabaseAdmin();
+    const { error: planError } = await admin
+      .from("users")
+      .update({
+        plan: "pro",
+        plan_type: "pro_yearly",
+        plan_expires_at: ADMIN_PRO_EXPIRES_AT,
+      })
+      .eq("id", user.id);
+    if (planError) {
+      console.error("Failed to keep admin on Pro plan", planError);
+    }
 
-  const { error: purchaseError } = await admin
-    .from("confirmed_purchases")
-    .upsert({
+    const purchaseRow = {
       purchase_id: `admin-${user.email.trim().toLowerCase()}`,
-      user_id: user.id,
       plan_type: "pro_yearly",
       item_name: "Admin Pro",
       purchase_email: user.email,
@@ -69,9 +67,21 @@ export async function ensureAdminProPlan(user: { id: string; email: string }): P
       fully_refunded: false,
       disputed: false,
       access_revoked: false,
-    }, { onConflict: "purchase_id" });
-  if (purchaseError) {
-    console.error("Failed to record admin Pro purchase", purchaseError);
+    };
+    const { error: purchaseError } = await admin
+      .from("confirmed_purchases")
+      .upsert({ ...purchaseRow, user_id: user.id }, { onConflict: "purchase_id" });
+    if (purchaseError) {
+      console.error("Failed to record admin Pro purchase", purchaseError);
+      const { error: retryError } = await admin
+        .from("confirmed_purchases")
+        .upsert(purchaseRow, { onConflict: "purchase_id" });
+      if (retryError) {
+        console.error("Failed to record admin Pro purchase without user_id", retryError);
+      }
+    }
+  } catch (err) {
+    console.error("ensureAdminProPlan failed", err);
   }
 }
 

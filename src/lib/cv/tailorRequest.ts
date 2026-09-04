@@ -133,7 +133,14 @@ export async function executeTailorRequest(input: {
         creditStatus: "refunded_persist_failure",
         usedFallback: result.meta.usedFallback,
       });
-      return { status: 500, body: { error: "DB_INSERT_FAILED", message: persist.error.message } };
+      return {
+        status: 500,
+        body: {
+          error: "DB_INSERT_FAILED",
+          message: persist.error.message,
+          userMessage: USER_ERROR_GENERIC,
+        },
+      };
     }
 
     if (!input.isAdmin) {

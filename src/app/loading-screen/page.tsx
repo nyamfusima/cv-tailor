@@ -7,7 +7,7 @@ import {
   shouldIgnoreLegacyReviewState,
   userMessageFromTailorResponse,
 } from "@/lib/cv/directFlow";
-import { USER_ERROR_GENERIC } from "@/lib/cv/userFacingErrors";
+import { USER_ERROR_GENERIC, USER_ERROR_TIMEOUT } from "@/lib/cv/userFacingErrors";
 
 const steps = [
   { id: 1, label: "Parsing your CV", detail: "Extracting text from your uploaded file..." },
@@ -86,7 +86,19 @@ export default function LoadingScreen() {
       }
 
       const res = await fetch("/api/tailor", { method: "POST", body: fd });
-      const data = await res.json();
+      const raw = await res.text();
+      let data: { error?: string; userMessage?: string; issues?: Array<{ code: string }>; experience?: unknown; skills?: unknown } = {};
+      try {
+        data = raw ? JSON.parse(raw) as typeof data : {};
+      } catch {
+        failToUpload(
+          timers,
+          res.status === 504 || res.status === 408 || res.status === 524
+            ? USER_ERROR_TIMEOUT
+            : USER_ERROR_GENERIC,
+        );
+        return;
+      }
 
       if (data.error === "SIGN_IN_REQUIRED") {
         timers.forEach(clearTimeout);

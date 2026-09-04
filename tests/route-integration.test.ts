@@ -212,6 +212,7 @@ describe("executeTailorRequest", () => {
     });
     assert.equal(result.status, 500);
     assert.equal(result.body.error, "DB_INSERT_FAILED");
+    assert.equal(result.body.userMessage, "We could not tailor this CV. Please try again. No credit was used.");
     assert.equal(store.users.get("user-1")?.tailor_count, 0);
   });
 

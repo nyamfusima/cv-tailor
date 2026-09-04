@@ -12,9 +12,10 @@ import {
   isDirectFlowBlockingError,
   shouldIgnoreLegacyReviewState,
   userMessageFromTailorResponse,
+  annotateTailorErrorForAdmin,
 } from "../src/lib/cv/directFlow";
 import { executeTailorRequest } from "../src/lib/cv/tailorRequest";
-import { USER_ERROR_EXTRACTION, USER_ERROR_IMAGE_ONLY, USER_ERROR_SECTION_BLEED } from "../src/lib/cv/userFacingErrors";
+import { USER_ERROR_EXTRACTION, USER_ERROR_GENERIC, USER_ERROR_IMAGE_ONLY, USER_ERROR_SECTION_BLEED } from "../src/lib/cv/userFacingErrors";
 import type { CompleteJsonFn, CompleteJsonResponse } from "../src/lib/cv/types";
 import type { UserCredits } from "../src/lib/types";
 import { contaminatedReviewedSource, SECTION_BLEED_RAW_CV } from "./fixtures/section-bleed-cv";
@@ -210,6 +211,19 @@ describe("direct tailor flow", () => {
       userMessageFromTailorResponse({ error: "EXTRACTION_INTEGRITY_FAILED" }),
       USER_ERROR_EXTRACTION,
     );
+  });
+
+  it("appends the internal error code for admin failures only", () => {
+    const annotated = annotateTailorErrorForAdmin(true, {
+      error: "PRESERVATION_FAILED",
+      userMessage: USER_ERROR_GENERIC,
+    });
+    assert.equal(annotated.userMessage, `${USER_ERROR_GENERIC} (PRESERVATION_FAILED)`);
+    const customer = annotateTailorErrorForAdmin(false, {
+      error: "PRESERVATION_FAILED",
+      userMessage: USER_ERROR_GENERIC,
+    });
+    assert.equal(customer.userMessage, USER_ERROR_GENERIC);
   });
 
   it("does not store empty Relevant areas: as coursework", () => {

@@ -10,6 +10,9 @@ export const USER_ERROR_SECTION_BLEED =
 export const USER_ERROR_GENERIC =
   "We could not tailor this CV. Please try again. No credit was used.";
 
+export const USER_ERROR_TIMEOUT =
+  "The request took too long and was stopped. Please try again. No credit was used.";
+
 const BLEED_CODES = new Set(["COURSEWORK_SECTION_BLEED", "CROSS_SECTION_DUPLICATION"]);
 
 export function userMessageForIntegrityIssues(

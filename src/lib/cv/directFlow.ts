@@ -52,6 +52,20 @@ export function userMessageFromTailorResponse(data: {
   return userMessageForErrorCode(data.error, data.issues);
 }
 
+export function annotateTailorErrorForAdmin(
+  isAdmin: boolean,
+  body: Record<string, unknown>,
+): Record<string, unknown> {
+  if (!isAdmin) return body;
+  const code = typeof body.error === "string" && body.error.trim() ? body.error : "TAILOR_FAILED";
+  const base =
+    typeof body.userMessage === "string" && body.userMessage.trim()
+      ? body.userMessage
+      : userMessageForErrorCode(typeof body.error === "string" ? body.error : undefined);
+  if (base.includes(`(${code})`)) return body;
+  return { ...body, userMessage: `${base} (${code})` };
+}
+
 export function shouldIgnoreLegacyReviewState(pending: {
   cvBase64?: string;
   jobDescription?: string;
