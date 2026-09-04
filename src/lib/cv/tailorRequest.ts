@@ -229,7 +229,15 @@ export async function executeTailorRequest(input: {
       console.error("Tailor model output failed", err);
       return { status: 502, body: { error: "INCOMPLETE_MODEL_OUTPUT", userMessage: USER_ERROR_GENERIC } };
     }
+    const message = err instanceof Error ? err.message : String(err);
     console.error("Tailor request failed", err);
-    return { status: 500, body: { error: "TAILOR_FAILED", userMessage: USER_ERROR_GENERIC } };
+    return {
+      status: 500,
+      body: {
+        error: "TAILOR_FAILED",
+        userMessage: USER_ERROR_GENERIC,
+        message,
+      },
+    };
   }
 }

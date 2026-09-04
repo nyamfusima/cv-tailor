@@ -226,6 +226,16 @@ describe("direct tailor flow", () => {
     assert.equal(customer.userMessage, USER_ERROR_GENERIC);
   });
 
+  it("includes the underlying exception message for admin tailor failures", () => {
+    const annotated = annotateTailorErrorForAdmin(true, {
+      error: "TAILOR_FAILED",
+      userMessage: USER_ERROR_GENERIC,
+      message: "404 The model `gpt-5.1` does not exist",
+    });
+    assert.match(String(annotated.userMessage), /TAILOR_FAILED/);
+    assert.match(String(annotated.userMessage), /gpt-5\.1/);
+  });
+
   it("does not store empty Relevant areas: as coursework", () => {
     const source = canonicalizeCv(harvardExtractedSource());
     const coursework = source.education[0].coursework.map((item) => item.text);

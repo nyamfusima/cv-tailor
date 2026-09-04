@@ -8,7 +8,7 @@ import { createOpenAICompleteJson } from "@/lib/cv";
 import { createSupabaseCreditStore } from "@/lib/cv/credits";
 import { annotateTailorErrorForAdmin } from "@/lib/cv/directFlow";
 import { executeTailorRequest } from "@/lib/cv/tailorRequest";
-import { USER_ERROR_GENERIC } from "@/lib/cv/userFacingErrors";
+import { USER_ERROR_GENERIC, USER_ERROR_IMAGE_ONLY } from "@/lib/cv/userFacingErrors";
 
 export const maxDuration = 60;
 
@@ -54,10 +54,22 @@ export async function POST(req: NextRequest) {
     let isLikelyImageOnly = false;
     let fileName = "upload";
     if (cvFile) {
-      const parsed = await parseFileWithMeta(cvFile);
-      cvText = parsed.text;
-      isLikelyImageOnly = parsed.isLikelyImageOnly;
-      fileName = cvFile.name || "upload";
+      try {
+        const parsed = await parseFileWithMeta(cvFile);
+        cvText = parsed.text;
+        isLikelyImageOnly = parsed.isLikelyImageOnly;
+        fileName = cvFile.name || "upload";
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Could not read this file.";
+        return NextResponse.json(
+          annotateTailorErrorForAdmin(isAdmin, {
+            error: "EXTRACTION_FAILED",
+            userMessage: USER_ERROR_IMAGE_ONLY,
+            message,
+          }),
+          { status: 422 },
+        );
+      }
     }
     if (!cvText && typeof reviewedSourceRaw === "string") {
       cvText = "";

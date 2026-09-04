@@ -105,6 +105,28 @@ describe("OpenAI response handling", () => {
     assert.ok(calls >= 2);
   });
 
+  it("uses the fallback model after a primary 404 instead of aborting the request", async () => {
+    let calls = 0;
+    const completeJson = createOpenAICompleteJson({
+      chat: {
+        completions: {
+          create: async (req: { model: string }) => {
+            calls += 1;
+            if (req.model === "gpt-5.1") {
+              const err = new Error("The model `gpt-5.1` does not exist") as Error & { status: number };
+              err.status = 404;
+              throw err;
+            }
+            return completion({ content: '{"ok":true}', finish_reason: "stop" });
+          },
+        },
+      },
+    } as never, { retryDelayMs: 0 });
+    const result = await completeJson({ purpose: "tailor", user: "{}", promptVersion: "tailor-v2" });
+    assert.equal(result.model, "gpt-5-mini");
+    assert.ok(calls >= 2);
+  });
+
   it("fails when both models fail", async () => {
     const completeJson = createOpenAICompleteJson({
       chat: {

@@ -13,14 +13,26 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function errorStatus(err: unknown): number | undefined {
+  return (err as { status?: number })?.status;
+}
+
+function errorMessage(err: unknown): string {
+  return String((err as { message?: string })?.message ?? err ?? "");
+}
+
 function isOverloaded(err: unknown): boolean {
-  const status = (err as { status?: number })?.status;
+  const status = errorStatus(err);
   return status === 429 || status === 500 || status === 503;
 }
 
+function isFatalAuth(err: unknown): boolean {
+  const status = errorStatus(err);
+  return status === 401 || /invalid api key|incorrect api key|missing.*api key/i.test(errorMessage(err));
+}
+
 function isSchemaUnsupported(err: unknown): boolean {
-  const message = String((err as { message?: string })?.message ?? err ?? "");
-  return /response_format|json_schema|unsupported|invalid_request/i.test(message);
+  return /response_format|json_schema|unsupported|invalid_request/i.test(errorMessage(err));
 }
 
 function usageOf(completion: OpenAI.Chat.Completions.ChatCompletion) {
@@ -128,6 +140,7 @@ export function createOpenAICompleteJson(
           } catch (err) {
             lastError = err;
             if (err instanceof IncompleteModelOutputError) throw err;
+            if (isFatalAuth(err)) throw err;
             if (isSchemaUnsupported(err) && responseFormat?.type === "json_schema") {
               break;
             }
@@ -136,8 +149,7 @@ export function createOpenAICompleteJson(
               await sleep(options.retryDelayMs ?? 2000 * Math.pow(2, attempt));
               continue;
             }
-            if (isOverloaded(err)) break;
-            throw err;
+            break;
           }
         }
       }

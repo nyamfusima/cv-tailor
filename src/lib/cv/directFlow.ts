@@ -63,7 +63,9 @@ export function annotateTailorErrorForAdmin(
       ? body.userMessage
       : userMessageForErrorCode(typeof body.error === "string" ? body.error : undefined);
   if (base.includes(`(${code})`)) return body;
-  return { ...body, userMessage: `${base} (${code})` };
+  const detail = typeof body.message === "string" ? body.message.replace(/\s+/g, " ").trim() : "";
+  const suffix = detail && !base.includes(detail) ? `${code}: ${detail.slice(0, 180)}` : code;
+  return { ...body, userMessage: `${base} (${suffix})` };
 }
 
 export function shouldIgnoreLegacyReviewState(pending: {
