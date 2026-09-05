@@ -212,6 +212,41 @@ describe("runTailorPipeline", () => {
     assert.equal((wire.projects ?? []).map((project) => project.name).sort().join(","), "Campus Connect,Campus Scheduler,Notes CLI");
   });
 
+  it("promotes catalog names evidenced only as aliases and still preserves the CV", async () => {
+    const source = canonicalizeCv({
+      name: "Alex Candidate",
+      email: "alex.candidate@example.com",
+      experience: [{
+        title: "Cloud intern",
+        company: "Example Labs",
+        dates: "2026 – Present",
+        bullets: ["Deployed reporting jobs on Azure and exposed them over a REST API"],
+      }],
+      education: [{ degree: "Diploma in Software Engineering", institution: "Example Code School", dates: "2026" }],
+      projects: [{ name: "Reports", description: "Internal reporting jobs.", technologies: ["Python"] }],
+      skills: [{ category: "Programming Languages", skills: ["Python"] }],
+    });
+    const result = await runTailorPipeline({
+      source,
+      jobDescription: "Cloud intern. Required: Python, Microsoft Azure, REST APIs, Kubernetes.",
+      completeJson: async () => ok({
+        summary: source.summary,
+        experience: [],
+        projects: [],
+        skillOrder: [],
+        keywordClassifications: [],
+        missingKeywords: ["Kubernetes"],
+        assumptions: [],
+        conflicts: [],
+      }),
+    });
+    const skillNames = result.tailored.skills.flatMap((group) => group.skills.map((skill) => skill.name));
+    assert.equal(result.report.valid, true);
+    assert.ok(skillNames.includes("Microsoft Azure"));
+    assert.ok(skillNames.includes("REST APIs"));
+    assert.ok(!skillNames.includes("Kubernetes"));
+  });
+
   it("does not inject architecture jargon into a non-technical CV", async () => {
     const source = officeAdminSourceCv();
     const completeJson: CompleteJsonFn = async (req) => {
@@ -355,6 +390,26 @@ describe("runTailorPipeline", () => {
     assert.equal(result.tailored.education.length, 2);
     assert.equal(result.tailored.certifications.length, 2);
     assert.equal(result.tailored.education[0].coursework.length, 5);
+  });
+
+  it("reverts an invented summary number instead of failing preservation", async () => {
+    const source = fixtureSourceCv();
+    const result = await runTailorPipeline({
+      source,
+      jobDescription: "Retail operations",
+      completeJson: async () => ok({
+        summary: `${source.summary} across 99 sites`,
+        experience: [],
+        projects: [],
+        skillOrder: [],
+        keywordClassifications: [],
+        missingKeywords: [],
+        assumptions: [],
+        conflicts: [],
+      }),
+    });
+    assert.equal(result.report.valid, true);
+    assert.equal(result.tailored.summary, source.summary);
   });
 });
 

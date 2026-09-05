@@ -2,6 +2,7 @@ import { canonicalizeCv } from "./canonical";
 import type { CreditStore } from "./credits";
 import { isOpenAIQuotaError, logTailorTelemetry } from "./openai";
 import { extractSourceCv, runTailorPipeline } from "./pipeline";
+import { formatPreservationIssues } from "./validatePreservation";
 import { toOriginalWire, toTailoredWire } from "./wire";
 import { ExtractionIntegrityError, SectionIntegrityError } from "./sectionIntegrity";
 import {
@@ -224,7 +225,14 @@ export async function executeTailorRequest(input: {
       };
     }
     if (err instanceof PreservationFailureError) {
-      return { status: 422, body: { error: "PRESERVATION_FAILED", userMessage: USER_ERROR_GENERIC } };
+      return {
+        status: 422,
+        body: {
+          error: "PRESERVATION_FAILED",
+          userMessage: USER_ERROR_GENERIC,
+          message: formatPreservationIssues(err.report) || err.message,
+        },
+      };
     }
     if (err instanceof IncompleteModelOutputError || err instanceof ModelJsonParseError) {
       console.error("Tailor model output failed", err);

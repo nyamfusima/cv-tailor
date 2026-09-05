@@ -1,5 +1,6 @@
 import { introducesNewNumbers, collectAllNumbers } from "./numbers";
 import { normalizeKey } from "./json";
+import { catalogSkillMatchesSourceText } from "./skillPromotion";
 import type { CanonicalCV, PreservationReport } from "./types";
 
 function pushUnique(list: string[], value: string) {
@@ -182,7 +183,10 @@ export function validatePreservation(source: CanonicalCV, tailored: CanonicalCV)
   }
   for (const group of tailored.skills) {
     for (const skill of group.skills) {
-      if (!allowedSkills.has(normalizeKey(skill.name)) && !sourceBlob.toLowerCase().includes(normalizeKey(skill.name))) {
+      if (
+        !allowedSkills.has(normalizeKey(skill.name)) &&
+        !catalogSkillMatchesSourceText(skill.name, sourceBlob)
+      ) {
         unsupportedClaims.push(`skill:${skill.name}`);
       }
     }
@@ -236,6 +240,17 @@ export function validatePreservation(source: CanonicalCV, tailored: CanonicalCV)
     warnings,
     claimStrengthWarnings: [],
   };
+}
+
+export function formatPreservationIssues(report: PreservationReport): string {
+  return [
+    ...report.unsupportedClaims,
+    ...report.missingIds.map((id) => `missing:${id}`),
+    ...report.changedProtectedFields.map((f) => `changed:${f}`),
+    ...report.duplicateIds.map((id) => `duplicate:${id}`),
+  ]
+    .slice(0, 8)
+    .join("; ");
 }
 
 export function missingItemCounts(report: PreservationReport): Record<string, number> {

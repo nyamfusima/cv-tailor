@@ -27,7 +27,7 @@ import {
   type ModelCallMeta,
   type TailorPipelineResult,
 } from "./types";
-import { missingItemCounts, validatePreservation } from "./validatePreservation";
+import { formatPreservationIssues, missingItemCounts, validatePreservation } from "./validatePreservation";
 
 function toMeta(
   response: { model: string; finishReason: string; promptTokens?: number; completionTokens?: number; latencyMs: number; retryCount: number },
@@ -171,9 +171,24 @@ export async function runTailorPipeline(input: {
 
   const usedFallback = tailorRes.model !== (process.env.OPENAI_TAILOR_MODEL || "gpt-5.1");
 
-  if (report.valid) {
-    tailored = promoteEvidencedJobSkills(source, tailored, input.jobDescription);
+  if (!report.valid) {
+    tailored = restoreMissingFromSource(source, { ...tailored, summary: source.summary });
     report = { ...validatePreservation(source, tailored), claimStrengthWarnings };
+  }
+
+  if (report.valid) {
+    const beforePromotion = tailored;
+    tailored = promoteEvidencedJobSkills(source, tailored, input.jobDescription);
+    const promotedReport = { ...validatePreservation(source, tailored), claimStrengthWarnings };
+    if (promotedReport.valid) {
+      report = promotedReport;
+    } else {
+      console.warn(
+        "Dropped skill promotion; preservation would fail",
+        formatPreservationIssues(promotedReport),
+      );
+      tailored = beforePromotion;
+    }
   }
 
   if (!report.valid) {
@@ -195,8 +210,11 @@ export async function runTailorPipeline(input: {
       extractionWarningCount: extractionReport?.warnings.length ?? 0,
       repairSucceeded,
     });
+    const issues = formatPreservationIssues(report);
     throw new PreservationFailureError(
-      "Tailoring could not preserve every source CV item. No credit was used.",
+      issues
+        ? `Tailoring could not preserve every source CV item. No credit was used. (${issues})`
+        : "Tailoring could not preserve every source CV item. No credit was used.",
       report,
     );
   }

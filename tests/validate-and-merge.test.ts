@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { cloneCanonical } from "../src/lib/cv/canonical";
+import { canonicalizeCv, cloneCanonical } from "../src/lib/cv/canonical";
 import { mergeProtectedFromSource, restoreMissingFromSource, deltaFromFullCv } from "../src/lib/cv/mergeProtected";
 import { validatePreservation } from "../src/lib/cv/validatePreservation";
 import { fixtureSourceCv } from "./fixtures/source-cv";
@@ -49,6 +49,26 @@ describe("validatePreservation", () => {
     const report = validatePreservation(source, tailored);
     assert.equal(report.valid, false);
     assert.ok(report.unsupportedClaims.some((c) => c.includes("Kubernetes")));
+  });
+
+  it("allows a catalog skill name evidenced only by an alias in source bullets", () => {
+    const source = canonicalizeCv({
+      name: "Alex Rivera",
+      email: "alex.rivera@example.com",
+      experience: [{
+        title: "Operations Coordinator",
+        company: "BrightMart Retail",
+        dates: "Jan 2022 – Present",
+        bullets: ["Migrated store reports onto Azure blob storage"],
+      }],
+      education: [{ degree: "BCom", institution: "UWC", dates: "2021", coursework: [] }],
+      skills: [{ category: "Operations", skills: ["Spreadsheets"] }],
+    });
+    const tailored = cloneCanonical(source);
+    tailored.skills[0].skills.push({ id: "skill-group-1-item-99", name: "Microsoft Azure" });
+    const report = validatePreservation(source, tailored);
+    assert.equal(report.valid, true, report.unsupportedClaims.join(", ") || JSON.stringify(report));
+    assert.equal(report.unsupportedClaims.length, 0);
   });
 
   it("fails when a numeric metric changes", () => {

@@ -102,6 +102,17 @@ function catalogFor(name: string): SkillCatalogEntry | undefined {
   return SKILL_CATALOG.find((entry) => normalizeKey(entry.name) === key || entry.aliases.includes(key));
 }
 
+/** True when a catalog canonical name (e.g. "Microsoft Azure") is evidenced by an alias in source text ("Azure"). */
+export function catalogSkillMatchesSourceText(skillName: string, sourceText: string): boolean {
+  const key = normalizeKey(skillName);
+  const blob = sourceText.toLowerCase();
+  if (!key) return false;
+  if (blob.includes(key)) return true;
+  const entry = catalogFor(skillName);
+  if (!entry) return false;
+  return entry.aliases.some((alias) => hasTerm(blob, alias)) || hasTerm(blob, entry.name);
+}
+
 function nextPromotedId(groups: CanonicalSkillGroup[], prefix: string): string {
   const used = new Set(groups.flatMap((group) => [group.id, ...group.skills.map((skill) => skill.id)]));
   let index = 1;

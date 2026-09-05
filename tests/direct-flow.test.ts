@@ -226,6 +226,16 @@ describe("direct tailor flow", () => {
     assert.equal(customer.userMessage, USER_ERROR_GENERIC);
   });
 
+  it("includes preservation issue details for admin preservation failures", () => {
+    const annotated = annotateTailorErrorForAdmin(true, {
+      error: "PRESERVATION_FAILED",
+      userMessage: USER_ERROR_GENERIC,
+      message: "skill:Microsoft Azure; missing:education-2",
+    });
+    assert.match(String(annotated.userMessage), /PRESERVATION_FAILED/);
+    assert.match(String(annotated.userMessage), /Microsoft Azure/);
+  });
+
   it("includes the underlying exception message for admin tailor failures", () => {
     const annotated = annotateTailorErrorForAdmin(true, {
       error: "TAILOR_FAILED",
