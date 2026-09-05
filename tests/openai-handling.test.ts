@@ -127,6 +127,29 @@ describe("OpenAI response handling", () => {
     assert.ok(calls >= 2);
   });
 
+  it("does not treat an OpenAI billing 429 as a retryable overload", async () => {
+    let calls = 0;
+    const completeJson = createOpenAICompleteJson({
+      chat: {
+        completions: {
+          create: async () => {
+            calls += 1;
+            const err = new Error(
+              "429 You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",
+            ) as Error & { status: number };
+            err.status = 429;
+            throw err;
+          },
+        },
+      },
+    } as never, { retryDelayMs: 0 });
+    await assert.rejects(
+      () => completeJson({ purpose: "tailor", user: "{}", promptVersion: "tailor-v2" }),
+      /no credits remaining/i,
+    );
+    assert.equal(calls, 1);
+  });
+
   it("fails when both models fail", async () => {
     const completeJson = createOpenAICompleteJson({
       chat: {

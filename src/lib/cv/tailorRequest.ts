@@ -1,6 +1,6 @@
 import { canonicalizeCv } from "./canonical";
 import type { CreditStore } from "./credits";
-import { logTailorTelemetry } from "./openai";
+import { isOpenAIQuotaError, logTailorTelemetry } from "./openai";
 import { extractSourceCv, runTailorPipeline } from "./pipeline";
 import { toOriginalWire, toTailoredWire } from "./wire";
 import { ExtractionIntegrityError, SectionIntegrityError } from "./sectionIntegrity";
@@ -17,6 +17,7 @@ import {
   USER_ERROR_EXTRACTION,
   USER_ERROR_GENERIC,
   USER_ERROR_IMAGE_ONLY,
+  USER_ERROR_AI_UNAVAILABLE,
   userMessageForIntegrityIssues,
 } from "./userFacingErrors";
 import type { UserCredits } from "../types";
@@ -228,6 +229,18 @@ export async function executeTailorRequest(input: {
     if (err instanceof IncompleteModelOutputError || err instanceof ModelJsonParseError) {
       console.error("Tailor model output failed", err);
       return { status: 502, body: { error: "INCOMPLETE_MODEL_OUTPUT", userMessage: USER_ERROR_GENERIC } };
+    }
+    if (isOpenAIQuotaError(err)) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("OpenAI quota exceeded", message);
+      return {
+        status: 503,
+        body: {
+          error: "OPENAI_QUOTA_EXCEEDED",
+          userMessage: USER_ERROR_AI_UNAVAILABLE,
+          message,
+        },
+      };
     }
     const message = err instanceof Error ? err.message : String(err);
     console.error("Tailor request failed", err);

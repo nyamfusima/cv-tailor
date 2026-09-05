@@ -21,7 +21,15 @@ function errorMessage(err: unknown): string {
   return String((err as { message?: string })?.message ?? err ?? "");
 }
 
+export function isOpenAIQuotaError(err: unknown): boolean {
+  const message = errorMessage(err);
+  return /no credits remaining|insufficient[_ ]quota|exceeded your current quota|add credits to continue using the api/i.test(
+    message,
+  );
+}
+
 function isOverloaded(err: unknown): boolean {
+  if (isOpenAIQuotaError(err)) return false;
   const status = errorStatus(err);
   return status === 429 || status === 500 || status === 503;
 }
@@ -140,7 +148,7 @@ export function createOpenAICompleteJson(
           } catch (err) {
             lastError = err;
             if (err instanceof IncompleteModelOutputError) throw err;
-            if (isFatalAuth(err)) throw err;
+            if (isFatalAuth(err) || isOpenAIQuotaError(err)) throw err;
             if (isSchemaUnsupported(err) && responseFormat?.type === "json_schema") {
               break;
             }

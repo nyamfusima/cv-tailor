@@ -13,6 +13,9 @@ export const USER_ERROR_GENERIC =
 export const USER_ERROR_TIMEOUT =
   "The request took too long and was stopped. Please try again. No credit was used.";
 
+export const USER_ERROR_AI_UNAVAILABLE =
+  "The AI service is temporarily unavailable. Please try again later. No credit was used.";
+
 const BLEED_CODES = new Set(["COURSEWORK_SECTION_BLEED", "CROSS_SECTION_DUPLICATION"]);
 
 export function userMessageForIntegrityIssues(
@@ -29,6 +32,7 @@ export function userMessageForErrorCode(
   issues?: Array<{ code: string }>,
 ): string {
   if (code === "EXTRACTION_FAILED") return USER_ERROR_IMAGE_ONLY;
+  if (code === "OPENAI_QUOTA_EXCEEDED" || code === "OPENAI_UNAVAILABLE") return USER_ERROR_AI_UNAVAILABLE;
   if (
     code === "EXTRACTION_INTEGRITY_FAILED" ||
     code === "SECTION_INTEGRITY_FAILED" ||
